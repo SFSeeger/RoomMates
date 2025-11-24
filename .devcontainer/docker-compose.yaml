@@ -1,0 +1,11 @@
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace
+      - ~/.gitconfig:/vscode/.gitconfig
+    environment:
+      - TZ=Europe/Berlin
+    command: sleep infinity

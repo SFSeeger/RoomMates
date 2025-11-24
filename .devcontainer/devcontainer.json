@@ -1,0 +1,30 @@
+{
+    "name": "RoomMates Dev Container",
+    "dockerComposeFile": [
+        "docker-compose.yaml"
+    ],
+    "service": "devcontainer",
+    "runServices": [
+        "devcontainer"
+    ],
+    "shutdownAction": "stopCompose",
+    "workspaceFolder": "/workspace",
+    "postStartCommand": "bash entrypoints/post_create_command.sh",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "rust-lang.rust-analyzer",
+                "vadimcn.vscode-lldb",
+                "tamasfe.even-better-toml",
+                "eamodio.gitlens",
+                "mhutchie.git-graph",
+                "mechatroner.rainbow-csv"
+            ],
+            "settings": {
+                "files.autoSave": "afterDelay",
+                "files.eol": "\n",
+                "files.insertFinalNewline": true
+            }
+        }
+    }
+}

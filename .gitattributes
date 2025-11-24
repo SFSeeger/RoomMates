@@ -1,0 +1,2 @@
+# Use LF in all text files since the devontainer is unix
+* text=auto eol=lf
