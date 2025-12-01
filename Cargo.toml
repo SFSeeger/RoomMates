@@ -1,6 +1,9 @@
-[package]
-name = "room_mates"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+resolver = "2"
+members = ["packages/frontend", "packages/api"]
 
-[dependencies]
+[workspace.dependencies]
+dioxus = { version = "0.7.1" }
+
+# workspace
+api = { path = "packages/api" }

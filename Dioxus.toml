@@ -1,0 +1,27 @@
+[application]
+name = "RoomMates"
+out_dir = "dist"
+tailwind_input = "tailwind.css"
+tailwind_output = "assets/dist/tailwind.css"
+[web.app]
+
+# HTML title tag content
+title = "RoomMates"
+
+# include `assets` in web platform
+[web.resource]
+
+# Additional CSS style files
+style = ["assets/dist/tailwind.css"]
+
+# Additional JavaScript files
+script = []
+
+[web.watcher]
+watch_path = ["src", "assets"]
+
+[web.resource.dev]
+
+# Javascript code file
+# serve: [dev-server] only
+script = []

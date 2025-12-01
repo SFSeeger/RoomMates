@@ -1,0 +1,15 @@
+[package]
+name = "frontend"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+dioxus = { workspace = true, features = ["router", "fullstack"] }
+api = { workspace = true }
+
+[features]
+default = ["web"]
+web = ["dioxus/web"]
+mobile = ["dioxus/mobile"]
+desktop = ["dioxus/desktop"]
+server = ["dioxus/server", "api/server"]

@@ -1,4 +1,14 @@
 services:
+  db:
+    image: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: roommates
+      MYSQL_USER: roommates
+      MYSQL_PASSWORD: roommates_password
+    volumes:
+      - db_data:/var/lib/mysql
+
   devcontainer:
     build:
       context: .
@@ -9,3 +19,7 @@ services:
     environment:
       - TZ=Europe/Berlin
     command: sleep infinity
+
+
+volumes:
+  db_data:

@@ -12,13 +12,6 @@ repos:
 
   - repo: local
     hooks:
-      - id: rustfmt
-        name: Rustfmt
-        entry: cargo fmt
-        language: system
-        types_or: [rust]
-        args: ["--"]
-
       - id: cargo-check
         name: cargo check
         description: Check the package for errors.
@@ -33,5 +26,22 @@ repos:
         entry: cargo clippy
         language: system
         args: ["--", "-D", "warnings"]
+        types: [rust]
+        pass_filenames: false
+
+      - id: dioxus-check
+        name: dioxus-check
+        description: Check dioxus project for common mistakes.
+        entry: dx check
+        args: ["--package", "frontend"]
+        language: system
+        types: [rust]
+        pass_filenames: false
+
+      - id: format-code
+        name: format-code
+        description: Format rust files.
+        entry: ./scripts/format.sh
+        language: system
         types: [rust]
         pass_filenames: false

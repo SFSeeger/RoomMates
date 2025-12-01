@@ -4,9 +4,6 @@
         "docker-compose.yaml"
     ],
     "service": "devcontainer",
-    "runServices": [
-        "devcontainer"
-    ],
     "shutdownAction": "stopCompose",
     "workspaceFolder": "/workspace",
     "postStartCommand": "bash entrypoints/post_create_command.sh",
@@ -18,12 +15,26 @@
                 "tamasfe.even-better-toml",
                 "eamodio.gitlens",
                 "mhutchie.git-graph",
-                "mechatroner.rainbow-csv"
+                "DioxusLabs.dioxus",
+                "bradlc.vscode-tailwindcss"
             ],
             "settings": {
                 "files.autoSave": "afterDelay",
                 "files.eol": "\n",
-                "files.insertFinalNewline": true
+                "files.insertFinalNewline": true,
+                "rust-analyzer.rustfmt.overrideCommand": [
+                    "dx",
+                    "fmt",
+                    "--all-files",
+                    "-f",
+                    "-"
+                ],
+                "tailwindCSS.experimental.classRegex": [
+                    "class: \"(.*)\""
+                ],
+                "tailwindCSS.includeLanguages": {
+                    "rust": "html"
+                }
             }
         }
     }
