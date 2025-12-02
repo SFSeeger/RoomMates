@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 pub fn Echo() -> Element {
     let mut response = use_signal(String::new);
     rsx! {
-        div { id: "echo",
+        div { class: "border rounded-md shadow-lg p-4 mt-4",
             h4 { "ServerFn Echo" }
             input {
                 placeholder: "Type here to echo...",

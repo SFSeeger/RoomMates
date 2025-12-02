@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 dioxus = { workspace = true, features = ["router", "fullstack"] }
 api = { workspace = true }
+anyhow = {workspace = true}
 
 [features]
 default = ["web"]

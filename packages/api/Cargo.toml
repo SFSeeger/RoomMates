@@ -7,6 +7,7 @@ edition = "2024"
 dioxus = { workspace = true, features = ["fullstack"] }
 sea-orm = { workspace = true, features = [
     "sqlx-mysql",
+    "sqlx-sqlite", # I want people to be able to choose between mysql or sqlite.
     "runtime-tokio-native-tls",
     "macros",
     "schema-sync",

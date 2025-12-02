@@ -12,7 +12,7 @@ title = "RoomMates"
 [web.resource]
 
 # Additional CSS style files
-style = ["assets/dist/tailwind.css"]
+style = []
 
 # Additional JavaScript files
 script = []
