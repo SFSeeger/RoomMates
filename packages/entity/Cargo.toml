@@ -1,0 +1,8 @@
+[package]
+name = "entity"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sea-orm = {workspace = true, features = ["macros"]}
+serde = { version = "1.0.228", features = ["derive"] }

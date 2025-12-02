@@ -5,6 +5,18 @@ edition = "2024"
 
 [dependencies]
 dioxus = { workspace = true, features = ["fullstack"] }
+sea-orm = { workspace = true, features = [
+    "sqlx-mysql",
+    "runtime-tokio-native-tls",
+    "macros",
+    "schema-sync",
+    "entity-registry",
+], optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+dotenv = "0.15.0"
+entity = { workspace = true }
+anyhow = { workspace = true }
 
 [features]
-server = ["dioxus/server"]
+server = ["dioxus/server", "dep:sea-orm"]

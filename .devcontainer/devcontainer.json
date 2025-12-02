@@ -25,7 +25,6 @@
                 "rust-analyzer.rustfmt.overrideCommand": [
                     "dx",
                     "fmt",
-                    "--all-files",
                     "-f",
                     "-"
                 ],

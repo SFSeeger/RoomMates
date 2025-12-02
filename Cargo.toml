@@ -1,9 +1,14 @@
 [workspace]
 resolver = "2"
-members = ["packages/frontend", "packages/api"]
+members = ["packages/frontend", "packages/api", "packages/entity"]
 
 [workspace.dependencies]
 dioxus = { version = "0.7.1" }
+sea-orm = {version = "2.0.0-rc"}
+serde = { version = "1.0.228" }
+serde_json = {version = "1.0.145"}
+anyhow = { version = "1.0.71" }
 
 # workspace
 api = { path = "packages/api" }
+entity = {path = "packages/entity"}
