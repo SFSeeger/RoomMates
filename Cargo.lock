@@ -2089,6 +2089,7 @@ dependencies = [
  "anyhow",
  "api",
  "dioxus",
+ "entity",
 ]
 
 [[package]]

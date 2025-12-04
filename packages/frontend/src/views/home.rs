@@ -4,21 +4,28 @@ use dioxus::prelude::*;
 
 #[component]
 pub fn Home() -> Element {
-    let events = use_loader(move || async move { list_events().await });
+    let events = use_resource(move || async move { list_events().await });
 
     rsx! {
         div {
             h1 { class: "text-xl font-bold mb-2", "Events owned by user 1" }
-            if let Ok(events) = events {
-                ul { class: "list-disc",
-                    for event in events.read().cloned() {
-                        li { key: "{event.id}", "{event.title}" }
+            match &*events.read_unchecked() {
+                Some(Ok(data)) => rsx! {
+                    ul { class: "list-disc pl-5",
+                        {data.iter().map(|event| rsx! {
+                            li { key: "{event.id}", "{event.title}" }
+                        })}
                     }
-                }
-            } else {
-                p { class: "text-red-500", "Getting User 1 caused an error" }
+                },
+                Some(Err(error)) => rsx! {
+                    p { class: "text-red-500", "Loading Events failed with {error}" }
+                },
+                None => rsx! {
+                    p { "Loading..." }
+                },
             }
         }
+
         Echo {}
     }
 }

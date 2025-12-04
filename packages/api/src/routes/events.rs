@@ -1,3 +1,5 @@
+use std::{thread, time::Duration};
+
 use crate::server;
 use dioxus::prelude::*;
 use entity::prelude::*;
@@ -9,6 +11,8 @@ use dioxus::server::axum::Extension;
 pub async fn list_events() -> Result<Vec<entity::event::Model>, ServerFnError> {
     use sea_orm::EntityTrait;
     use sea_orm::ModelTrait;
+
+    thread::sleep(Duration::from_secs(1)); // Simulate a slow database query
 
     let user = User::find_by_id(1)
         .one(&ext.database)
@@ -22,26 +26,4 @@ pub async fn list_events() -> Result<Vec<entity::event::Model>, ServerFnError> {
         .or_internal_server_error("Error loading events")?;
 
     Ok(events)
-}
-
-#[post("/api/users", ext: Extension<server::AppState>)]
-pub async fn create_event(
-    email: String,
-    password: String,
-) -> Result<entity::user::Model, ServerFnError> {
-    use sea_orm::{ActiveModelTrait, TryIntoModel};
-
-    let user = entity::user::ActiveModel {
-        email: sea_orm::Set(email),
-        password: sea_orm::Set(password),
-        ..Default::default()
-    };
-
-    let user = user
-        .save(&ext.database)
-        .await
-        .or_internal_server_error("Error saving new user to database")?;
-    Ok(user
-        .try_into_model()
-        .or_internal_server_error("Error converting user to model")?)
 }

@@ -3,6 +3,7 @@ name = "RoomMates"
 out_dir = "dist"
 tailwind_input = "tailwind.css"
 tailwind_output = "assets/dist/tailwind.css"
+
 [web.app]
 
 # HTML title tag content
@@ -25,3 +26,7 @@ watch_path = ["src", "assets"]
 # Javascript code file
 # serve: [dev-server] only
 script = []
+
+[bundle]
+identifier = "com.example.roommates"
+publisher = "RoomMates"
