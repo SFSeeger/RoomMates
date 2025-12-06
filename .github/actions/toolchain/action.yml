@@ -1,0 +1,19 @@
+name: toolchain
+description: Setup toolchain for development
+
+inputs:
+  dioxus-version:
+    description: Version of dioxus used in the project
+    required: true
+    default: 0.7.2
+
+runs:
+  using: composite
+  steps:
+    - name: Install dx
+      run: |
+        curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+        cargo binstall dioxus-cli@${{ inputs.dioxus-version }}
+        rustup target add wasm32-unknown-unknown
+
+      shell: bash

@@ -1,0 +1,32 @@
+name: pull-request-checks.yml
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  quality-ensurance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - uses: ./.github/actions/toolchain
+        with:
+          dioxus-version: '0.7.2'
+
+      - uses: giraffate/clippy-action@v1
+        with:
+          reporter: 'github-pr-check'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          clippy_flags: --all-targets --all-features -- -Dwarnings
+
+      - name: Formatting
+        run: ./scripts/format.sh
