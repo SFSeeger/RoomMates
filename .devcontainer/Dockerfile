@@ -1,4 +1,5 @@
 FROM mcr.microsoft.com/devcontainers/rust:trixie
+ARG NODE_VERSION=20
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libwebkit2gtk-4.1-dev \
@@ -15,8 +16,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 USER vscode
 
+#Dioxus
 RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
 RUN cargo binstall dioxus-cli
 RUN rustup target add wasm32-unknown-unknown
+
+
+# Node
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+ENV NVM_DIR=/home/vscode/.nvm
+RUN bash -c "source $NVM_DIR/nvm.sh && nvm install $NODE_VERSION"
 
 RUN pipx ensurepath && pipx install pre-commit

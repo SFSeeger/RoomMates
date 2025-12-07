@@ -1,0 +1,10 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "description": "",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.1.17",
+    "daisyui": "^5.5.8",
+    "tailwindcss": "^4.1.17"
+  }
+}

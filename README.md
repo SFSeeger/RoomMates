@@ -37,13 +37,13 @@ Modules in `routes` and `views` should be equal the URL structure. The API Route
 Run the following command in the root of your project to start developing with the default platform:
 
 ```bash
-dx serve --package frontend
+make dev-server
 ```
 
-To run for a different platform, use the `--platform platform` flag. E.g.
+To run for a different platform, use the `PLATFORM` flag. E.g.
 
 ```bash
-dx serve --platform desktop --package frontend
+make dev-server PLATFORM=desktop
 ```
 
 ### Development Services
