@@ -17,3 +17,15 @@ runs:
         rustup target add wasm32-unknown-unknown
 
       shell: bash
+
+    - name: Cache Node modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          node_modules
+        key: ${{ runner.os }}-node-modules-${{ hashFiles('**/package-lock.json') }}
+
+    - name: Install dependencies
+      run: make dependencies
+
+      shell: bash
