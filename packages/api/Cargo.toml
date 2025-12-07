@@ -15,7 +15,7 @@ sea-orm = { workspace = true, features = [
 ], optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-dotenv = "0.15.0"
+dotenvy = "0.15.7"
 entity = { workspace = true }
 anyhow = { workspace = true }
 

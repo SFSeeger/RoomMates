@@ -1,9 +1,8 @@
 use anyhow::Context;
-use dotenv::dotenv;
 use sea_orm::{Database, DatabaseConnection};
 
 pub async fn establish_connection() -> Result<DatabaseConnection, anyhow::Error> {
-    dotenv().ok();
+    dotenvy::dotenv()?;
     let database_url =
         std::env::var("DATABASE_URL").context("Missing environment variable 'DATABASE_URL'")?;
     let db = Database::connect(database_url)

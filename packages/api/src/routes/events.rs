@@ -1,5 +1,3 @@
-use std::{thread, time::Duration};
-
 use crate::server;
 use dioxus::prelude::*;
 use entity::prelude::*;
@@ -11,6 +9,7 @@ use dioxus::server::axum::Extension;
 pub async fn list_events() -> Result<Vec<entity::event::Model>, ServerFnError> {
     use sea_orm::EntityTrait;
     use sea_orm::ModelTrait;
+    use std::{thread, time::Duration};
 
     thread::sleep(Duration::from_secs(1)); // Simulate a slow database query
 
