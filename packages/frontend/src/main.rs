@@ -1,6 +1,8 @@
 use crate::layouts::StandardAppLayout;
+use dioxus::logger::tracing;
 use dioxus::prelude::*;
 use views::Home;
+use views::NotFound;
 mod components;
 mod layouts;
 mod views;
@@ -8,14 +10,20 @@ mod views;
 const TAILWIND_CSS: Asset = asset!("/assets/dist/tailwind.css");
 const FAVICON: Asset = asset!("/assets/favicon.svg");
 
+// !! IMPORTANT: DO NOT FORMAT THIS! The formatting of the routing enum determines behaviour !!
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 enum Route {
     #[layout(StandardAppLayout)]
-    #[route("/")]
-    Home {},
+        #[route("/")]
+        Home {},
+
+        #[route("/:..segments")]
+        NotFound { segments: Vec<String> },
 }
 fn main() -> Result<(), anyhow::Error> {
+    tracing::info!("Starting Server");
+
     #[cfg(feature = "server")]
     dioxus::serve(|| async move { api::server::setup_api(App).await });
 

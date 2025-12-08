@@ -11,7 +11,7 @@ pub async fn list_events() -> Result<Vec<entity::event::Model>, ServerFnError> {
     use sea_orm::ModelTrait;
     use std::{thread, time::Duration};
 
-    thread::sleep(Duration::from_secs(1)); // Simulate a slow database query
+    thread::sleep(Duration::from_secs(1)); // Simulate a slow database query TODO: Remove this after basic setup
 
     let user = User::find_by_id(1)
         .one(&ext.database)
