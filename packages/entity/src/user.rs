@@ -7,13 +7,25 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
+    #[sea_orm(unique)]
     pub email: String,
+    pub first_name: String,
+    pub last_name: String,
     #[serde(skip_serializing)]
     pub password: String,
 
-    // Relation
+    //events that belong to this user
     #[sea_orm(has_many)]
-    pub events: HasMany<super::event::Entity>,
+    pub my_events: HasMany<super::event::Entity>,
+
+    //belongs to many groups
+    #[sea_orm(has_many, via = "is_in_group")]
+    pub groups: HasMany<super::group::Entity>,
+
+    //has gotten many invitations
+    #[sea_orm(has_many)]
+    pub invitations: HasMany<super::invitation::Entity>,
+    //events shared by other users found through linked
 }
 
 impl ActiveModelBehavior for ActiveModel {}
