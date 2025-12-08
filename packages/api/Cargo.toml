@@ -20,7 +20,8 @@ entity = { workspace = true }
 anyhow = { workspace = true }
 argon2 = {version = "0.5.3", features=["std"], optional = true}
 tokio = {version = "1", features = ["full"], optional = true}
+chrono ={ version =  "0.4.42", optional = true}
 
 
 [features]
-server = ["dioxus/server", "dep:sea-orm", "dep:tokio", "dep:argon2"]
+server = ["dioxus/server", "dep:sea-orm", "dep:tokio", "dep:argon2", "dep:chrono"]
