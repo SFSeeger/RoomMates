@@ -8,6 +8,7 @@ dioxus = { workspace = true, features = ["router", "fullstack"] }
 api = { workspace = true }
 anyhow = {workspace = true}
 entity = {workspace = true}
+dioxus-free-icons = { version = "0.10.0", features = ["lucide"] }
 
 [features]
 default = ["web"]

@@ -1,7 +1,8 @@
-use crate::components::Navbar;
+use crate::layouts::StandardAppLayout;
 use dioxus::prelude::*;
 use views::Home;
 mod components;
+mod layouts;
 mod views;
 
 const TAILWIND_CSS: Asset = asset!("/assets/dist/tailwind.css");
@@ -10,7 +11,7 @@ const FAVICON: Asset = asset!("/assets/favicon.svg");
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 enum Route {
-    #[layout(Navbar)]
+    #[layout(StandardAppLayout)]
     #[route("/")]
     Home {},
 }
