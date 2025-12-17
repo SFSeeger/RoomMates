@@ -10,6 +10,22 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Install apt dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+        libwebkit2gtk-4.1-dev \
+        build-essential \
+        curl \
+        file \
+        libxdo-dev \
+        libssl-dev \
+        libayatana-appindicator3-dev \
+        librsvg2-dev \
+        libgtk2.0-dev
+
+      shell: bash
+
     - name: Install dx
       run: |
         curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
