@@ -29,3 +29,9 @@ runs:
       run: make dependencies
 
       shell: bash
+
+    - name: Create .env file
+      run: |
+        cp .env.ci.dist .env
+
+      shell: bash
