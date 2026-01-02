@@ -1,5 +1,5 @@
 use crate::Route;
-use crate::components::sidebar::sidebar_provider::SidebarState;
+use crate::components::ui::sidebar::sidebar_provider::SidebarState;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::IconShape;

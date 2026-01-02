@@ -1,8 +1,6 @@
+use crate::Route;
+use crate::components::ui::{Footer, Navbar, SidebarProvider};
 use crate::views::NotFound;
-use crate::{
-    Route,
-    components::{Footer, Navbar, sidebar::SidebarProvider},
-};
 use dioxus::{fullstack::FullstackContext, prelude::*};
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::LdCircleX;

@@ -1,4 +1,4 @@
-use crate::components::sidebar::Sidebar;
+use crate::components::ui::sidebar::Sidebar;
 use dioxus::prelude::*;
 
 #[derive(Clone)]
