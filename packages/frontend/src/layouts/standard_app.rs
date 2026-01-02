@@ -1,5 +1,5 @@
 use crate::Route;
-use crate::components::ui::{Footer, Navbar, SidebarProvider};
+use crate::components::ui::{Footer, Navbar, SidebarProvider, loader::Loader};
 use crate::views::NotFound;
 use dioxus::{fullstack::FullstackContext, prelude::*};
 use dioxus_free_icons::Icon;
@@ -21,7 +21,7 @@ pub fn StandardAppLayout(children: Element) -> Element {
                         fallback: |_| {
                             rsx! {
                                 div { class: "flex items-center justify-center gap-2",
-                                    span { class: "loading loading-xl" }
+                                    Loader {}
                                     "RoomMates is loading..."
                                 }
                             }
