@@ -15,7 +15,7 @@ pub enum ButtonVariant {
 }
 
 impl ButtonVariant {
-    #[allow(dead_code)] // Used in the button component.
+    #[allow(dead_code)] // TODO: Remove when this component is in use
     fn class(&self) -> &'static str {
         match self {
             ButtonVariant::Primary => "btn-primary",
