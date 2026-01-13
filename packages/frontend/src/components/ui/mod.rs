@@ -8,3 +8,4 @@ pub mod footer;
 pub use footer::Footer;
 pub mod card;
 pub mod loader;
+pub mod toaster;
