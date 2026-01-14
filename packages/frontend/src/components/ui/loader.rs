@@ -12,6 +12,7 @@ pub enum LoaderSize {
 }
 
 impl LoaderSize {
+    #[allow(dead_code)]
     fn class(&self) -> &'static str {
         match self {
             LoaderSize::ExtraSmall => "loading-xs",

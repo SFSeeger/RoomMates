@@ -1,11 +1,10 @@
 pub mod button;
 pub mod collapse;
-pub mod sidebar;
-pub use sidebar::SidebarProvider;
 pub mod navbar;
+pub mod sidebar;
 pub use navbar::Navbar;
-pub mod footer;
-pub use footer::Footer;
 pub mod card;
+pub mod dock;
+pub mod footer;
 pub mod loader;
 pub mod toaster;

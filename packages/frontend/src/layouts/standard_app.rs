@@ -1,7 +1,11 @@
-use crate::Route;
+use crate::components::ui::dock::Dock;
+use crate::components::ui::loader::Loader;
 use crate::components::ui::toaster::ToastProvider;
-use crate::components::ui::{Footer, Navbar, SidebarProvider, loader::Loader};
 use crate::views::NotFound;
+use crate::{
+    Route,
+    components::ui::{Navbar, sidebar::SidebarProvider},
+};
 use dioxus::{fullstack::FullstackContext, prelude::*};
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::LdCircleX;
@@ -53,7 +57,7 @@ pub fn StandardAppLayout(children: Element) -> Element {
                     }
                 }
             }
-            Footer {}
+            Dock {}
         }
     }
 }
