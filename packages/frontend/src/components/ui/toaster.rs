@@ -4,7 +4,7 @@ use dioxus_free_icons::{
     icons::ld_icons::{LdCircleCheck, LdCircleX, LdInfo, LdTriangleAlert, LdX},
 };
 
-use crate::components::ui::button::Button;
+use crate::components::ui::button::{Button, ButtonShape, ButtonVariant};
 
 /// Style of the Toast. Controls colro and icon
 #[allow(dead_code)]
@@ -120,7 +120,9 @@ pub fn ToastComponent(toast: Toast) -> Element {
             }
             if toast.close_button {
                 Button {
-                    class: "btn btn-ghost btn-xs btn-circle",
+                    variant: ButtonVariant::None,
+                    shape: ButtonShape::Round,
+                    ghost: true,
                     onclick: move |_| {
                         let _ = toaster_state.remove_toast(toast.id);
                     },

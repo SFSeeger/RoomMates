@@ -12,6 +12,7 @@ pub enum ButtonVariant {
     Success,
     Warning,
     Error,
+    None,
 }
 
 impl ButtonVariant {
@@ -25,6 +26,31 @@ impl ButtonVariant {
             ButtonVariant::Success => "btn-success",
             ButtonVariant::Warning => "btn-warning",
             ButtonVariant::Error => "btn-error",
+            ButtonVariant::None => "",
+        }
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Copy, Clone, PartialEq, Default)]
+pub enum ButtonShape {
+    #[default]
+    Default,
+    Round,
+    Square,
+    Block,
+    Wide,
+}
+
+impl ButtonShape {
+    #[allow(dead_code)] // TODO: Remove when this component is in use
+    fn class(&self) -> &'static str {
+        match self {
+            ButtonShape::Default => "",
+            ButtonShape::Round => "btn-round",
+            ButtonShape::Square => "btn-square",
+            ButtonShape::Block => "btn-block",
+            ButtonShape::Wide => "btn-wide",
         }
     }
 }
@@ -32,18 +58,24 @@ impl ButtonVariant {
 #[component]
 pub fn Button(
     #[props(default)] variant: ButtonVariant,
-    #[props(extends=GlobalAttributes)]
-    #[props(extends=button)]
-    attributes: Vec<Attribute>,
+    #[props(default)] ghost: bool,
+    #[props(default)] shape: ButtonShape,
+    #[props(default)] disabled: bool,
+    #[props(extends=GlobalAttributes, extends=button)] attributes: Vec<Attribute>,
     onclick: Option<EventHandler<MouseEvent>>,
     onmousedown: Option<EventHandler<MouseEvent>>,
     onmouseup: Option<EventHandler<MouseEvent>>,
     children: Element,
 ) -> Element {
     let variant_class = variant.class();
+    let shape_class = shape.class();
+
     rsx! {
         button {
-            class: "btn {variant_class}",
+            class: "btn {variant_class} {shape_class}",
+            class: if ghost { "btn-ghost" },
+            class: if disabled { "btn-disabled" },
+            disabled,
             onclick: move |event| {
                 if let Some(f) = &onclick {
                     f.call(event);
