@@ -8,3 +8,5 @@ mod sign_up;
 pub mod todo;
 
 pub use sign_up::SignupView;
+mod profile;
+pub use profile::Profile;
