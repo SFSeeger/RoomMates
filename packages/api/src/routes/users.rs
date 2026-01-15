@@ -153,3 +153,33 @@ pub async fn get_me() -> Result<UserInfo, ServerFnError> {
     let auth_user = auth.user.clone().or_unauthorized("Not authenticated")?;
     Ok(UserInfo::from_user_model(auth_user))
 }
+
+//change this when forms are implemented maybes
+#[patch("/api/users/{user_id}", ext: Extension<server::AppState>)]
+pub async fn change_user_info(
+    user_id: i32,
+    first_name: String,
+    last_name: String,
+    email: String,
+    password: String,
+) -> dioxus::Result<NoContent, ServerFnError> {
+    use entity::user::Entity as User;
+    use sea_orm::EntityTrait;
+
+    let user: Option<entity::user::Model> = User::find_by_id(user_id)
+        .one(&ext.database)
+        .await
+        .or_internal_server_error("horrible server error")?;
+
+    let mut user_active: entity::user::ActiveModel = Option::unwrap(user).into();
+
+    // Update name attribute
+    user_active.first_name = sea_orm::Set(first_name);
+    user_active.last_name = sea_orm::Set(last_name);
+    user_active.email = sea_orm::Set(email);
+    user_active.password = sea_orm::Set(password);
+
+    let _res = User::update(user_active).exec(&ext.database).await;
+
+    Ok(NoContent)
+}

@@ -44,7 +44,7 @@ pub fn Navbar() -> Element {
                             class: "menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-42 p-2 shadow",
                             tabindex: "-1",
                             li {
-                                Link { to: Route::Home {}, "Profile" }
+                                Link { to: Route::Profile {}, "Profile" }
                             }
                             li {
                                 Link { to: Route::Home {}, "Settings" }
