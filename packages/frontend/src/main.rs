@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 use views::Home;
 use views::NotFound;
 mod components;
+mod hooks;
 mod layouts;
 mod views;
 

@@ -2053,6 +2053,9 @@ dependencies = [
  "dioxus",
  "dioxus-free-icons",
  "entity",
+ "regex",
+ "serde",
+ "serde_json",
  "uuid",
 ]
 
