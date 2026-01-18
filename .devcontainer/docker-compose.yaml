@@ -28,6 +28,7 @@ services:
     volumes:
       - ..:/workspace
       - ~/.gitconfig:/vscode/.gitconfig
+      - ~/.ssh:/home/vscode/.ssh
     environment:
       - TZ=Europe/Berlin
     command: sleep infinity

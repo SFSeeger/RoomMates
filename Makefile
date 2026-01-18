@@ -13,6 +13,9 @@ dependencies: $(NODE_MODULES_STAMP)
 dev-server: dependencies
 	dx serve --package frontend --platform $(PLATFORM)
 
+tests: dependencies
+	cargo test --workspace --all-features --no-fail-fast
+
 clean:
 	rm -rf node_modules
 	rm -rf target
