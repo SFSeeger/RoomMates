@@ -7,5 +7,7 @@ pub use navbar::Navbar;
 pub mod footer;
 pub use footer::Footer;
 pub mod card;
+pub mod fieldset;
+pub mod list;
 pub mod loader;
 pub mod toaster;

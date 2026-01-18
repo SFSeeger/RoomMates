@@ -1,4 +1,6 @@
 use crate::components::Echo;
+use crate::components::ui::list;
+use crate::views::home::list::List;
 use api::routes::events::list_events;
 use dioxus::prelude::*;
 
@@ -25,6 +27,7 @@ pub fn Home() -> Element {
                         p { "Loading..." }
                     },
                 }
+                List {}
             }
         }
         Echo {}
