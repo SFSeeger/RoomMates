@@ -1,4 +1,5 @@
-use crate::Route;
+use crate::components::ui::button;
+use crate::{Route, components::ui::button::Button};
 use api::routes::users::retrieve_user;
 use dioxus::prelude::*;
 //use dioxus_free_icons::Icon;
@@ -43,8 +44,30 @@ pub fn Profile() -> Element {
                 }
             }
 
-            div { class: "card-actions justify-end" }
-            button { class: "btn btn-lg btn-outline", {"Edit Profile Information"} }
+            div { class: "card-actions justify-end",
+                Button {
+                    variant: button::ButtonVariant::Primary,
+                    ghost: false,
+                    shape: button::ButtonShape::Square,
+                    disabled: false,
+                    "Edit Profile"
+                }
+            }
         }
+    }
+}
+
+#[component]
+pub fn Profile_Editor() -> Element {
+    rsx! {
+
+        label { class: "btn", "open modal" }
+        input { class: "modal-toggle", id: "my_modal_6", r#type: "checkbox" }
+        div { class: "modal", role: "dialog",
+            div { class: "modal-box",
+                div { class: "modal-action" }
+            }
+        }
+
     }
 }
