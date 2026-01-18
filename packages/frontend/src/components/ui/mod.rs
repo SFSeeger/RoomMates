@@ -5,6 +5,8 @@ pub mod sidebar;
 pub use navbar::Navbar;
 pub mod card;
 pub mod dock;
+pub mod fieldset;
 pub mod footer;
+pub mod list;
 pub mod loader;
 pub mod toaster;
