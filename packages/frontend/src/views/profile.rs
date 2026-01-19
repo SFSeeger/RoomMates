@@ -1,15 +1,15 @@
 use crate::components::ui::button;
 //use crate::components::ui::card::{Card, CardBody};
 use crate::{Route, components::ui::button::Button};
-use api::routes::users::retrieve_user;
+use api::routes::users::get_me;
 use dioxus::prelude::*;
 //use dioxus_free_icons::Icon;
 //use dioxus_free_icons::icons::ld_icons::LdCircleHelp;
 
 #[component]
 pub fn Profile() -> Element {
-    let user: Resource<std::result::Result<entity::user::Model, ServerFnError>> =
-        use_server_future(move || async move { retrieve_user(1).await })?;
+    let user =
+        use_server_future(move || async move { get_me().await })?;
 
     rsx! {
 
@@ -38,14 +38,54 @@ pub fn Profile() -> Element {
         div { class: "card card-border bg-base-100 shadow-sm",
             div { class: "card-body",
                 h2 { class: "card-title", "Profile Information" }
-                p { "view and edit your info" }
+                p { "" }
 
                 match &*user.read() {
                     Some(Ok(data)) => rsx! {
-                        p { "user information" }
                         ul { class: "list bg-base-100 rounded-box shadow-md",
-                            li { class: "list-row", key: "data.id", " Username: {data.id}" }
-                            li { class: "list-row", key: "data.id", "Email: {data.email}" }
+
+                            li { class: "list-row", key: "{data.id}",
+
+                                " First Name: {data.first_name} "
+
+                                div {
+                                    fieldset { class: "fieldset",
+                                        legend { class: "fieldset-legend", "Edit first name!" }
+                                        input {
+                                            class: "input",
+                                            placeholder: "firstname",
+                                            r#type: "text",
+                                        }
+                                    }
+                                }
+                            }
+                            li { class: "list-row", key: "{data.id}",
+
+                                " Last Name: {data.last_name}"
+
+                                div {
+                                    fieldset { class: "fieldset",
+                                        legend { class: "fieldset-legend", "Edit last name" }
+
+                                        input { class: "input", placeholder: "lastname", r#type: "text" }
+                                    }
+                                }
+                            }
+                            li { class: "list-row", key: "{data.id}",
+                                "Email: {data.email}"
+                                div {
+
+                                    fieldset { class: "fieldset",
+                                        legend { class: "fieldset-legend", "Edit your email!" }
+
+                                        input {
+                                            class: "input",
+                                            placeholder: "new email",
+                                            r#type: "text",
+                                        }
+                                    }
+                                }
+                            }
                         }
                     },
                     Some(Err(err)) => rsx! {
@@ -63,7 +103,7 @@ pub fn Profile() -> Element {
                     shape: button::ButtonShape::Wide,
                     disabled: false,
                     //how to add attributes
-                    "Edit Profile"
+                    "Confirm New Info"
                 }
             }
         }
