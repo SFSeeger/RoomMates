@@ -1,5 +1,5 @@
 use crate::components::ui::button;
-//use crate::components::ui::card::{Card, CardBody};
+use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
 use crate::{Route, components::ui::button::Button};
 use api::routes::users::get_me;
 use dioxus::prelude::*;
@@ -19,7 +19,6 @@ pub fn Profile() -> Element {
                     img { src: "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp" }
                 }
             }
-            //Icon { class: "size-30", icon: LdCircleHelp }
             h1 { class: "text-2xl font-bold text-center", "you reached your profile, success" }
             Link { to: Route::Home {},
                 Button {
@@ -32,81 +31,94 @@ pub fn Profile() -> Element {
             }
         }
         div { class: "divider divider-primar" }
+        Card {
 
-        //div { children: CardBody {}, Card {} } figure out how to do card with component!!
-        // how to turn off auto format
-        div { class: "card card-border bg-base-100 shadow-sm",
-            div { class: "card-body",
-                h2 { class: "card-title", "Profile Information" }
-                p { "" }
+            CardBody {
+                {
+                    rsx! {
+                        CardTitle { "Profile Information" }
+                        match &*user.read() {
+                            Some(Ok(data)) => rsx! {
+                                ul { class: "list bg-base-100 rounded-box shadow-md",
+                                    li { class: "list-row", key: "{data.id}",
+                                        " Username: {data.first_name} {data.last_name}"
 
-                match &*user.read() {
-                    Some(Ok(data)) => rsx! {
-                        ul { class: "list bg-base-100 rounded-box shadow-md",
-                            li { class: "list-row", key: "{data.id}",
+                                        div {
 
-                                " First Name: {data.first_name} "
-                                " Username: {data.first_name} {data.last_name}"
+                                            fieldset { class: "fieldset",
 
-                                div {
+                                                legend { class: "fieldset-legend", "Edit first name!" }
+                                                input {
+                                                    class: "input",
+                                                    placeholder: " {data.first_name}",
+                                                    r#type: "text",
+                                                }
+                                                legend { class: "fieldset-legend", "Edit last name!" }
 
-                                    fieldset { class: "fieldset",
-
-                                        legend { class: "fieldset-legend", "Edit first name!" }
-                                        input {
-                                            class: "input",
-                                            placeholder: " {data.first_name}",
-                                            r#type: "text",
+                                                input {
+                                                    class: "input",
+                                                    placeholder: " {data.last_name}",
+                                                    r#type: "text",
+                                                }
+                                            }
                                         }
-                                        legend { class: "fieldset-legend", "Edit last name!" }
+                                    }
 
-                                        input {
-                                            class: "input",
-                                            placeholder: " {data.last_name}",
-                                            r#type: "text",
+                                    li { class: "list-row", key: "{data.id}",
+                                        "Email: {data.email}"
+                                        div {
+
+                                            fieldset { class: "fieldset",
+                                                legend { class: "fieldset-legend", "Edit your email!" }
+
+                                                input {
+                                                    class: "input",
+                                                    placeholder: "new email",
+                                                    r#type: "text",
+                                                }
+                                            }
                                         }
                                     }
                                 }
-                            }
-
-                            li { class: "list-row", key: "{data.id}",
-                                "Email: {data.email}"
-                                div {
-
-                                    fieldset { class: "fieldset",
-                                        legend { class: "fieldset-legend", "Edit your email!" }
-
-                                        input {
-                                            class: "input",
-                                            placeholder: "new email",
-                                            r#type: "text",
-                                        }
+                            },
+                            Some(Err(err)) => rsx! {
+                                p { class: "text-red-500", "Loading Events failed with {err}" }
+                            },
+                            None => rsx! {
+                                p { "cant connect to db" }
+                            },
+                        }
+                        CardActions {
+                            {
+                                rsx! {
+                                    Button {
+                                        variant: button::ButtonVariant::Primary,
+                                        ghost: false,
+                                        shape: button::ButtonShape::Wide,
+                                        disabled: false,
+                                        "Confirm New Info"
                                     }
                                 }
                             }
                         }
-                    },
-                    Some(Err(err)) => rsx! {
-                        p { class: "text-red-500", "Loading Events failed with {err}" }
-                    },
-                    None => rsx! {
-                        p { "cant connect to db" }
-                    },
-                }
-            }
-            div { class: "card-actions justify-end",
-                Button {
-                    variant: button::ButtonVariant::Primary,
-                    ghost: false,
-                    shape: button::ButtonShape::Wide,
-                    disabled: false,
-                    //how to add attributes
-                    "Confirm New Info"
+                    }
                 }
             }
         }
     }
 }
+
+/*  div {
+    Card {
+        {
+            rsx! {
+                Button { variant: button::ButtonVariant::Secondary, "example" }
+            }
+        }
+
+    }
+}
+*/
 
 // div {
 //   label { class: "btn", r#for: "my_modal_6", "open modal" }
