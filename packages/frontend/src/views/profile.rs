@@ -1,4 +1,5 @@
 use crate::components::ui::button;
+//use crate::components::ui::card::{Card, CardBody};
 use crate::{Route, components::ui::button::Button};
 use api::routes::users::retrieve_user;
 use dioxus::prelude::*;
@@ -20,19 +21,31 @@ pub fn Profile() -> Element {
             }
             //Icon { class: "size-30", icon: LdCircleHelp }
             h1 { class: "text-2xl font-bold text-center", "you reached your profile, success" }
-            Link { class: "btn btn-lg btn-outline", to: Route::Home {}, "Homepage" }
+            Link { to: Route::Home {},
+                Button {
+                    variant: button::ButtonVariant::Primary,
+                    ghost: false,
+                    shape: button::ButtonShape::Wide,
+                    disabled: false,
+                    "Homepage"
+                }
+            }
         }
-        div { class: "card",
+        div { class: "divider divider-primar" }
+
+        //div { children: CardBody {}, Card {} } figure out how to do card with component!!
+        // how to turn off auto format
+        div { class: "card card-border bg-base-100 shadow-sm",
             div { class: "card-body",
                 h2 { class: "card-title", "Profile Information" }
-                p { "View and Edit your Info" }
+                p { "view and edit your info" }
 
                 match &*user.read() {
                     Some(Ok(data)) => rsx! {
                         p { "user information" }
                         ul { class: "list bg-base-100 rounded-box shadow-md",
-                            li { class: "list-row", "Username: {data.id}" }
-                            li { class: "list-row", "Email: {data.email}" }
+                            li { class: "list-row", key: "data.id", " Username: {data.id}" }
+                            li { class: "list-row", key: "data.id", "Email: {data.email}" }
                         }
                     },
                     Some(Err(err)) => rsx! {
@@ -43,31 +56,25 @@ pub fn Profile() -> Element {
                     },
                 }
             }
-
             div { class: "card-actions justify-end",
                 Button {
                     variant: button::ButtonVariant::Primary,
                     ghost: false,
-                    shape: button::ButtonShape::Square,
+                    shape: button::ButtonShape::Wide,
                     disabled: false,
+                    //how to add attributes
                     "Edit Profile"
                 }
             }
         }
-    }
-}
-
-#[component]
-pub fn Profile_Editor() -> Element {
-    rsx! {
-
-        label { class: "btn", "open modal" }
-        input { class: "modal-toggle", id: "my_modal_6", r#type: "checkbox" }
-        div { class: "modal", role: "dialog",
-            div { class: "modal-box",
-                div { class: "modal-action" }
+        div {
+            label { class: "btn", r#for: "my_modal_6", "open modal" }
+            input { class: "modal-toggle", id: "my_modal_6", r#type: "checkbox" }
+            div { class: "modal", role: "dialog",
+                div { class: "modal-box",
+                    div { class: "modal-action" }
+                }
             }
         }
-
     }
 }
