@@ -1,4 +1,4 @@
 pub mod setup;
-pub use setup::{AppState, setup_api};
+pub use setup::{AppState, AuthenticationState, setup_api};
 pub mod auth;
 mod database;

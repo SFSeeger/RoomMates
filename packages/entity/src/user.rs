@@ -26,6 +26,10 @@ pub struct Model {
     #[sea_orm(has_many)]
     pub invitations: HasMany<super::invitation::Entity>,
     //events shared by other users found through linked
+
+    // Sessions owned by this user
+    #[sea_orm(has_many)]
+    pub sessions: HasMany<super::session::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

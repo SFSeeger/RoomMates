@@ -2,6 +2,7 @@ pub use super::event::Entity as Event;
 pub use super::group::Entity as Group;
 pub use super::invitation::Entity as Invitation;
 pub use super::is_in_group::Entity as InGroup;
+pub use super::session::Entity as Session;
 pub use super::shared_friend_event::Entity as FriendShare;
 pub use super::shared_group_event::Entity as GroupShare;
 pub use super::user::Entity as User;

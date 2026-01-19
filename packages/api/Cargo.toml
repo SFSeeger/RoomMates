@@ -18,10 +18,12 @@ serde_json = { workspace = true }
 dotenvy = "0.15.7"
 entity = { workspace = true }
 anyhow = { workspace = true }
-argon2 = {version = "0.5.3", features=["std"], optional = true}
-tokio = {version = "1", features = ["full"], optional = true}
-chrono ={ version =  "0.4.42", optional = true}
+argon2 = { version = "0.5.3", features = ["std"], optional = true }
+blake3 = { version = "1.8.3", optional = true }
+tokio = { version = "1", features = ["full"], optional = true }
+base64 = { version = "0.22.1", optional = true }
+chrono = { workspace = true }
 
 
 [features]
-server = ["dioxus/server", "dep:sea-orm", "dep:tokio", "dep:argon2", "dep:chrono"]
+server = ["dioxus/server", "dep:sea-orm", "dep:tokio", "dep:argon2", "dep:blake3", "dep:base64"]

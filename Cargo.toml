@@ -9,6 +9,7 @@ serde = { version = "1.0.228" }
 serde_json = { version = "1.0.145" }
 anyhow = { version = "1.0.71" }
 regex = "1.12.2"
+chrono = { version = "0.4.43", features = ["serde", "wasmbind"] }
 
 # workspace
 api = { path = "packages/api" }
