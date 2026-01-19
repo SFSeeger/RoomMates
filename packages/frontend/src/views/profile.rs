@@ -43,34 +43,32 @@ pub fn Profile() -> Element {
                 match &*user.read() {
                     Some(Ok(data)) => rsx! {
                         ul { class: "list bg-base-100 rounded-box shadow-md",
-
                             li { class: "list-row", key: "{data.id}",
 
                                 " First Name: {data.first_name} "
+                                " Username: {data.first_name} {data.last_name}"
 
                                 div {
+
                                     fieldset { class: "fieldset",
+
                                         legend { class: "fieldset-legend", "Edit first name!" }
                                         input {
                                             class: "input",
-                                            placeholder: "firstname",
+                                            placeholder: " {data.first_name}",
+                                            r#type: "text",
+                                        }
+                                        legend { class: "fieldset-legend", "Edit last name!" }
+
+                                        input {
+                                            class: "input",
+                                            placeholder: " {data.last_name}",
                                             r#type: "text",
                                         }
                                     }
                                 }
                             }
-                            li { class: "list-row", key: "{data.id}",
 
-                                " Last Name: {data.last_name}"
-
-                                div {
-                                    fieldset { class: "fieldset",
-                                        legend { class: "fieldset-legend", "Edit last name" }
-
-                                        input { class: "input", placeholder: "lastname", r#type: "text" }
-                                    }
-                                }
-                            }
                             li { class: "list-row", key: "{data.id}",
                                 "Email: {data.email}"
                                 div {
@@ -107,14 +105,12 @@ pub fn Profile() -> Element {
                 }
             }
         }
-        div {
-            label { class: "btn", r#for: "my_modal_6", "open modal" }
-            input { class: "modal-toggle", id: "my_modal_6", r#type: "checkbox" }
-            div { class: "modal", role: "dialog",
-                div { class: "modal-box",
-                    div { class: "modal-action" }
-                }
-            }
-        }
     }
 }
+
+// div {
+//   label { class: "btn", r#for: "my_modal_6", "open modal" }
+//   input { class: "modal-toggle", id: "my_modal_6", r#type: "checkbox" }
+//   div { class: "modal", role: "dialog",
+//      div { class: "modal-box",
+//          div { class: "modal-action" }
