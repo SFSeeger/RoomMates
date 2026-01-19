@@ -37,57 +37,9 @@ pub fn Profile() -> Element {
                 {
                     rsx! {
                         CardTitle { "Profile Information" }
-                        match &*user.read() {
-                            Some(Ok(data)) => rsx! {
-                                ul { class: "list bg-base-100 rounded-box shadow-md",
-                                    li { class: "list-row", key: "{data.id}",
-                                        " Username: {data.first_name} {data.last_name}"
 
-                                        div {
+                        List_Info_Display {}
 
-                                            fieldset { class: "fieldset",
-
-                                                legend { class: "fieldset-legend", "Edit first name!" }
-                                                input {
-                                                    class: "input",
-                                                    placeholder: " {data.first_name}",
-                                                    r#type: "text",
-                                                }
-                                                legend { class: "fieldset-legend", "Edit last name!" }
-
-                                                input {
-                                                    class: "input",
-                                                    placeholder: " {data.last_name}",
-                                                    r#type: "text",
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    li { class: "list-row", key: "{data.id}",
-                                        "Email: {data.email}"
-                                        div {
-
-                                            fieldset { class: "fieldset",
-                                                legend { class: "fieldset-legend", "Edit your email!" }
-
-                                                input {
-                                                    class: "input",
-                                                    placeholder: "new email",
-                                                    r#type: "text",
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            Some(Err(err)) => rsx! {
-                                p { class: "text-red-500", "Loading Events failed with {err}" }
-                            },
-                            None => rsx! {
-                                p { "cant connect to db" }
-                            },
-                        }
                         CardActions {
                             {
                                 rsx! {
@@ -108,17 +60,65 @@ pub fn Profile() -> Element {
     }
 }
 
-/*  div {
-    Card {
-        {
-            rsx! {
-                Button { variant: button::ButtonVariant::Secondary, "example" }
-            }
-        }
+#[component]
+pub fn List_Info_Display() -> Element {
+    let user: Resource<std::result::Result<entity::user::Model, ServerFnError>> =
+        use_server_future(move || async move { retrieve_user(1).await })?;
 
+    rsx! {
+        match &*user.read() {
+            Some(Ok(data)) => rsx! {
+                ul { class: "list bg-base-100 rounded-box shadow-md",
+                    li { class: "list-row", key: "{data.id}",
+                        " Username: {data.first_name} {data.last_name}"
+
+                        div {
+
+                            fieldset { class: "fieldset",
+
+                                legend { class: "fieldset-legend", "Edit first name!" }
+                                input {
+                                    class: "input",
+                                    placeholder: " {data.first_name}",
+                                    r#type: "text",
+                                }
+                                legend { class: "fieldset-legend", "Edit last name!" }
+
+                                input {
+                                    class: "input",
+                                    placeholder: " {data.last_name}",
+                                    r#type: "text",
+                                }
+                            }
+                        }
+                    }
+
+                    li { class: "list-row", key: "{data.id}",
+                        "Email: {data.email}"
+                        div {
+
+                            fieldset { class: "fieldset",
+                                legend { class: "fieldset-legend", "Edit your email!" }
+
+                                input {
+                                    class: "input",
+                                    placeholder: "new email",
+                                    r#type: "text",
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            Some(Err(err)) => rsx! {
+                p { class: "text-red-500", "Loading Events failed with {err}" }
+            },
+            None => rsx! {
+                p { "cant connect to db" }
+            },
+        }
     }
 }
-*/
 
 // div {
 //   label { class: "btn", r#for: "my_modal_6", "open modal" }
