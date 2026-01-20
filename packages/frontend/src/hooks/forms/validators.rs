@@ -43,7 +43,7 @@ impl ValueRef for Option<String> {
 
 pub type ValidatorFunc<T> = Rc<dyn Fn(&T) -> Result<(), String>>;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 struct ValidatorMeta {
     attribute: &'static str,
     attribute_value: AttributeValue,

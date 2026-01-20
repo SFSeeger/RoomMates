@@ -7,6 +7,7 @@ pub mod card;
 pub mod dock;
 pub mod fieldset;
 pub mod footer;
+pub mod form;
 pub mod list;
 pub mod loader;
 pub mod toaster;

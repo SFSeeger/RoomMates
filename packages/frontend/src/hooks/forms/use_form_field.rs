@@ -118,6 +118,17 @@ pub struct FormField<T: FieldValue> {
     validators: Vec<Validator<T>>,
 }
 
+impl<T: FieldValue> PartialEq for FormField<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+            && self.original_value == other.original_value
+            && self.name == other.name
+            && self.errors == other.errors
+            && self.touched == other.touched
+            && self.validators.len() == other.validators.len()
+    }
+}
+
 impl<T: FieldValue> FormField<T> {
     pub fn new(name: &str, initial_value: T) -> Self {
         FormField {

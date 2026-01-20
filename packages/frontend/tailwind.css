@@ -5,3 +5,8 @@
 @plugin "daisyui" {
     themes: light --default, dark --prefersdark;
 }
+
+.input:has(input[required]) > .label::after {
+    @apply text-error;
+    content: "*";
+}
