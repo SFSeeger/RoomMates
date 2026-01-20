@@ -8,7 +8,7 @@ dioxus = { workspace = true, features = ["router", "fullstack"] }
 api = { workspace = true }
 anyhow = { workspace = true }
 entity = { workspace = true }
-dioxus-free-icons = { version = "0.10.0", features = ["lucide"] }
+dioxus-free-icons = { version = "0.10.0", features = ["lucide"]}
 uuid = { version = "1.19.0", features = ["js", "v4"] }
 serde = { workspace = true }
 form_hooks = { workspace = true }
