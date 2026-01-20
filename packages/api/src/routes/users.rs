@@ -32,6 +32,7 @@ pub async fn retrieve_user(user_id: i32) -> dioxus::Result<UserInfo, ServerFnErr
     use sea_orm::EntityTrait;
 
     let user = User::find_by_id(user_id)
+        // make partial model for getting user info to the frontend, or just make password nullable/turn of deserialize, discucss
         .one(&ext.database)
         .await
         .or_internal_server_error("Error loading user from database")?
@@ -176,7 +177,10 @@ pub async fn change_user_info(
     user_active.email = sea_orm::Set(email);
     user_active.password = sea_orm::Set(password);
 
-    let _res = User::update(user_active).exec(&ext.database).await;
+    let _res = User::update(user_active)
+        .exec(&ext.database)
+        .await
+        .or_internal_server_error("cant update user")?;
 
     Ok(NoContent)
 }

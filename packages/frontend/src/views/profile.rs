@@ -76,6 +76,7 @@ pub fn List_Info_Display() -> Element {
 
                             fieldset { class: "fieldset",
 
+
                                 legend { class: "fieldset-legend", "Edit first name!" }
                                 input {
                                     class: "input",
@@ -103,6 +104,28 @@ pub fn List_Info_Display() -> Element {
                                 input {
                                     class: "input",
                                     placeholder: "new email",
+                                    r#type: "text",
+                                }
+                            }
+                        }
+                    }
+                    li { class: "list-row", key: "{data.id}",
+                        "Set new password!"
+                        div {
+
+                            fieldset { class: "fieldset",
+                                legend { class: "fieldset-legend", "Type new password" }
+
+                                input {
+                                    class: "input",
+                                    placeholder: "**********",
+                                    r#type: "text",
+                                }
+                                legend { class: "fieldset-legend", "Repeat password" }
+
+                                input {
+                                    class: "input",
+                                    placeholder: "**********",
                                     r#type: "text",
                                 }
                             }
