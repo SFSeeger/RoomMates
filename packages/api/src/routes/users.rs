@@ -2,6 +2,7 @@ use crate::dioxus_fullstack::NoContent;
 use crate::server;
 use dioxus::fullstack::{SetCookie, SetHeader};
 use dioxus::prelude::*;
+use regex::Regex;
 
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
@@ -52,7 +53,6 @@ pub async fn create_user(
     let user = auth::create_user(email, password, first_name, last_name, &ext.database).await?;
     Ok(UserInfo::from_user_model(user))
 }
-
 pub const EMAIL_REGEX: &str = r"^[\w+.-]*\w@[\w.-]+\.\w+$";
 
 #[post("/api/users/signup", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
@@ -154,32 +154,55 @@ pub async fn get_me() -> Result<UserInfo, ServerFnError> {
     Ok(UserInfo::from_user_model(auth_user))
 }
 
-//change this when forms are implemented maybes
-#[patch("/api/users/{user_id}", ext: Extension<server::AppState>)]
+#[put("/api/users", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn change_user_info(
-    user_id: i32,
     first_name: String,
     last_name: String,
     email: String,
-    password: String,
-) -> dioxus::Result<NoContent, ServerFnError> {
+) -> dioxus::Result<UserInfo, ServerFnError> {
     use entity::user::Entity as User;
-    use sea_orm::EntityTrait;
+    use sea_orm::{EntityTrait, IntoActiveModel};
 
-    let user: Option<entity::user::Model> = User::find_by_id(user_id)
-        .one(&ext.database)
-        .await
-        .or_internal_server_error("horrible server error")?;
+    let email = email.trim().to_lowercase();
+    let email_regex = Regex::new(EMAIL_REGEX).expect("EMAIL_REGEX must be valid");
+    email_regex
+        .is_match(&email)
+        .or_bad_request("email is not a valid email")?;
 
-    let mut user_active: entity::user::ActiveModel = Option::unwrap(user).into();
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
-    // Update name attribute
+    let mut user_active: entity::user::ActiveModel = user.clone().into_active_model();
+
     user_active.first_name = sea_orm::Set(first_name);
     user_active.last_name = sea_orm::Set(last_name);
     user_active.email = sea_orm::Set(email);
-    user_active.password = sea_orm::Set(password);
 
-    let _res = User::update(user_active).exec(&ext.database).await;
+    let res = User::update(user_active)
+        .exec(&ext.database)
+        .await
+        .or_internal_server_error("cant update user")?;
+
+    Ok(UserInfo::from_user_model(res))
+}
+
+#[put("/api/users/password",  ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn change_password(password: String) -> dioxus::Result<NoContent, ServerFnError> {
+    use crate::server::auth::hash_password;
+    use entity::user::Entity as User;
+    use sea_orm::EntityTrait;
+    use sea_orm::IntoActiveModel;
+
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+
+    let hashed_pass = hash_password(password)?;
+
+    let mut user_active: entity::user::ActiveModel = user.clone().into_active_model();
+    user_active.password = sea_orm::Set(hashed_pass);
+
+    User::update(user_active)
+        .exec(&ext.database)
+        .await
+        .or_internal_server_error("couldnt change password")?;
 
     Ok(NoContent)
 }
