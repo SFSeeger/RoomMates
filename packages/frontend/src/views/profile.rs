@@ -6,6 +6,11 @@ use dioxus::prelude::*;
 //use dioxus_free_icons::Icon;
 //use dioxus_free_icons::icons::ld_icons::LdCircleHelp;
 
+//TODO
+//fix loading errors
+//add list and input components
+//add forms and api calls
+
 #[component]
 pub fn Profile() -> Element {
     let user =
@@ -69,7 +74,7 @@ pub fn List_Info_Display() -> Element {
         match &*user.read() {
             Some(Ok(data)) => rsx! {
                 ul { class: "list bg-base-100 rounded-box shadow-md",
-                    li { class: "list-row", key: "{data.id}",
+                    li { class: "list-row",
                         " Username: {data.first_name} {data.last_name}"
 
                         div {
@@ -94,7 +99,7 @@ pub fn List_Info_Display() -> Element {
                         }
                     }
 
-                    li { class: "list-row", key: "{data.id}",
+                    li { class: "list-row",
                         "Email: {data.email}"
                         div {
 
@@ -109,7 +114,7 @@ pub fn List_Info_Display() -> Element {
                             }
                         }
                     }
-                    li { class: "list-row", key: "{data.id}",
+                    li { class: "list-row",
                         "Set new password!"
                         div {
 
