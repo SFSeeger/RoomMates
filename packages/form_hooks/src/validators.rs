@@ -1,4 +1,4 @@
-use crate::hooks::forms::use_form_field::FieldValue;
+use crate::use_form_field::FieldValue;
 use dioxus::core::{Attribute, AttributeValue, IntoAttributeValue};
 use std::rc::Rc;
 // Based on dioxus-forms by ap-1 (https://github.com/ap-1/dioxus-forms/)

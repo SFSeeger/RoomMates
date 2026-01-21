@@ -1,6 +1,6 @@
 #![allow(dead_code)] // TODO: Remove this when UI compoents are in use
 
-use crate::hooks::forms::validators::Validator;
+use crate::validators::Validator;
 use dioxus::core::IntoAttributeValue;
 use dioxus::prelude::*;
 use serde::Serialize;

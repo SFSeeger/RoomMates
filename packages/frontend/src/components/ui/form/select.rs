@@ -1,6 +1,6 @@
-use crate::hooks::forms::use_form_field::{AnyField, FieldValue, FormField};
 use dioxus::core::AttributeValue;
 use dioxus::prelude::*;
+use form_hooks::use_form_field::{AnyField, FieldValue, FormField};
 
 pub trait EnumSelect {
     fn select_options() -> Vec<(String, &'static str)>;

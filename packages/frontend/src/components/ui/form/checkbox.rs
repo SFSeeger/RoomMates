@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::hooks::forms::use_form_field::{AnyField, FieldValue, FormField};
+use form_hooks::use_form_field::{AnyField, FieldValue, FormField};
 
 #[allow(dead_code)]
 #[derive(Clone, PartialEq, Default)]

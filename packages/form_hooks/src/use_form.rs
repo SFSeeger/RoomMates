@@ -1,6 +1,6 @@
 #![allow(dead_code)] // TODO: Remove this when UI compoents are in use
 
-use crate::hooks::forms::use_form_field::{AnyField, FieldValue, FormField};
+use crate::use_form_field::{AnyField, FieldValue, FormField};
 use dioxus::prelude::*;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -22,6 +22,12 @@ pub struct FormState {
     dirty_checkers: Signal<Vec<Rc<dyn Fn() -> bool>>>,
     field_error_checkers: FieldErrorCallbacks,
     fields: Signal<Vec<Rc<RefCell<dyn AnyField>>>>,
+}
+
+impl Default for FormState {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl FormState {

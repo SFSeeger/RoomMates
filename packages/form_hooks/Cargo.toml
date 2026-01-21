@@ -1,0 +1,11 @@
+[package]
+name = "form_hooks"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+dioxus = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+regex = { workspace = true }
+frontend_derive = { workspace = true }
