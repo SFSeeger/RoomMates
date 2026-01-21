@@ -1,5 +1,7 @@
 use crate::components::ui::button;
 use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
+use crate::components::ui::fieldset::Fieldset;
+use crate::components::ui::list::{List, ListRow};
 use crate::{Route, components::ui::button::Button};
 use api::routes::users::get_me;
 use dioxus::prelude::*;
@@ -72,15 +74,15 @@ pub fn List_Info_Display() -> Element {
 
     rsx! {
         match &*user.read() {
+
             Some(Ok(data)) => rsx! {
-                ul { class: "list bg-base-100 rounded-box shadow-md",
-                    li { class: "list-row",
+                List { header: "",
+                    ListRow {
                         " Username: {data.first_name} {data.last_name}"
 
                         div {
 
                             fieldset { class: "fieldset",
-
 
                                 legend { class: "fieldset-legend", "Edit first name!" }
                                 input {
@@ -99,41 +101,22 @@ pub fn List_Info_Display() -> Element {
                         }
                     }
 
-                    li { class: "list-row",
+                    ListRow {
+
                         "Email: {data.email}"
-                        div {
-
-                            fieldset { class: "fieldset",
-                                legend { class: "fieldset-legend", "Edit your email!" }
-
-                                input {
-                                    class: "input",
-                                    placeholder: "new email",
-                                    r#type: "text",
-                                }
-                            }
+                        Fieldset { title: "Edit Email!",
+                            input { class: "input", placeholder: "new email", r#type: "text" }
                         }
                     }
-                    li { class: "list-row",
+                    ListRow {
+
                         "Set new password!"
-                        div {
+                        Fieldset { title: "Set new password",
+                            input { class: "input", placeholder: "**********", r#type: "text" }
+                            p { class: "label", "Type New Password" }
 
-                            fieldset { class: "fieldset",
-                                legend { class: "fieldset-legend", "Type new password" }
-
-                                input {
-                                    class: "input",
-                                    placeholder: "**********",
-                                    r#type: "text",
-                                }
-                                legend { class: "fieldset-legend", "Repeat password" }
-
-                                input {
-                                    class: "input",
-                                    placeholder: "**********",
-                                    r#type: "text",
-                                }
-                            }
+                            input { class: "input", placeholder: "**********", r#type: "text" }
+                            p { class: "label", "Repeat New Password" }
                         }
                     }
                 }
