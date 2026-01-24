@@ -8,4 +8,4 @@ dioxus = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 regex = { workspace = true }
-frontend_derive = { workspace = true }
+form_hooks_derive = { workspace = true }

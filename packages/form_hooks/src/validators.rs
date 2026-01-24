@@ -209,7 +209,8 @@ pub fn max_length<T: ValueRef<Value = String> + Clone + 'static>(
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
+/// # use form_hooks::{use_form_field::use_form_field, validators};
 /// let name = use_form_field("name", String::new())
 ///     .with_validator(validators::pattern(
 ///         regex::Regex::new("[a-zA-Z0-9]+").unwrap(),

@@ -2068,10 +2068,18 @@ name = "form_hooks"
 version = "0.1.0"
 dependencies = [
  "dioxus",
- "frontend_derive",
+ "form_hooks_derive",
  "regex",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "form_hooks_derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn 2.0.114",
 ]
 
 [[package]]
@@ -2095,14 +2103,6 @@ dependencies = [
  "form_hooks",
  "serde",
  "uuid",
-]
-
-[[package]]
-name = "frontend_derive"
-version = "0.1.0"
-dependencies = [
- "quote",
- "syn 2.0.114",
 ]
 
 [[package]]

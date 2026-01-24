@@ -1,5 +1,5 @@
 [package]
-name = "frontend_derive"
+name = "form_hooks_derive"
 version = "0.1.0"
 edition = "2024"
 

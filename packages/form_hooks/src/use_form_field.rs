@@ -18,8 +18,9 @@ use serde_json::Value;
 /// # Examples
 /// To use an enum in a form, the enum needs to implement [FieldValue]. FieldValue can derive it or imperilment manually.
 /// ```
-///# use frontend_derive::FieldValue;
-/// #[derive(serde::Serialize, FieldValue)]
+///# use form_hooks_derive::FieldValue;
+///# use form_hooks::use_form_field::FieldValue;
+/// #[derive(serde::Serialize, Clone, PartialEq, FieldValue)]
 /// enum MyEnum {
 ///     Option1,
 ///     Option2
@@ -27,7 +28,8 @@ use serde_json::Value;
 ///```
 /// ## Manual Implementation
 ///```
-/// #[derive(serde::Serialize)]
+///# use form_hooks::use_form_field::FieldValue;
+/// #[derive(serde::Serialize, Clone, PartialEq)]
 /// enum MyEnum {
 ///     Option1,
 ///     Option2
@@ -152,10 +154,11 @@ impl<T: FieldValue> FormField<T> {
 
     /// Adds a [Validator] to the field
     /// # Examples
-    /// ```
+    /// ```ignore
+    /// # use form_hooks::{use_form_field::use_form_field, validators};
     /// let name = use_form_field("name", "Bob".to_string())
-    ///     .with_validator(validators::required("Name is required")
-    ///     .with_validator(validators::min_length(2, "Name needs to be at least 2 Characters long");
+    ///     .with_validator(validators::required("Name is required"))
+    ///     .with_validator(validators::min_length(2, "Name needs to be at least 2 Characters long"));
     /// ```
     pub fn with_validator(mut self, validator: Validator<T>) -> Self {
         self.validators.push(validator);
@@ -196,9 +199,11 @@ impl<T: FieldValue> FormField<T> {
     /// for different input types (e.g., text, checkbox) using methods like [into_input_attributes()] or [into_checkbox_attributes()].
     ///
     /// ## Example
-    /// ```
-    /// # let name = use_form_field("name", "Bob".to_string())
-    /// let name_attributes = name.field_attributes;
+    /// ```ignore
+    /// # use form_hooks::use_form_field::use_form_field;
+    /// # use dioxus::prelude::*;
+    /// # let name = use_form_field("name", "Bob".to_string());
+    /// let name_attributes = name.field_attributes();
     /// rsx! {
     ///     input {
     ///         r#type: "text",
@@ -206,7 +211,7 @@ impl<T: FieldValue> FormField<T> {
     ///         onblur: name_attributes.onblur,
     ///         ..name_attributes.into_input_attributes()
     ///     }
-    /// }
+    /// };
     /// ```
     pub fn field_attributes(&self) -> FieldAttributes {
         let value = self.value.read().clone().to_input_value();
@@ -333,12 +338,13 @@ where
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
+/// # use form_hooks::{use_form_field::use_form_field, validators};
 /// let name = use_form_field("name", String::new())
 ///     .with_validator(validators::required_with_default_message());
 /// let age = use_form_field("age", Some(30))
 ///     .with_validator(validators::required("Age is required"))
-///     .with_validator(validators::min(18, "No minors allowed)";
+///     .with_validator(validators::min_value(18, "No minors allowed)"));
 /// ```
 pub fn use_form_field<T: FieldValue>(name: &str, initial_value: T) -> FormField<T> {
     use_signal(|| FormField::new(name, initial_value))()

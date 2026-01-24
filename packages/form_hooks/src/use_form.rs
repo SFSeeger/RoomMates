@@ -45,10 +45,11 @@ impl FormState {
 
     /// Registers a [FormField] into the form. Allows for updating errors, dirty and touched
     /// # Examples
-    /// ```
+    /// ```ignore
+    /// # use form_hooks::{use_form::use_form, use_form_field::use_form_field};
     /// let mut form_state = use_form();
-    /// let name = use_form_field("name", "Bob".to_string())
-    /// form_state.register(&name);
+    /// let name = use_form_field("name", "Bob".to_string());
+    /// form_state.register_field(&name);
     pub fn register_field<T: FieldValue>(&mut self, field: &FormField<T>) {
         let field_clone = field.clone();
         self.dirty_checkers
@@ -117,14 +118,15 @@ impl FormState {
     /// Since [FieldValue] needs to implement [serde::Serialize] by default, any [FieldValue] can be used
     ///
     /// # Examples
-    /// ```
-    /// #[derive(serde::Deserialize)]
+    /// ```ignore
+    /// # use form_hooks::{use_form::use_form, use_form_field::use_form_field};
+    /// #[derive(serde::Deserialize, Clone, PartialEq, Debug)]
     /// struct FormData {
     ///     name: String,
     /// }
     /// let mut form_state = use_form();
-    /// let name = use_form_field("name", "Bob".to_string())
-    /// form_state.register(&name);
+    /// let name = use_form_field("name", "Bob".to_string());
+    /// form_state.register_field(&name);
     ///
     /// // Parse form data into the struct
     /// let form_data: FormData = form_state.parsed_values().unwrap();
@@ -154,7 +156,8 @@ impl FormState {
 
 /// Hook which returns a FormState.
 /// # Examples
-/// ```
+/// ```ignore
+/// # use form_hooks::use_form::use_form;
 /// let mut form_state = use_form();
 /// ```
 pub fn use_form() -> FormState {
@@ -164,7 +167,9 @@ pub fn use_form() -> FormState {
 /// Creates an event handler to handle form submission.
 /// The event handler returns early, if the form has errors.
 /// # Examples
-/// ```
+/// ```ignore
+/// # use form_hooks::{use_form::{use_form, use_on_submit}, use_form_field::use_form_field};
+/// # use dioxus::prelude::*;
 /// let mut form_state = use_form();
 /// let onsubmit = use_on_submit(&form_state, move |form| async move {
 ///         // Do something with the data

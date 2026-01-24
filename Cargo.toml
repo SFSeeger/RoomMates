@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["packages/frontend", "packages/api", "packages/entity", "packages/form_hooks/frontend_derive", "packages/form_hooks"]
+members = ["packages/frontend", "packages/api", "packages/entity", "packages/form_hooks/form_hooks_derive", "packages/form_hooks"]
 
 [workspace.dependencies]
 dioxus = { version = "0.7.2" }
@@ -14,5 +14,5 @@ chrono = { version = "0.4.43", features = ["serde", "wasmbind"] }
 # workspace
 api = { path = "packages/api" }
 entity = { path = "packages/entity" }
-frontend_derive = { path = "packages/form_hooks/frontend_derive" }
+form_hooks_derive = { path = "packages/form_hooks/form_hooks_derive" }
 form_hooks = { path = "packages/form_hooks" }

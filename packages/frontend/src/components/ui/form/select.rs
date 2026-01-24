@@ -3,6 +3,7 @@ use dioxus::prelude::*;
 use form_hooks::use_form_field::{AnyField, FieldValue, FormField};
 
 pub trait EnumSelect {
+    #[allow(dead_code)] //TODO: Remove after usage
     fn select_options() -> Vec<(String, &'static str)>;
 }
 
