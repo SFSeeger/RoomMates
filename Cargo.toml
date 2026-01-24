@@ -3,7 +3,7 @@ resolver = "2"
 members = ["packages/frontend", "packages/api", "packages/entity", "packages/form_hooks/form_hooks_derive", "packages/form_hooks"]
 
 [workspace.dependencies]
-dioxus = { version = "0.7.2" }
+dioxus = { version = "0.7.3" }
 sea-orm = { version = "2.0.0-rc" }
 serde = { version = "1.0.228" }
 serde_json = { version = "1.0.145" }

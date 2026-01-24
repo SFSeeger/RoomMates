@@ -2101,6 +2101,7 @@ dependencies = [
  "dioxus-free-icons",
  "entity",
  "form_hooks",
+ "regex",
  "serde",
  "uuid",
 ]

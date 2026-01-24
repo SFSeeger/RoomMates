@@ -18,7 +18,7 @@ USER vscode
 
 #Dioxus
 RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-RUN cargo binstall dioxus-cli@0.7.2
+RUN cargo binstall dioxus-cli@0.7.3
 RUN rustup target add wasm32-unknown-unknown
 RUN cargo install sea-orm-cli@^2.0.0-rc
 

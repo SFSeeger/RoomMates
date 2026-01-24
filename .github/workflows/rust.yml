@@ -23,7 +23,7 @@ jobs:
 
       - uses: ./.github/actions/toolchain
         with:
-          dioxus-version: '0.7.2'
+          dioxus-version: '0.7.3'
 
       - name: Run web build
         run: dx bundle --package frontend
