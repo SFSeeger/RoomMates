@@ -16,8 +16,17 @@ use serde_json::Value;
 /// - `bool`
 /// - `Option<T: FieldValue>`
 /// # Examples
-/// To use an enum in a form, the enum needs to implement [FieldValue]
+/// To use an enum in a form, the enum needs to implement [FieldValue]. FieldValue can derive it or imperilment manually.
 /// ```
+///# use frontend_derive::FieldValue;
+/// #[derive(serde::Serialize, FieldValue)]
+/// enum MyEnum {
+///     Option1,
+///     Option2
+/// }
+///```
+/// ## Manual Implementation
+///```
 /// #[derive(serde::Serialize)]
 /// enum MyEnum {
 ///     Option1,

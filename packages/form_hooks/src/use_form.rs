@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 type FieldErrorCallbacks = Signal<Vec<Rc<dyn Fn() -> Vec<String>>>>;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct FormState {
     /// True if the form has changed values
     pub is_dirty: Signal<bool>,
