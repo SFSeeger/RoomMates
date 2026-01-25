@@ -5,6 +5,7 @@ use dioxus::prelude::*;
 
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
+use serde::{Deserialize, Serialize};
 
 #[get("/api/users/{user_id}", ext: Extension<server::AppState>)]
 pub async fn retrieve_user(user_id: i32) -> dioxus::Result<entity::user::Model, ServerFnError> {
@@ -121,4 +122,23 @@ pub async fn delete_user(user_id: i32) -> Result<NoContent, ServerFnError> {
 
     (delete_result.rows_affected == 1).or_not_found("User not found")?;
     Ok(NoContent)
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
+pub struct UserInfo {
+    pub id: i32,
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+}
+
+#[get("/api/me", auth: Extension<server::AuthenticationState>)]
+pub async fn get_me() -> Result<UserInfo, ServerFnError> {
+    let auth_user = auth.user.clone().or_unauthorized("Not authenticated")?;
+    Ok(UserInfo {
+        id: auth_user.id,
+        email: auth_user.email,
+        first_name: auth_user.first_name,
+        last_name: auth_user.last_name,
+    })
 }

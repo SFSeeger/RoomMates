@@ -1,8 +1,9 @@
 use crate::Route;
+use crate::components::contexts::AuthState;
 use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
 use crate::components::ui::form::input::Input;
 use crate::components::ui::form::submit_button::SubmitButton;
-use api::routes::users::login;
+use api::routes::users::{get_me, login};
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{LdKey, LdMail};
@@ -23,7 +24,16 @@ struct LoginFormData {
 #[component]
 pub fn LoginPage() -> Element {
     let mut login_action = use_action(login);
+    let mut get_me = use_action(get_me);
     let mut form_errors = use_signal(Vec::<String>::new);
+
+    let mut auth_state = use_context::<AuthState>();
+
+    // If already logged in, redirect to home
+    if auth_state.user.read().is_some() {
+        let nav = navigator();
+        nav.push(Route::Home {});
+    }
 
     let mut form_state = use_form();
     let email = use_form_field("email", String::new())
@@ -46,15 +56,24 @@ pub fn LoginPage() -> Element {
         let form_data: LoginFormData = form.parsed_values().unwrap();
         login_action.call(form_data.email, form_data.password).await;
         match login_action.value() {
-            None => {
-                debug!("No value present!")
-            }
             Some(Ok(_)) => {
-                let nav = navigator();
-                nav.push(Route::Home {});
+                get_me.call().await;
+                match get_me.value() {
+                    Some(Ok(_fetched_user)) => {
+                        auth_state.user.set(Some(_fetched_user.peek().clone()));
+                        let nav = navigator();
+                        nav.push(Route::Home {});
+                    }
+                    _ => {
+                        form_errors.push("Login failed: Failed to retrieve user".into());
+                    }
+                }
             }
             Some(Err(error)) => {
                 debug!("Failed to log in with error {:?}", error);
+            }
+            None => {
+                debug!("No value present!")
             }
         };
     });
