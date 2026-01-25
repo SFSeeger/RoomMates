@@ -1,8 +1,7 @@
 use crate::layouts::StandardAppLayout;
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
-use views::Home;
-use views::NotFound;
+use views::{Home, LoginPage, NotFound};
 mod components;
 mod hooks;
 mod layouts;
@@ -18,6 +17,8 @@ enum Route {
     #[layout(StandardAppLayout)]
         #[route("/")]
         Home {},
+        #[route("/login")]
+        LoginPage {},
 
         #[route("/:..segments")]
         NotFound { segments: Vec<String> },

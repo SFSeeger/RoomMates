@@ -76,20 +76,22 @@ pub fn CardBody(
 
 #[component]
 pub fn CardTitle(
+    #[props(default)] class: String,
     #[props(extends=GlobalAttributes)] attributes: Vec<Attribute>,
     children: Element,
 ) -> Element {
     rsx! {
-        h2 { class: "card-title", ..attributes, {children} }
+        h2 { class: "card-title {class}", ..attributes, {children} }
     }
 }
 
 #[component]
 pub fn CardActions(
+    #[props(default)] class: String,
     #[props(extends=GlobalAttributes)] attributes: Vec<Attribute>,
     children: Element,
 ) -> Element {
     rsx! {
-        div { class: "card-actions justify-end", ..attributes, {children} }
+        div { class: "card-actions justify-end {class}", ..attributes, {children} }
     }
 }
