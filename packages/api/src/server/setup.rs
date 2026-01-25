@@ -63,8 +63,6 @@ async fn authentication_middleware(
         authentication_state.user = Some(user);
     }
 
-    debug!("Authentication state: {:?}", authentication_state);
-
     request.extensions_mut().insert(authentication_state);
 
     next.run(request).await

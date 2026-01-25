@@ -57,9 +57,9 @@ pub fn Checkbox<T: FieldValue>(
                 {label}
             }
             if is_invalid() && is_touched() {
-                p { class: "text-error", role: "alert",
+                ul { class: "text-error", role: "alert",
                     {errors.iter().map(|error| rsx! {
-                        span { "{error}" }
+                        li { "{error}" }
                     })}
                 }
             }

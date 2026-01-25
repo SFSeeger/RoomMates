@@ -62,6 +62,7 @@ pub fn Button(
     #[props(default)] shape: ButtonShape,
     #[props(default)] disabled: bool,
     #[props(extends=GlobalAttributes, extends=button)] attributes: Vec<Attribute>,
+    class: Option<String>,
     onclick: Option<EventHandler<MouseEvent>>,
     onmousedown: Option<EventHandler<MouseEvent>>,
     onmouseup: Option<EventHandler<MouseEvent>>,
@@ -69,10 +70,10 @@ pub fn Button(
 ) -> Element {
     let variant_class = variant.class();
     let shape_class = shape.class();
-
+    let class = class.unwrap_or_default();
     rsx! {
         button {
-            class: "btn {variant_class} {shape_class}",
+            class: "btn {variant_class} {shape_class} {class}",
             class: if ghost { "btn-ghost" },
             class: if disabled { "btn-disabled" },
             disabled,

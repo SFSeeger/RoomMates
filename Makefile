@@ -11,7 +11,7 @@ $(NODE_MODULES_STAMP): $(NPM_DEPS)
 dependencies: $(NODE_MODULES_STAMP)
 
 dev-server: dependencies
-	dx serve --package frontend --platform $(PLATFORM)
+	dx serve --package frontend --platform $(PLATFORM) --addr 0.0.0.0
 
 tests: dependencies
 	cargo test --workspace --all-features --no-fail-fast

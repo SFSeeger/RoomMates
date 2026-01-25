@@ -48,13 +48,14 @@ pub fn Card(
     #[props(default)]
     image_full: bool,
     #[props(default)] variant: CardVariant,
+    #[props(default)] class: String,
     #[props(extends=GlobalAttributes)] attributes: Vec<Attribute>,
     children: Element,
 ) -> Element {
     let variant_class = variant.class();
     rsx!(
         div {
-            class: "card card-border bg-base-100 shadow-sm {variant_class}",
+            class: "card card-border bg-base-100 shadow-sm {variant_class} {class}",
             class: if image_full { "image-full" },
             ..attributes,
             {children}
@@ -64,11 +65,12 @@ pub fn Card(
 
 #[component]
 pub fn CardBody(
+    #[props(default)] class: String,
     #[props(extends=GlobalAttributes)] attributes: Vec<Attribute>,
     children: Element,
 ) -> Element {
     rsx! {
-        div { class: "card-body", ..attributes, {children} }
+        div { class: "card-body {class}", ..attributes, {children} }
     }
 }
 

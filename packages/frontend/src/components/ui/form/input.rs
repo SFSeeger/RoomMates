@@ -25,7 +25,7 @@ pub fn Input<T: FieldValue>(
     rsx! {
         div { class: "my-2",
             label {
-                class: "input",
+                class: "input w-full",
                 class: if *is_invalid.read() { "input-error" },
                 aria_invalid: is_invalid,
                 if label.is_some() && !has_icon {
@@ -43,9 +43,9 @@ pub fn Input<T: FieldValue>(
                 }
             }
             if is_invalid() && is_touched() {
-                p { class: "text-error", role: "alert",
+                ul { class: "text-error", role: "alert",
                     {errors.iter().map(|error| rsx! {
-                        span { "{error}" }
+                        li { "{error}" }
                     })}
                 }
             }

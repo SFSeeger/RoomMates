@@ -21,8 +21,8 @@ pub fn StandardAppLayout(children: Element) -> Element {
                     class: "drawer-toggle",
                 }
                 Navbar {}
-                main { class: "grow mx-10 mt-5",
-                    ToastProvider {
+                ToastProvider {
+                    main { class: "grow mx-10 mt-5",
                         SuspenseBoundary {
                             fallback: |_| {
                                 rsx! {

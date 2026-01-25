@@ -64,9 +64,9 @@ pub fn Select<T: FieldValue + EnumSelect>(
                 })}
             }
             if is_invalid() && field.is_touched() {
-                p { class: "text-error", role: "alert",
+                ul { class: "text-error", role: "alert",
                     {field.errors.iter().map(|error| rsx! {
-                        span { "{error}" }
+                        li { "{error}" }
                     })}
                 }
             }

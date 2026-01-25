@@ -166,13 +166,11 @@ pub fn ToastProvider(children: Element) -> Element {
     use_context_provider(|| ToasterState { toasts });
 
     rsx! {
-        div {
-            {children}
-            div { class: "toast",
-                {toasts.iter().map(|toast| rsx! {
-                    ToastComponent { key: "{toast.id}", toast: {toast.clone()} }
-                })}
-            }
+        {children}
+        div { class: "toast",
+            {toasts.iter().map(|toast| rsx! {
+                ToastComponent { key: "{toast.id}", toast: {toast.clone()} }
+            })}
         }
     }
 }
