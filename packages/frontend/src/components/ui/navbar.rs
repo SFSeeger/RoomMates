@@ -1,6 +1,7 @@
 use crate::Route;
 use crate::components::contexts::AuthState;
 use crate::components::ui::sidebar::SidebarState;
+use api::routes::users::logout;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::LdMenu;
@@ -9,6 +10,8 @@ use dioxus_free_icons::icons::ld_icons::LdMenu;
 pub fn Navbar() -> Element {
     let mut sidebar_state = use_context::<SidebarState>();
     let auth_state = use_context::<AuthState>();
+    let auth_state_clone = auth_state.clone();
+    let nav = navigator();
 
     rsx! {
         div { class: "navbar bg-base-100 shadow-sm",
@@ -44,7 +47,17 @@ pub fn Navbar() -> Element {
                                 Link { to: Route::Home {}, "Settings" }
                             }
                             li {
-                                Link { to: Route::Home {}, "Logout" }
+                                button {
+                                    onclick: move |_| {
+                                        let mut auth_state_clone = auth_state_clone.clone();
+                                        async move {
+                                            let _ = logout().await;
+                                            auth_state_clone.logout();
+                                            nav.push(Route::Home {});
+                                        }
+                                    },
+                                    "Logout"
+                                }
                             }
                         }
                     }

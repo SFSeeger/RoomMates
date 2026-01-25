@@ -5,10 +5,30 @@ use dioxus::prelude::*;
 
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
+#[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
+pub struct UserInfo {
+    pub id: i32,
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+}
+
+impl UserInfo {
+    pub fn from_user_model(user: entity::user::Model) -> Self {
+        UserInfo {
+            id: user.id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+        }
+    }
+}
+
 #[get("/api/users/{user_id}", ext: Extension<server::AppState>)]
-pub async fn retrieve_user(user_id: i32) -> dioxus::Result<entity::user::Model, ServerFnError> {
+pub async fn retrieve_user(user_id: i32) -> dioxus::Result<UserInfo, ServerFnError> {
     use entity::user::Entity as User;
     use sea_orm::EntityTrait;
 
@@ -17,7 +37,7 @@ pub async fn retrieve_user(user_id: i32) -> dioxus::Result<entity::user::Model, 
         .await
         .or_internal_server_error("Error loading user from database")?
         .or_not_found("User not found")?;
-    Ok(user)
+    Ok(UserInfo::from_user_model(user))
 }
 
 #[post("/api/users", ext: Extension<server::AppState>)]
@@ -45,13 +65,19 @@ pub async fn create_user(
         .or_internal_server_error("Error converting user to model")?)
 }
 
+pub const EMAIL_REGEX: &str = r"^[\w+.-]*\w@[\w.-]+\.\w+$";
+
 #[post("/api/users/signup", ext: Extension<server::AppState>)]
-pub async fn sign_up(
-    email: String,
-    password: String,
-) -> dioxus::Result<entity::user::Model, ServerFnError> {
+pub async fn sign_up(email: String, password: String) -> dioxus::Result<UserInfo, ServerFnError> {
     use entity::user::Entity as User;
     use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+    let email_regex = Regex::new(EMAIL_REGEX).expect("EMAIL_REGEX must be valid");
+    email_regex
+        .is_match(&email)
+        .or_bad_request("email is not a valid email")?;
+
+    let email = email.trim().to_lowercase();
 
     let user_check = User::find()
         .filter(entity::user::Column::Email.eq(&email))
@@ -69,7 +95,7 @@ pub async fn sign_up(
         let user = create_user(email, password)
             .await
             .or_internal_server_error("Error creating user")?;
-        Ok(user)
+        Ok(UserInfo::from_user_model(user))
     }
 }
 
@@ -85,6 +111,8 @@ pub async fn login(email: String, password: String) -> Result<SetHeader<SetCooki
         });
     }
 
+    let email = email.trim().to_lowercase();
+
     let verified_user = verify_user(&password, &email, &ext.database)
         .await
         .or_unauthorized("Missing or incorrect Credentials")?;
@@ -99,6 +127,12 @@ pub async fn login(email: String, password: String) -> Result<SetHeader<SetCooki
         expires_at.to_rfc2822()
     ))
     .or_internal_server_error("Error setting session cookie")?)
+}
+
+#[post("/api/logout", ext: Extension<server::AppState>, mut auth: Extension<server::AuthenticationState>)]
+pub async fn logout() -> Result<NoContent, ServerFnError> {
+    auth.logout(&ext.database).await?;
+    Ok(NoContent)
 }
 
 #[delete("/api/users/{user_id}", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
@@ -124,21 +158,8 @@ pub async fn delete_user(user_id: i32) -> Result<NoContent, ServerFnError> {
     Ok(NoContent)
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
-pub struct UserInfo {
-    pub id: i32,
-    pub email: String,
-    pub first_name: String,
-    pub last_name: String,
-}
-
 #[get("/api/me", auth: Extension<server::AuthenticationState>)]
 pub async fn get_me() -> Result<UserInfo, ServerFnError> {
     let auth_user = auth.user.clone().or_unauthorized("Not authenticated")?;
-    Ok(UserInfo {
-        id: auth_user.id,
-        email: auth_user.email,
-        first_name: auth_user.first_name,
-        last_name: auth_user.last_name,
-    })
+    Ok(UserInfo::from_user_model(auth_user))
 }

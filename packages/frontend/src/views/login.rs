@@ -3,7 +3,7 @@ use crate::components::contexts::AuthState;
 use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
 use crate::components::ui::form::input::Input;
 use crate::components::ui::form::submit_button::SubmitButton;
-use api::routes::users::{get_me, login};
+use api::routes::users::{EMAIL_REGEX, get_me, login};
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{LdKey, LdMail};
@@ -39,7 +39,7 @@ pub fn LoginPage() -> Element {
     let email = use_form_field("email", String::new())
         .with_validator(validators::required("Email is required!"))
         .with_validator(validators::pattern(
-            Regex::new(r"^[\w+.-]*\w@[\w.-]+\.\w+$")?,
+            Regex::new(EMAIL_REGEX)?,
             "Email must be a valid email",
         ));
 

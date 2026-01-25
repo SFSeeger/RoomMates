@@ -67,6 +67,7 @@ dependencies = [
  "dioxus",
  "dotenvy",
  "entity",
+ "regex",
  "sea-orm",
  "serde",
  "serde_json",

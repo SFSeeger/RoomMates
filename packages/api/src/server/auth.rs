@@ -125,12 +125,12 @@ pub async fn create_session(
 /// * `session_key`: plain session key
 /// * `db`: Connection to the database
 ///
-/// returns: Result<Option<entity::user::Model>, Error> - User when the session is valid and has a lined user,
+/// returns: Result<Option<(entity::user::Model, i32)>, Error> - (User, Session id) when the session is valid and has a lined user,
 ///     otherwise none. Returns an error, if the database operation fails.
 pub async fn find_user_by_session(
     session_key: &str,
     db: &DatabaseConnection,
-) -> Result<Option<entity::user::Model>, anyhow::Error> {
+) -> Result<Option<(entity::user::Model, i32)>, anyhow::Error> {
     let hashed_session_key = hash_session_key(session_key);
     let session = Session::find()
         .filter(entity::session::Column::Token.eq(&hashed_session_key))
@@ -138,7 +138,11 @@ pub async fn find_user_by_session(
         .one(db)
         .await?;
     if let Some(session) = session {
-        return Ok(session.find_related(User).one(db).await?);
+        return Ok(session
+            .find_related(User)
+            .one(db)
+            .await?
+            .map(|user| (user, session.id)));
     };
     Ok(None)
 }

@@ -8,7 +8,11 @@ pub struct AuthState {
     pub user: Signal<Option<UserInfo>>,
 }
 
-impl AuthState {}
+impl AuthState {
+    pub fn logout(&mut self) {
+        self.user.set(None);
+    }
+}
 
 #[component]
 pub fn AuthProvider(children: Element) -> Element {
