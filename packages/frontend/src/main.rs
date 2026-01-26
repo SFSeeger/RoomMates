@@ -1,7 +1,7 @@
 use crate::layouts::StandardAppLayout;
 use dioxus::prelude::*;
 use views::{
-    Home, LoginPage, NotFound, SignupView,
+    Home, LoginPage, NotFound, SignupView, GroupView, NewGroup, 
     event_views::{AddEventView, EditEventView, ListEventView},
     todo::{TodoListCreateView, TodoListListView, TodosCreateView, TodosGroupView},
 };
@@ -47,6 +47,11 @@ enum Route {
             #[route("/add")]
             AddEventView {},
        #[end_nest]
+        #[route("/groups")]
+        GroupView {},
+
+        #[route("/new_groups")]
+        NewGroup {},
 
         #[route("/:..segments")]
         NotFound { segments: Vec<String> },

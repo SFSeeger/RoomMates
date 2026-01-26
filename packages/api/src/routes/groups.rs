@@ -2,6 +2,7 @@ use crate::dioxus_fullstack::NoContent;
 use crate::server;
 use dioxus::prelude::*;
 use entity::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
@@ -59,4 +60,40 @@ pub async fn add_user_to_group(email: i32, group_id: i32) -> Result<NoContent, S
     add_user_to_table(user.id, group_id).await?;
 
     Ok(NoContent)
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
+pub struct GroupCardData {
+    pub name: String,
+    pub members: Vec<entity::user::Model>,
+    pub events: Vec<entity::event::Model>,
+}
+
+///returns default struct of GroupCardData when trying to call a group which does not exist
+#[get("/api/groups", ext: Extension<server::AppState>)]
+pub async fn list_group_card_data(n: usize) -> Result<GroupCardData, ServerFnError> {
+    use sea_orm::ModelTrait;
+    let groups = list_groups().await?;
+    if n >= groups.len() {
+        let group_data = GroupCardData::default();
+        Ok(group_data)
+    } else {
+        let name = &groups[n].name;
+        let members = groups[n]
+            .find_related(User)
+            .all(&ext.database)
+            .await
+            .or_internal_server_error("Error loading members from database")?;
+        let events = groups[n]
+            .find_related(Event)
+            .all(&ext.database)
+            .await
+            .or_internal_server_error("Error loading events from database")?;
+        let group_data = GroupCardData {
+            name: name.to_string(),
+            members,
+            events,
+        };
+        Ok(group_data)
+    }
 }

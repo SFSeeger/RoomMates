@@ -11,6 +11,7 @@ pub mod fieldset;
 pub mod footer;
 pub mod form;
 pub mod list;
+pub mod groupcard;
 pub mod loader;
 pub mod theme_controller;
 pub mod toaster;
