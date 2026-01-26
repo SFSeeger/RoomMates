@@ -1,3 +1,4 @@
+use crate::routes::users::EMAIL_REGEX;
 use argon2::password_hash::rand_core::RngCore;
 use argon2::{
     Argon2,
@@ -7,9 +8,11 @@ use base64::Engine;
 use chrono::DateTime;
 use dioxus::prelude::*;
 use entity::prelude::*;
+use regex::Regex;
 use sea_orm::sea_query::prelude::Local;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, QueryFilter, Set,
+    TryIntoModel,
 };
 use std::time::Duration;
 
@@ -61,6 +64,36 @@ pub async fn verify_user(
     }
 
     Ok(user)
+}
+
+pub async fn create_user(
+    email: String,
+    password: String,
+    first_name: String,
+    last_name: String,
+    database: &DatabaseConnection,
+) -> Result<entity::user::Model, ServerFnError> {
+    let email = email.trim().to_lowercase();
+    let email_regex = Regex::new(EMAIL_REGEX).expect("EMAIL_REGEX must be valid");
+    email_regex
+        .is_match(&email)
+        .or_bad_request("email is not a valid email")?;
+    let hashed_password = hash_password(password)?;
+
+    let user = entity::user::ActiveModel {
+        email: sea_orm::Set(email),
+        password: sea_orm::Set(hashed_password),
+        first_name: sea_orm::Set(first_name),
+        last_name: sea_orm::Set(last_name),
+        ..Default::default()
+    };
+    let user = user
+        .save(database)
+        .await
+        .or_internal_server_error("Error saving new user to database")?;
+    Ok(user
+        .try_into_model()
+        .or_internal_server_error("Failed to convert active model to model")?)
 }
 
 /// Hashes a session key using blake3

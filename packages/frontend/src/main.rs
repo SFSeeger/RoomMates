@@ -1,7 +1,7 @@
 use crate::layouts::StandardAppLayout;
 use dioxus::logger::tracing;
 use dioxus::prelude::*;
-use views::{Home, LoginPage, NotFound};
+use views::{Home, LoginPage, NotFound, SignupView};
 mod components;
 mod hooks;
 mod layouts;
@@ -9,6 +9,7 @@ mod views;
 
 const TAILWIND_CSS: Asset = asset!("/assets/dist/tailwind.css");
 const FAVICON: Asset = asset!("/assets/favicon.svg");
+pub const ICON: Asset = asset!("/assets/icon.svg");
 
 // !! IMPORTANT: DO NOT FORMAT THIS! The formatting of the routing enum determines behaviour !!
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -19,6 +20,8 @@ enum Route {
         Home {},
         #[route("/login")]
         LoginPage {},
+        #[route("/signup")]
+        SignupView {},
 
         #[route("/:..segments")]
         NotFound { segments: Vec<String> },

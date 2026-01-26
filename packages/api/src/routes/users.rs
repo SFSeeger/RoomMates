@@ -5,7 +5,6 @@ use dioxus::prelude::*;
 
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
@@ -40,44 +39,34 @@ pub async fn retrieve_user(user_id: i32) -> dioxus::Result<UserInfo, ServerFnErr
     Ok(UserInfo::from_user_model(user))
 }
 
+//TODO: Secure this route
 #[post("/api/users", ext: Extension<server::AppState>)]
 pub async fn create_user(
     email: String,
     password: String,
-) -> Result<entity::user::Model, ServerFnError> {
-    use crate::server::auth::hash_password;
-    use sea_orm::{ActiveModelTrait, TryIntoModel};
-
-    let hashed_password = hash_password(password)?;
-
-    let user = entity::user::ActiveModel {
-        email: sea_orm::Set(email),
-        password: sea_orm::Set(hashed_password),
-        ..Default::default()
-    };
-
-    let user = user
-        .save(&ext.database)
-        .await
-        .or_internal_server_error("Error saving new user to database")?;
-    Ok(user
-        .try_into_model()
-        .or_internal_server_error("Error converting user to model")?)
+    first_name: String,
+    last_name: String,
+) -> Result<UserInfo, ServerFnError> {
+    use server::auth;
+    let user = auth::create_user(email, password, first_name, last_name, &ext.database).await?;
+    Ok(UserInfo::from_user_model(user))
 }
 
 pub const EMAIL_REGEX: &str = r"^[\w+.-]*\w@[\w.-]+\.\w+$";
 
-#[post("/api/users/signup", ext: Extension<server::AppState>)]
-pub async fn sign_up(email: String, password: String) -> dioxus::Result<UserInfo, ServerFnError> {
+#[post("/api/users/signup", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn sign_up(
+    email: String,
+    password: String,
+    first_name: String,
+    last_name: String,
+) -> Result<UserInfo, ServerFnError> {
+    use crate::server::auth;
     use entity::user::Entity as User;
     use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
-    let email_regex = Regex::new(EMAIL_REGEX).expect("EMAIL_REGEX must be valid");
-    email_regex
-        .is_match(&email)
-        .or_bad_request("email is not a valid email")?;
-
-    let email = email.trim().to_lowercase();
+    auth.is_anonymous()
+        .or_bad_request("Already logged in user cannot sign up")?;
 
     let user_check = User::find()
         .filter(entity::user::Column::Email.eq(&email))
@@ -92,9 +81,7 @@ pub async fn sign_up(email: String, password: String) -> dioxus::Result<UserInfo
             details: None,
         })
     } else {
-        let user = create_user(email, password)
-            .await
-            .or_internal_server_error("Error creating user")?;
+        let user = auth::create_user(email, password, first_name, last_name, &ext.database).await?;
         Ok(UserInfo::from_user_model(user))
     }
 }

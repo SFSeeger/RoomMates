@@ -62,7 +62,16 @@ pub fn Navbar() -> Element {
                         }
                     }
                 } else {
-                    Link { to: Route::LoginPage {}, class: "btn btn-primary", "Login" }
+                    Link {
+                        to: Route::SignupView {},
+                        class: "btn btn-secondary btn-sm mx-1",
+                        "Sign Up"
+                    }
+                    Link {
+                        to: Route::LoginPage {},
+                        class: "btn btn-primary btn-sm mx-1",
+                        "Login"
+                    }
                 }
             }
         }

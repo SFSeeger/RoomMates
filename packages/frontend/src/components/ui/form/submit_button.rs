@@ -23,7 +23,7 @@ pub fn SubmitButton(
 
     rsx! {
         Button {
-            disabled: form.has_errors() || !*form.is_touched.read(),
+            disabled: form.has_errors() || !*form.is_touched.read() || *form.is_submitting.read(),
             class: "w-full",
             if *form.is_submitting.read() {
                 {submitting_label}

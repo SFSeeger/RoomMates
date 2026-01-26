@@ -10,3 +10,11 @@
     @apply text-error;
     content: "*";
 }
+
+.link {
+    @apply link-primary link-hover;
+
+    &:hover {
+        @apply link-secondary;
+    }
+}
