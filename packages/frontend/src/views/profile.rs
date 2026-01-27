@@ -15,9 +15,6 @@ use dioxus::prelude::*;
 
 #[component]
 pub fn Profile() -> Element {
-    let user =
-        use_server_future(move || async move { get_me().await })?;
-
     rsx! {
 
         div { class: "flex flex-col items-center gap-4 justify-center h-full",
@@ -44,9 +41,7 @@ pub fn Profile() -> Element {
                 {
                     rsx! {
                         CardTitle { "Profile Information" }
-
                         List_Info_Display {}
-
                         CardActions {
                             {
                                 rsx! {
@@ -69,8 +64,7 @@ pub fn Profile() -> Element {
 
 #[component]
 pub fn List_Info_Display() -> Element {
-    let user: Resource<std::result::Result<entity::user::Model, ServerFnError>> =
-        use_server_future(move || async move { retrieve_user(1).await })?;
+    let user = use_server_future(move || async move { get_me().await })?;
 
     rsx! {
         match &*user.read() {
@@ -79,11 +73,8 @@ pub fn List_Info_Display() -> Element {
                 List { header: "",
                     ListRow {
                         " Username: {data.first_name} {data.last_name}"
-
                         div {
-
                             fieldset { class: "fieldset",
-
                                 legend { class: "fieldset-legend", "Edit first name!" }
                                 input {
                                     class: "input",
@@ -91,7 +82,6 @@ pub fn List_Info_Display() -> Element {
                                     r#type: "text",
                                 }
                                 legend { class: "fieldset-legend", "Edit last name!" }
-
                                 input {
                                     class: "input",
                                     placeholder: " {data.last_name}",
@@ -100,21 +90,17 @@ pub fn List_Info_Display() -> Element {
                             }
                         }
                     }
-
                     ListRow {
-
                         "Email: {data.email}"
                         Fieldset { title: "Edit Email!",
                             input { class: "input", placeholder: "new email", r#type: "text" }
                         }
                     }
                     ListRow {
-
                         "Set new password!"
                         Fieldset { title: "Set new password",
                             input { class: "input", placeholder: "**********", r#type: "text" }
                             p { class: "label", "Type New Password" }
-
                             input { class: "input", placeholder: "**********", r#type: "text" }
                             p { class: "label", "Repeat New Password" }
                         }
