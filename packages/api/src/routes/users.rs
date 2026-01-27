@@ -52,7 +52,6 @@ pub async fn create_user(
     let user = auth::create_user(email, password, first_name, last_name, &ext.database).await?;
     Ok(UserInfo::from_user_model(user))
 }
-
 pub const EMAIL_REGEX: &str = r"^[\w+.-]*\w@[\w.-]+\.\w+$";
 
 #[post("/api/users/signup", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
