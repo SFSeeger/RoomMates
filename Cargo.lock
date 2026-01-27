@@ -1138,6 +1138,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "dioxus-attributes"
+version = "0.1.0"
+source = "git+https://github.com/DioxusLabs/components#4acbf53dd86b1b3dc8cd7e409002bf922f37b4e1"
+dependencies = [
+ "dioxus-rsx",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.114",
+]
+
+[[package]]
 name = "dioxus-cli-config"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1552,9 +1563,10 @@ dependencies = [
 [[package]]
 name = "dioxus-primitives"
 version = "0.0.1"
-source = "git+https://github.com/DioxusLabs/components#7943bed2eb59ee43d713f935e0ba17989c02b992"
+source = "git+https://github.com/DioxusLabs/components#4acbf53dd86b1b3dc8cd7e409002bf922f37b4e1"
 dependencies = [
  "dioxus",
+ "dioxus-attributes",
  "dioxus-sdk-time",
  "lazy-js-bundle 0.6.2",
  "num-integer",
@@ -1904,6 +1916,8 @@ dependencies = [
 name = "entity"
 version = "0.1.0"
 dependencies = [
+ "chrono",
+ "form_hooks",
  "sea-orm",
  "serde",
 ]
@@ -2093,6 +2107,7 @@ checksum = "aa9a19cbb55df58761df49b23516a86d432839add4af60fc256da840f66ed35b"
 name = "form_hooks"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "dioxus",
  "form_hooks_derive",
  "regex",
@@ -2123,6 +2138,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "api",
+ "chrono",
  "dioxus",
  "dioxus-free-icons",
  "dioxus-primitives",

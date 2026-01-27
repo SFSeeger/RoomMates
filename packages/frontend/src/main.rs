@@ -1,10 +1,8 @@
 use crate::layouts::StandardAppLayout;
 use dioxus::prelude::*;
-use views::EventCreator;
-use views::EventEditor;
-use views::Events;
 use views::{
     Home, LoginPage, NotFound, SignupView,
+    event_views::{AddEventView, EditEventView, ListEventView},
     todo::{TodoListCreateView, TodoListListView},
 };
 mod components;
@@ -35,17 +33,17 @@ enum Route {
             TodoListCreateView {},
         #[end_nest]
 
+         #[nest("/event")]
+            #[route("/")]
+            ListEventView {},
+            #[route("/:event_id/edit")]
+            EditEventView {event_id: i32,},
+            #[route("/add")]
+            AddEventView {},
+       #[end_nest]
+
         #[route("/:..segments")]
         NotFound { segments: Vec<String> },
-
-        #[route("/events")]
-        Events {},
-
-        #[route("/event_editor")]
-        EventEditor {event_id: i32},
-
-        #[route("/event_creator")]
-        EventCreator {},
 }
 fn main() -> Result<(), anyhow::Error> {
     info!("Starting Server");

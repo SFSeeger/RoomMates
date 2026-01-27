@@ -8,7 +8,4 @@ mod sign_up;
 pub mod todo;
 
 pub use sign_up::SignupView;
-mod event_views;
-pub use event_views::EventCreator;
-pub use event_views::EventEditor;
-pub use event_views::Events;
+pub mod event_views;

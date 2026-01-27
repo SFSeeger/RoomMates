@@ -4,7 +4,7 @@ use crate::components::ui::theme_controller::ThemeController;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::IconShape;
-use dioxus_free_icons::icons::ld_icons::{LdHome, LdLibrary, LdListTodo, LdCalendar} ;
+use dioxus_free_icons::icons::ld_icons::{LdCalendar, LdHome, LdListTodo};
 
 #[component]
 pub fn Sidebar() -> Element {
@@ -28,7 +28,7 @@ pub fn Sidebar() -> Element {
                     SidebarItem {
                         title: "Events",
                         icon: LdCalendar,
-                        to: Route::Events {},
+                        to: Route::ListEventView {},
                     }
                 }
                 div { class: "md:hidden w-full is-drawer-close:hidden",
