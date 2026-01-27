@@ -38,14 +38,14 @@ enum Route {
         #[route("/:..segments")]
         NotFound { segments: Vec<String> },
 
-        #[route("/events")]
-        Events {},
+        #[nest("/event")]
+            #[route("/")]
+            Events {},
+            #[route("/event_editor/:event_id")]
+            EventEditor {event_id: i32,},
+            #[route("/event_creator")]
+            EventCreator {},
 
-        #[route("/event_editor")]
-        EventEditor {event_id: i32},
-
-        #[route("/event_creator")]
-        EventCreator {},
 }
 fn main() -> Result<(), anyhow::Error> {
     info!("Starting Server");
