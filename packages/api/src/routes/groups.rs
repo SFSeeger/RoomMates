@@ -71,29 +71,31 @@ pub struct GroupCardData {
 
 ///returns default struct of GroupCardData when trying to call a group which does not exist
 #[get("/api/groups", ext: Extension<server::AppState>)]
-pub async fn list_group_card_data(n: usize) -> Result<GroupCardData, ServerFnError> {
+pub async fn retrieve_group(group_id: i32) -> Result<GroupCardData, ServerFnError> {
+    use sea_orm::EntityTrait;
     use sea_orm::ModelTrait;
-    let groups = list_groups().await?;
-    if n >= groups.len() {
-        let group_data = GroupCardData::default();
-        Ok(group_data)
-    } else {
-        let name = &groups[n].name;
-        let members = groups[n]
-            .find_related(User)
-            .all(&ext.database)
-            .await
-            .or_internal_server_error("Error loading members from database")?;
-        let events = groups[n]
-            .find_related(Event)
-            .all(&ext.database)
-            .await
-            .or_internal_server_error("Error loading events from database")?;
-        let group_data = GroupCardData {
-            name: name.to_string(),
-            members,
-            events,
-        };
-        Ok(group_data)
-    }
+
+    let groups = Group::find_by_id(group_id)
+        .one(&ext.database)
+        .await
+        .or_not_found("Group not found")?
+        .or_internal_server_error("Error loading group from database")?;
+
+    let name = &groups.name;
+    let members = groups
+        .find_related(User)
+        .all(&ext.database)
+        .await
+        .or_internal_server_error("Error loading members from database")?;
+    let events = groups
+        .find_related(Event)
+        .all(&ext.database)
+        .await
+        .or_internal_server_error("Error loading events from database")?;
+    let group_data = GroupCardData {
+        name: name.to_string(),
+        members,
+        events,
+    };
+    Ok(group_data)
 }
