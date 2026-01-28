@@ -205,7 +205,7 @@ pub fn max_length<T: ValueRef<Value = String> + Clone + 'static>(
 /// * `pattern`: [regex::Regex] pattern to validate against
 /// * `error_message`: Error message to display when the pattern does not match
 ///
-/// returns: [Validator<T>]
+/// returns: [`Validator<T>`]
 ///
 /// # Examples
 ///
@@ -234,6 +234,14 @@ pub fn pattern<T: ValueRef<Value = String> + Clone + 'static>(
             }
             _ => Ok(()),
         }),
+        meta: None,
+    }
+}
+
+#[allow(dead_code)]
+pub fn custom<T: ValueRef + Clone + 'static>(validator_func: ValidatorFunc<T>) -> Validator<T> {
+    Validator {
+        validator_func,
         meta: None,
     }
 }

@@ -196,7 +196,7 @@ impl<T: FieldValue> FormField<T> {
     ///
     /// This method is used to easily bind form field state and validation to Dioxus input components.
     /// The returned [FieldAttributes] can be converted into a vector of Dioxus [Attributes](dioxus_core::Attribute)
-    /// for different input types (e.g., text, checkbox) using methods like [into_input_attributes()] or [into_checkbox_attributes()].
+    /// for different input types (e.g., text, checkbox) using methods like [into_input_attributes]() or [into_checkbox_attributes]().
     ///
     /// ## Example
     /// ```ignore
@@ -327,14 +327,14 @@ where
     }
 }
 
-/// Initializes and returns a [FormField<T>] for managing the state, validation, and event handling of a single form field.
+/// Initializes and returns a [`FormField<T>`] for managing the state, validation, and event handling of a single form field.
 ///
 /// # Arguments
 ///
 /// * `name`: The field's name as a string.
-/// * `initial_value`: The initial value for the field (must implement [FieldValue]).
+/// * `initial_value`: The initial value for the field (must implement [`FieldValue]).
 ///
-/// returns: [FormField<T>]
+/// returns: [`FormField<T>`]
 ///
 /// # Examples
 ///

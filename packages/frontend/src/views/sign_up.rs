@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::components::contexts::AuthState;
 use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
 use crate::components::ui::form::input::Input;
@@ -6,7 +8,7 @@ use crate::{ICON, Route};
 use api::routes::users::{EMAIL_REGEX, sign_up};
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::{LdKey, LdMail};
+use dioxus_free_icons::icons::ld_icons::{LdKeyRound, LdMail};
 use form_hooks::use_form::{use_form, use_on_submit};
 use form_hooks::use_form_field::use_form_field;
 use form_hooks::validators;
@@ -56,10 +58,23 @@ pub fn SignupView() -> Element {
     let password = use_form_field("password", String::new())
         .with_validator(validators::required("Password is required!"));
 
+    let password_repeat_func = Rc::new(move |value: &String| {
+        let password_value = password.value.peek();
+        if *value != *password_value || value.is_empty() {
+            Err("Passwords do not match!".to_string())
+        } else {
+            Ok(())
+        }
+    });
+
+    let password_repeat = use_form_field("password_repeat", String::new())
+        .with_validator(validators::custom(password_repeat_func));
+
     form_state.register_field(&email);
     form_state.register_field(&first_name);
     form_state.register_field(&last_name);
     form_state.register_field(&password);
+    form_state.register_field(&password_repeat);
     form_state.revalidate();
 
     let onsubmit = use_on_submit(&form_state, move |form_state| async move {
@@ -127,7 +142,17 @@ pub fn SignupView() -> Element {
                                 r#type: "password",
                                 icon: {
                                     rsx! {
-                                        Icon { icon: LdKey }
+                                        Icon { icon: LdKeyRound }
+                                    }
+                                },
+                            }
+                            Input {
+                                field: password_repeat,
+                                label: "Repeat Password",
+                                r#type: "password",
+                                icon: {
+                                    rsx! {
+                                        Icon { icon: LdKeyRound }
                                     }
                                 },
                             }
