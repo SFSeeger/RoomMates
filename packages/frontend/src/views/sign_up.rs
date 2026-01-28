@@ -8,7 +8,7 @@ use crate::{ICON, Route};
 use api::routes::users::{EMAIL_REGEX, sign_up};
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::{LdKeyRound, LdMail};
+use dioxus_free_icons::icons::ld_icons::{LdCircleX, LdKeyRound, LdMail};
 use form_hooks::use_form::{use_form, use_on_submit};
 use form_hooks::use_form_field::use_form_field;
 use form_hooks::validators;
@@ -107,6 +107,7 @@ pub fn SignupView() -> Element {
                                 div {
                                     class: "alert alert-error mb-4",
                                     role: "alert",
+                                    Icon { icon: LdCircleX }
                                     ul {
                                         for error in form_errors.read().iter() {
                                             li { key: "{error}", "{error}" }

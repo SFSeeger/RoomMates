@@ -6,7 +6,7 @@ use crate::{ICON, Route};
 use api::routes::users::{EMAIL_REGEX, get_me, login};
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::{LdKey, LdMail};
+use dioxus_free_icons::icons::ld_icons::{LdCircleX, LdKey, LdMail};
 use form_hooks::use_form::{use_form, use_on_submit};
 use form_hooks::use_form_field::use_form_field;
 use form_hooks::validators;
@@ -86,7 +86,10 @@ pub fn LoginPage() -> Element {
 
                         form { onsubmit, class: "w-full text-left",
                             if form_errors.len() > 0 {
-                                div { class: "alert alert-error mb-4",
+                                div {
+                                    class: "alert alert-error mb-4",
+                                    role: "alert",
+                                    Icon { icon: LdCircleX }
                                     ul {
                                         for error in form_errors.read().iter() {
                                             li { key: "{error}", "{error}" }
