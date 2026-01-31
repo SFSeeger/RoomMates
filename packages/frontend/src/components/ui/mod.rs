@@ -4,6 +4,7 @@ pub mod navbar;
 pub mod sidebar;
 pub use navbar::Navbar;
 pub mod card;
+pub mod dialog;
 pub mod dock;
 pub mod fieldset;
 pub mod footer;

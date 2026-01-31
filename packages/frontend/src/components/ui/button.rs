@@ -47,7 +47,7 @@ impl ButtonShape {
     fn class(&self) -> &'static str {
         match self {
             ButtonShape::Default => "",
-            ButtonShape::Round => "btn-round",
+            ButtonShape::Round => "btn-circle",
             ButtonShape::Square => "btn-square",
             ButtonShape::Block => "btn-block",
             ButtonShape::Wide => "btn-wide",
@@ -55,45 +55,53 @@ impl ButtonShape {
     }
 }
 
+#[derive(Clone, PartialEq, Props)]
+pub struct ButtonProps {
+    #[props(default)]
+    pub variant: ButtonVariant,
+    #[props(default)]
+    pub ghost: bool,
+    #[props(default)]
+    pub shape: ButtonShape,
+    #[props(default)]
+    pub disabled: bool,
+    #[props(extends=GlobalAttributes, extends=button)]
+    pub attributes: Vec<Attribute>,
+    pub class: Option<String>,
+    pub onclick: Option<EventHandler<MouseEvent>>,
+    pub onmousedown: Option<EventHandler<MouseEvent>>,
+    pub onmouseup: Option<EventHandler<MouseEvent>>,
+    pub children: Element,
+}
+
 #[component]
-pub fn Button(
-    #[props(default)] variant: ButtonVariant,
-    #[props(default)] ghost: bool,
-    #[props(default)] shape: ButtonShape,
-    #[props(default)] disabled: bool,
-    #[props(extends=GlobalAttributes, extends=button)] attributes: Vec<Attribute>,
-    class: Option<String>,
-    onclick: Option<EventHandler<MouseEvent>>,
-    onmousedown: Option<EventHandler<MouseEvent>>,
-    onmouseup: Option<EventHandler<MouseEvent>>,
-    children: Element,
-) -> Element {
-    let variant_class = variant.class();
-    let shape_class = shape.class();
-    let class = class.unwrap_or_default();
+pub fn Button(props: ButtonProps) -> Element {
+    let variant_class = props.variant.class();
+    let shape_class = props.shape.class();
+    let class = props.class.unwrap_or_default();
     rsx! {
         button {
             class: "btn {variant_class} {shape_class} {class}",
-            class: if ghost { "btn-ghost" },
-            class: if disabled { "btn-disabled" },
-            disabled,
+            class: if props.ghost { "btn-ghost" },
+            class: if props.disabled { "btn-disabled" },
+            disabled: props.disabled,
             onclick: move |event| {
-                if let Some(f) = &onclick {
+                if let Some(f) = &props.onclick {
                     f.call(event);
                 }
             },
             onmousedown: move |event| {
-                if let Some(f) = &onmousedown {
+                if let Some(f) = &props.onmousedown {
                     f.call(event);
                 }
             },
             onmouseup: move |event| {
-                if let Some(f) = &onmouseup {
+                if let Some(f) = &props.onmouseup {
                     f.call(event);
                 }
             },
-            ..attributes,
-            {children}
+            ..props.attributes,
+            {props.children}
         }
     }
 }
