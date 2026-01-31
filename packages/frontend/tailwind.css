@@ -3,8 +3,153 @@
 @source "./src/**/*.{rs,html,css}";
 
 @plugin "daisyui" {
-    themes: light --default, dark --prefersdark;
 }
+
+@plugin "daisyui/theme" {
+  name: "roommatesdefault";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: oklch(100% 0 0);
+  --color-base-200: oklch(97% 0 0);
+  --color-base-300: oklch(92% 0 0);
+  --color-base-content: oklch(20% 0 0);
+  --color-primary: #FCBF56;
+  --color-primary-content: oklch(42% 0.095 57.708);
+  --color-secondary: #F06C3C;
+  --color-secondary-content: oklch(40% 0.123 38.172);
+  --color-accent: #340A00;
+  --color-accent-content: oklch(100% 0 0);
+  --color-neutral: oklch(92% 0.003 48.717);
+  --color-neutral-content: oklch(44% 0.011 73.639);
+  --color-info: #688ED3;
+  --color-info-content: oklch(39% 0.09 240.876);
+  --color-success: #15C288;
+  --color-success-content: oklch(37% 0.077 168.94);
+  --color-warning: oklch(82% 0.189 84.429);
+  --color-warning-content: oklch(41% 0.112 45.904);
+  --color-error: #ED0F48;
+  --color-error-content: oklch(39% 0.141 25.723);
+  --radius-selector: 1rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+
+@plugin "daisyui/theme" {
+  name: "roommatesdark";
+  default: false;
+  prefersdark: true;
+  color-scheme: "dark";
+  --color-base-100: oklch(24.353% 0 0);
+  --color-base-200: oklch(22.648% 0 0);
+  --color-base-300: oklch(20.944% 0 0);
+  --color-base-content: oklch(84.87% 0 0);
+  --color-primary: oklch(41.703% 0.099 251.473);
+  --color-primary-content: oklch(88.34% 0.019 251.473);
+  --color-secondary: oklch(64.092% 0.027 229.389);
+  --color-secondary-content: oklch(12.818% 0.005 229.389);
+  --color-accent: oklch(67.271% 0.167 35.791);
+  --color-accent-content: oklch(13.454% 0.033 35.791);
+  --color-neutral: oklch(27.441% 0.013 253.041);
+  --color-neutral-content: oklch(85.488% 0.002 253.041);
+  --color-info: oklch(62.616% 0.143 240.033);
+  --color-info-content: oklch(12.523% 0.028 240.033);
+  --color-success: oklch(70.226% 0.094 156.596);
+  --color-success-content: oklch(14.045% 0.018 156.596);
+  --color-warning: oklch(77.482% 0.115 81.519);
+  --color-warning-content: oklch(15.496% 0.023 81.519);
+  --color-error: oklch(51.61% 0.146 29.674);
+  --color-error-content: oklch(90.322% 0.029 29.674);
+  --radius-selector: 0rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.25rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+
+@plugin "daisyui/theme" {
+  name: "roommateswarm";
+  default: false;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: oklch(98% 0.016 73.684);
+  --color-base-200: oklch(95% 0.038 75.164);
+  --color-base-300: oklch(90% 0.076 70.697);
+  --color-base-content: oklch(40% 0.123 38.172);
+  --color-primary: oklch(0% 0 0);
+  --color-primary-content: oklch(100% 0 0);
+  --color-secondary: oklch(22.45% 0.075 37.85);
+  --color-secondary-content: oklch(90% 0.076 70.697);
+  --color-accent: oklch(46.44% 0.111 37.85);
+  --color-accent-content: oklch(90% 0.076 70.697);
+  --color-neutral: oklch(55% 0.195 38.402);
+  --color-neutral-content: oklch(98% 0.016 73.684);
+  --color-info: oklch(42% 0.199 265.638);
+  --color-info-content: oklch(90% 0.076 70.697);
+  --color-success: oklch(43% 0.095 166.913);
+  --color-success-content: oklch(90% 0.076 70.697);
+  --color-warning: oklch(82% 0.189 84.429);
+  --color-warning-content: oklch(41% 0.112 45.904);
+  --color-error: oklch(70% 0.191 22.216);
+  --color-error-content: oklch(39% 0.141 25.723);
+  --radius-selector: 2rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 2px;
+  --depth: 1;
+  --noise: 1;
+}
+
+
+@plugin "daisyui/theme" {
+  name: "roommatespastel";
+  default: false;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: oklch(100% 0 0);
+  --color-base-200: oklch(97% 0 0);
+  --color-base-300: oklch(92% 0 0);
+  --color-base-content: oklch(20% 0 0);
+  --color-primary: #FFE0A6;
+  --color-primary-content: oklch(42% 0.095 57.708);
+  --color-secondary: #FCB399;
+  --color-secondary-content: oklch(40% 0.123 38.172);
+  --color-accent: #9B8480;
+  --color-accent-content: oklch(100% 0 0);
+  --color-neutral: oklch(92% 0.003 48.717);
+  --color-neutral-content: oklch(44% 0.011 73.639);
+  --color-info: #B1C6EC;
+  --color-info-content: oklch(39% 0.09 240.876);
+  --color-success: #86E5C5;
+  --color-success-content: oklch(37% 0.077 168.94);
+  --color-warning: #FFDE80;
+  --color-warning-content: oklch(41% 0.112 45.904);
+  --color-error: #FC81A1;
+  --color-error-content: oklch(39% 0.141 25.723);
+  --radius-selector: 1rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin "./catppuccinTheme.frappe.ts";
+
 
 .input:has(input[required]) > .label::after {
     @apply text-error;

@@ -1,5 +1,6 @@
 use crate::Route;
 use crate::components::ui::sidebar::sidebar_provider::SidebarState;
+use crate::components::ui::theme_controller::ThemeController;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::IconShape;
@@ -10,12 +11,12 @@ pub fn Sidebar() -> Element {
     let mut sidebar_state = use_context::<SidebarState>();
 
     rsx! {
-        aside { class: "drawer-side is-drawer-close:overflow-visible overflow-y-hidden",
+        aside { class: "drawer-side is-drawer-close:overflow-visible min-h-screen",
             button {
                 class: "drawer-overlay",
                 onclick: move |_| sidebar_state.visible.toggle(),
             }
-            div { class: "flex min-h-full flex-col items-start bg-base-200 is-drawer-close:w-14 is-drawer-open:w-64",
+            div { class: "flex min-h-screen flex-col items-start bg-base-200 is-drawer-close:w-14 is-drawer-open:w-64",
                 ul { class: "menu w-full grow",
                     SidebarItem { title: "Homepage", icon: LdHome, to: Route::Home {} }
                     SidebarItem {
@@ -23,6 +24,9 @@ pub fn Sidebar() -> Element {
                         icon: LdLibrary,
                         to: Route::Home {},
                     }
+                }
+                div { class: "md:hidden w-full is-drawer-close:hidden",
+                    ThemeController { dropdown_top: true, id_extra: "sidebar" }
                 }
             }
         }

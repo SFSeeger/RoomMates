@@ -10,4 +10,5 @@ pub mod footer;
 pub mod form;
 pub mod list;
 pub mod loader;
+pub mod theme_controller;
 pub mod toaster;
