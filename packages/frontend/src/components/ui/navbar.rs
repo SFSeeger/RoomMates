@@ -1,6 +1,7 @@
 use crate::Route;
 use crate::components::contexts::AuthState;
 use crate::components::ui::sidebar::SidebarState;
+use crate::components::ui::theme_controller::ThemeController;
 use api::routes::users::logout;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
@@ -23,7 +24,10 @@ pub fn Navbar() -> Element {
             div { class: "flex-1",
                 Link { to: Route::Home {}, class: "btn btn-ghost text-xl", "RoomMates" }
             }
-            div { class: "flex-none",
+            div { class: "flex-none flex gap-2 items-center",
+                div { class: "hidden md:block",
+                    ThemeController { id_extra: "navbar" }
+                }
                 if let Some(user) = auth_state.user.read().as_ref() {
                     div { class: "dropdown dropdown-end",
                         div {
