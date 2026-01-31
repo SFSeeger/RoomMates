@@ -30,6 +30,10 @@ pub struct Model {
     // Sessions owned by this user
     #[sea_orm(has_many)]
     pub sessions: HasMany<super::session::Entity>,
+
+    // Todo Lists owned by this user
+    #[sea_orm(has_many)]
+    pub todo_lists: HasMany<super::todo_list::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

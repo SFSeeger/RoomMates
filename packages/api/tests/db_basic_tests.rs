@@ -21,9 +21,9 @@ mod test_db_mod {
 
         insert(&db).await?;
 
-        assert_eq!(check_group_membership(&db).await?, ());
-        assert_eq!(check_shared_friend_events(&db).await?, ());
-        assert_eq!(check_shared_group_events(&db).await?, ());
+        assert!(check_group_membership(&db).await.is_ok());
+        assert!(check_shared_friend_events(&db).await.is_ok());
+        assert!(check_shared_group_events(&db).await.is_ok());
 
         Ok(())
     }
@@ -37,9 +37,7 @@ mod test_db_mod {
             .register(shared_group_event::Entity)
             .register(is_in_group::Entity)
             .apply(db)
-            .await?;
-
-        Ok(())
+            .await
     }
 
     pub async fn insert(db: &DatabaseConnection) -> Result<(), DbErr> {

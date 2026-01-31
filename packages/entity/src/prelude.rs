@@ -5,4 +5,5 @@ pub use super::is_in_group::Entity as InGroup;
 pub use super::session::Entity as Session;
 pub use super::shared_friend_event::Entity as FriendShare;
 pub use super::shared_group_event::Entity as GroupShare;
+pub use super::todo_list::Entity as TodoList;
 pub use super::user::Entity as User;
