@@ -123,6 +123,7 @@ pub fn ToastComponent(toast: Toast) -> Element {
                     variant: ButtonVariant::None,
                     shape: ButtonShape::Round,
                     ghost: true,
+                    class: "btn-sm",
                     onclick: move |_| {
                         let _ = toaster_state.remove_toast(toast.id);
                     },
@@ -167,7 +168,7 @@ pub fn ToastProvider(children: Element) -> Element {
 
     rsx! {
         {children}
-        div { class: "toast",
+        div { class: "toast toast-top",
             {toasts.iter().map(|toast| rsx! {
                 ToastComponent { key: "{toast.id}", toast: {toast.clone()} }
             })}

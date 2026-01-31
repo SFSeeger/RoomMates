@@ -160,6 +160,7 @@ pub fn SignupView() -> Element {
                             CardActions {
                                 SubmitButton {
                                     form: form_state.clone(),
+                                    class: "w-full",
                                     label: "Create Account",
                                     submitting_label: "Creating account...",
                                 }

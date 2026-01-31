@@ -1,7 +1,9 @@
 use crate::layouts::StandardAppLayout;
-use dioxus::logger::tracing;
 use dioxus::prelude::*;
-use views::{Home, LoginPage, NotFound, SignupView};
+use views::{
+    Home, LoginPage, NotFound, SignupView,
+    todo::{TodoListCreateView, TodoListListView},
+};
 mod components;
 mod hooks;
 mod layouts;
@@ -23,11 +25,18 @@ enum Route {
         #[route("/signup")]
         SignupView {},
 
+        #[nest("/todo")]
+            #[route("/")]
+            TodoListListView {},
+            #[route("/add")]
+            TodoListCreateView {},
+        #[end_nest]
+
         #[route("/:..segments")]
         NotFound { segments: Vec<String> },
 }
 fn main() -> Result<(), anyhow::Error> {
-    tracing::info!("Starting Server");
+    info!("Starting Server");
 
     #[cfg(feature = "server")]
     dioxus::serve(|| async move { api::server::setup_api(App).await });

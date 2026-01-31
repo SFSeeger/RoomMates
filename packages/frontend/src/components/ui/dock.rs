@@ -2,12 +2,17 @@ use crate::Route;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::IconShape;
-use dioxus_free_icons::icons::ld_icons::{LdCalendar, LdHome};
+use dioxus_free_icons::icons::ld_icons::{LdCalendar, LdHome, LdListTodo};
 
 #[component]
 pub fn Dock() -> Element {
     rsx! {
         div { class: "dock dock-md lg:hidden",
+            DockItem {
+                label: "Todos",
+                icon: LdListTodo,
+                to: Route::TodoListListView {},
+            }
             DockItem { label: "Home", icon: LdHome, to: Route::Home {} }
             DockItem {
                 label: "Calendar",

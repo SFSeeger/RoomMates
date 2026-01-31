@@ -120,6 +120,7 @@ pub fn LoginPage() -> Element {
                             CardActions {
                                 SubmitButton {
                                     form: form_state.clone(),
+                                    class: "w-full",
                                     label: "Login",
                                     submitting_label: "Logging in...",
                                 }

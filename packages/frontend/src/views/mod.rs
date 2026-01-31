@@ -5,4 +5,6 @@ pub use not_found::NotFound;
 mod login;
 pub use login::LoginPage;
 mod sign_up;
+pub mod todo;
+
 pub use sign_up::SignupView;

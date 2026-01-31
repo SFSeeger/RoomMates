@@ -24,9 +24,8 @@ pub fn ListDetails(
     image_url: Option<String>,
 ) -> Element {
     rsx! {
-        if image_url.is_some() {
-
-            div {
+        div {
+            if image_url.is_some() {
                 img { class: "size-10 rounded-box", src: image_url.unwrap() }
             }
         }

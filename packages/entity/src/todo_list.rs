@@ -1,3 +1,4 @@
+use sea_orm::DeriveIntoActiveModel;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -25,3 +26,19 @@ pub struct Model {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
+
+#[derive(Serialize, Deserialize, Default, DeriveIntoActiveModel)]
+pub struct CreateTodoList {
+    pub title: String,
+    pub description: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Default, DeriveIntoActiveModel)]
+pub struct UpdateTodoList {
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub description: Option<Option<String>>,
+    #[serde(default)]
+    pub is_favorite: Option<bool>,
+}
