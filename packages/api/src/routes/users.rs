@@ -176,7 +176,7 @@ pub async fn change_user_info(
     user_active.email = sea_orm::Set(email);
     user_active.password = sea_orm::Set(password);
 
-    let _res = User::update(user_active)
+    User::update(user_active)
         .exec(&ext.database)
         .await
         .or_internal_server_error("cant update user")?;

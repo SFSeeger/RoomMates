@@ -1,17 +1,16 @@
 use crate::components::ui::button;
-use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
+use crate::components::ui::card::{Card, CardBody, CardTitle};
 use crate::components::ui::fieldset::Fieldset;
+use crate::components::ui::form::input::Input;
+use crate::components::ui::form::submit_button::SubmitButton;
 use crate::components::ui::list::{List, ListRow};
 use crate::{Route, components::ui::button::Button};
 use api::routes::users::get_me;
 use dioxus::prelude::*;
+use form_hooks::use_form::{use_form, use_on_submit};
+use form_hooks::use_form_field::use_form_field;
 //use dioxus_free_icons::Icon;
 //use dioxus_free_icons::icons::ld_icons::LdCircleHelp;
-
-//TODO
-//fix loading errors
-//add list and input components
-//add forms and api calls
 
 #[component]
 pub fn Profile() -> Element {
@@ -36,25 +35,12 @@ pub fn Profile() -> Element {
         }
         div { class: "divider divider-primar" }
         Card {
-
             CardBody {
                 {
                     rsx! {
                         CardTitle { "Profile Information" }
                         List_Info_Display {}
-                        CardActions {
-                            {
-                                rsx! {
-                                    Button {
-                                        variant: button::ButtonVariant::Primary,
-                                        ghost: false,
-                                        shape: button::ButtonShape::Wide,
-                                        disabled: false,
-                                        "Confirm New Info"
-                                    }
-                                }
-                            }
-                        }
+
                     }
                 }
             }
@@ -66,49 +52,82 @@ pub fn Profile() -> Element {
 pub fn List_Info_Display() -> Element {
     let user = use_server_future(move || async move { get_me().await })?;
 
+    let mut form_state = use_form();
+
+    //let mut update = use_action();
+
+    let first_name = use_form_field("first", String::new());
+    let last_name = use_form_field("last", String::new());
+    let email = use_form_field("email", String::new());
+
+    let password = use_form_field("password", String::new());
+    let password2 = use_form_field("password", String::new());
+
+    form_state.register_field(&email);
+    form_state.register_field(&first_name);
+    form_state.register_field(&last_name);
+
+    form_state.revalidate();
+
+    let _on_submit = use_on_submit(&form_state, move |_form| async move {
+        match &*user.read() {
+            Some(Ok(_data)) => {}
+            _ => debug!("User Auth Error!"),
+        }
+    });
+
     rsx! {
         match &*user.read() {
 
             Some(Ok(data)) => rsx! {
-                List { header: "",
-                    ListRow {
-                        " Username: {data.first_name} {data.last_name}"
-                        div {
-                            fieldset { class: "fieldset",
-                                legend { class: "fieldset-legend", "Edit first name!" }
-                                input {
-                                    class: "input",
-                                    placeholder: " {data.first_name}",
-                                    r#type: "text",
-                                }
-                                legend { class: "fieldset-legend", "Edit last name!" }
-                                input {
-                                    class: "input",
-                                    placeholder: " {data.last_name}",
-                                    r#type: "text",
+                form {
+                    List { header: "",
+                        ListRow {
+                            " Username: {data.first_name} {data.last_name}"
+                            div {
+                                fieldset { class: "fieldset",
+                                    legend { class: "fieldset-legend", "Edit first name!" }
+                                    input {
+                                        class: "input",
+                                        placeholder: " {data.first_name}",
+                                        r#type: "text",
+                                    }
+                                    legend { class: "fieldset-legend", "Edit last name!" }
+                                    input {
+                                        class: "input",
+                                        placeholder: " {data.last_name}",
+                                        r#type: "text",
+                                    }
                                 }
                             }
                         }
-                    }
-                    ListRow {
-                        "Email: {data.email}"
-                        Fieldset { title: "Edit Email!",
-                            input { class: "input", placeholder: "new email", r#type: "text" }
+                        ListRow {
+                            p { "Email: {data.email}" }
+                            Input { label: "Set Email", field: email, r#type: "email" }
                         }
-                    }
-                    ListRow {
-                        "Set new password!"
-                        Fieldset { title: "Set new password",
-                            input { class: "input", placeholder: "**********", r#type: "text" }
-                            p { class: "label", "Type New Password" }
-                            input { class: "input", placeholder: "**********", r#type: "text" }
-                            p { class: "label", "Repeat New Password" }
+
+
+                        ListRow {
+                            p { "Set new password!" }
+                            Fieldset { title: "Set new password",
+                                Input {
+                                    field: password,
+                                    label: "Type New Password",
+                                    r#type: "email",
+                                }
+                                Input {
+                                    field: password2,
+                                    label: "Repeat New Password",
+                                    r#type: "email",
+                                }
+                            }
                         }
+                        SubmitButton { form: form_state, label: "Confirm New Info" }
                     }
                 }
             },
             Some(Err(err)) => rsx! {
-                p { class: "text-red-500", "Loading Events failed with {err}" }
+                p { class: "text-red-500", " failed with {err}" }
             },
             None => rsx! {
                 p { "cant connect to db" }
