@@ -1,8 +1,12 @@
 @import "tailwindcss";
+@import "./assets/styles/calendar.css";
 
 @source "./src/**/*.{rs,html,css}";
+@source "./assets/styles/**/*.css";
+
 
 @plugin "daisyui" {
+  themes: false;
 }
 
 @plugin "daisyui/theme" {
@@ -151,15 +155,17 @@
 @plugin "./catppuccinTheme.frappe.ts";
 
 
-.input:has(input[required]) > .label::after {
-    @apply text-error;
-    content: "*";
+.input:has(input[required])>.label::after {
+  @apply text-error;
+  content: "*";
 }
 
-.link {
+@layer components {
+  .link {
     @apply link-primary link-hover;
 
     &:hover {
-        @apply link-secondary;
+      @apply link-secondary;
     }
+  }
 }

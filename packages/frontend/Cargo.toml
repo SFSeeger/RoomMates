@@ -13,6 +13,8 @@ uuid = { version = "1.19.0", features = ["js", "v4"] }
 serde = { workspace = true }
 form_hooks = { workspace = true }
 regex = { workspace = true }
+dioxus-primitives = { git = "https://github.com/DioxusLabs/components", version = "0.0.1", default-features = false }
+time = { version = "0.3.46", features = ["wasm-bindgen"] }
 
 [features]
 default = ["web"]
