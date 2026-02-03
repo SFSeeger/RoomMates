@@ -45,6 +45,13 @@ pub fn TodoListListView() -> Element {
                 }
             }
         }
+        div { class: "fixed bottom-16 lg:bottom-4 right-4",
+            Link {
+                to: Route::TodoListCreateView {},
+                class: "btn btn-primary btn-circle lg:btn-lg",
+                Icon { icon: LdPlus }
+            }
+        }
     }
 }
 
@@ -148,13 +155,6 @@ pub fn TodoListEntry(
                         }
                     }
                 }
-            }
-        }
-        div { class: "fixed bottom-16 lg:bottom-4 right-4",
-            Link {
-                to: Route::TodoListCreateView {},
-                class: "btn btn-primary btn-circle lg:btn-lg",
-                Icon { icon: LdPlus }
             }
         }
     }

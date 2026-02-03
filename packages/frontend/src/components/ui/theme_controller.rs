@@ -57,7 +57,11 @@ pub fn ThemeController(#[props(default)] dropdown_top: bool, id_extra: String) -
     use_effect(move || {
         spawn(async move {
             let mut eval = document::eval(
-                r#"dioxus.send(localStorage.getItem("theme") ?? "roommatesdefault");"#,
+                r#"
+                    const darkModeMql = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+                    const defaultTheme = darkModeMql && darkModeMql.matches ? "roommatesdark" : "roommatesdefault";
+                    dioxus.send(localStorage.getItem("theme") ?? defaultTheme);
+                "#,
             );
             let theme: String = eval.recv().await.unwrap();
             current_theme.set(Theme::from_string(&theme));
@@ -81,7 +85,7 @@ pub fn ThemeController(#[props(default)] dropdown_top: bool, id_extra: String) -
         ul {
             class: if dropdown_top { "dropdown-top" },
             class: "dropdown dropdown-end menu w-full md:w-52 bg-base-300 rounded-box p-2 shadow-2xl",
-            popover: true,
+            popover: "auto",
             id: "popover-theme-{id_extra}",
             style: "position-anchor:--anchor-theme-{id_extra}",
 
