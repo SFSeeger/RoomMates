@@ -2,7 +2,6 @@
 mod test_db_mod {
     // .....
 
-    use chrono::{NaiveDate, NaiveTime};
     use entity::{
         event, group, is_in_group, links::FriendEvents, shared_friend_event, shared_group_event,
         user,
@@ -10,6 +9,7 @@ mod test_db_mod {
     use sea_orm::{
         ColumnTrait, Database, DatabaseConnection, DbErr, EntityTrait, ModelTrait, QueryFilter, Set,
     };
+    use time::macros::{date, time};
 
     #[cfg(feature = "server")]
     #[tokio::test]
@@ -75,9 +75,9 @@ mod test_db_mod {
             private: Set(false),
             //desc: Set("nya".to_owned()),
             //location: Set("owo".to_owned()),
-            date: Set(NaiveDate::from_ymd_opt(2026, 1, 8).unwrap()),
-            start_time: Set(NaiveTime::from_hms_milli_opt(8, 59, 59, 1_000).unwrap()),
-            end_time: Set(NaiveTime::from_hms_milli_opt(8, 59, 59, 1_000).unwrap()),
+            date: Set(date!(2026 - 1 - 8)),
+            start_time: Set(time!(8:59:59.001)),
+            end_time: Set(time!(8:59:59.001)),
             weekday: Set(event::Weekday::Monday),
             owner_id: Set(1),
             ..Default::default()
@@ -92,9 +92,9 @@ mod test_db_mod {
             private: Set(true),
             description: Set(Some("nya".to_owned())),
             location: Set(Some("owo".to_owned())),
-            date: Set(NaiveDate::from_ymd_opt(2026, 1, 8).unwrap()),
-            start_time: Set(NaiveTime::from_hms_milli_opt(8, 59, 59, 1_000).unwrap()),
-            end_time: Set(NaiveTime::from_hms_milli_opt(8, 59, 59, 1_000).unwrap()),
+            date: Set(date!(2026 - 1 - 8)),
+            start_time: Set(time!(8:59:59.001)),
+            end_time: Set(time!(8:59:59.001)),
             weekday: Set(event::Weekday::Wednesday),
             owner_id: Set(1),
         };

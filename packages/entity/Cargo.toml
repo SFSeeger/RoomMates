@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-sea-orm = {workspace = true, features = ["macros"]}
-serde = { version = "1.0.228", features = ["derive"] }
+sea-orm = {workspace = true, features = ["macros", "with-time"]}
+serde = { workspace = true, features = ["derive"] }
 form_hooks = { workspace = true }
-chrono = { workspace = true }
+time = { workspace = true }
