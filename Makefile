@@ -16,6 +16,9 @@ dev-server: dependencies
 tests: dependencies
 	cargo test --workspace --all-features --no-fail-fast
 
+format:
+	@./scripts/format.sh
+
 clean:
 	rm -rf node_modules
 	rm -rf target

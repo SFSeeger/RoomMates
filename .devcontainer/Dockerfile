@@ -30,3 +30,5 @@ ENV NVM_DIR=/home/vscode/.nvm
 RUN bash -c "source $NVM_DIR/nvm.sh && nvm install $NODE_VERSION"
 
 RUN pipx ensurepath && pipx install pre-commit
+
+COPY --chown=vscode:vscode .bash_aliases /home/vscode/.bash_aliases

@@ -20,6 +20,12 @@ packages/
 │       ├── lib.rs
 │       ├── prelude.rs # Reexports of database entities
 │       └── ...
+├── form_hooks/ # Package providing utilities for handeling forms
+│   ├── Cargo.toml
+│   ├── form_hooks_derive/ # Package prividing derive macros for form traits
+│   │   └── ...
+│   └── src/
+│       └── ...
 └── frontend/
     ├── assets/ # Any assets that are used by the app should be placed here
     ├── Cargo.toml

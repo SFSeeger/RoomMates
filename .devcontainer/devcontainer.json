@@ -23,11 +23,11 @@
                 "files.eol": "\n",
                 "files.insertFinalNewline": true,
                 "rust-analyzer.rustfmt.overrideCommand": [
-                    "dx",
-                    "fmt",
-                    "-f",
-                    "-"
+                    "/workspace/scripts/dioxusfmt.sh"
                 ],
+                "rust-analyzer.cargo.features": "all",
+                "rust-analyzer.check.features": "all",
+                "dioxus.formatOnSave": "disabled",
                 "tailwindCSS.experimental.classRegex": [
                     "class: \"(.*)\""
                 ],
