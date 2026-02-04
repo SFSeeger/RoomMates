@@ -1,11 +1,11 @@
 #![allow(dead_code)] // TODO: Remove this when UI compoents are in use
 
 use crate::validators::Validator;
-use chrono::{NaiveDate, NaiveTime};
 use dioxus::core::IntoAttributeValue;
 use dioxus::prelude::*;
 use serde::Serialize;
 use serde_json::Value;
+use time::{Date, Time, macros::format_description};
 // Based on dioxus-forms by ap-1 (https://github.com/ap-1/dioxus-forms/)
 
 // region FieldValue Declaration
@@ -119,14 +119,15 @@ impl<T: FieldValue> FieldValue for Option<T> {
 
 // format yyyy-mm-dd
 
-impl FieldValue for NaiveDate {
+impl FieldValue for Date {
     fn to_input_value(&self) -> String {
-        format!("{}", self)
+        self.format(format_description!("[year]-[month]-[day]"))
+            .unwrap()
+            .to_string()
     }
 
     fn from_input_value(value: &str) -> Result<Self, String> {
-        let res: std::result::Result<NaiveDate, chrono::ParseError> =
-            NaiveDate::parse_from_str(value, "%Y-%m-%d");
+        let res = Date::parse(value, &format_description!("[year]-[month]-[day]"));
         match res {
             Ok(d) => Ok(d),
             _ => Err("parse fail".to_string()),
@@ -136,13 +137,15 @@ impl FieldValue for NaiveDate {
 
 // always a 24-hour HH:mm or HH:mm:ss formatted time, with leading zeros,
 //fix form input value!!
-impl FieldValue for NaiveTime {
+impl FieldValue for Time {
     fn to_input_value(&self) -> String {
-        self.format("%H:%M").to_string()
+        self.format(format_description!("[hour]:[minute]"))
+            .unwrap()
+            .to_string()
     }
 
     fn from_input_value(value: &str) -> Result<Self, String> {
-        let res = NaiveTime::parse_from_str(value, "%H:%M");
+        let res = Time::parse(value, &format_description!("[hour]:[minute]"));
         match res {
             Ok(d) => Ok(d),
             _ => Err("parse fail".to_string()),

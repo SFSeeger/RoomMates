@@ -9,4 +9,4 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 regex = { workspace = true }
 form_hooks_derive = { workspace = true }
-chrono = {workspace = true}
+time = { workspace = true }

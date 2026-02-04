@@ -14,9 +14,8 @@ serde = { workspace = true }
 form_hooks = { workspace = true }
 regex = { workspace = true }
 dioxus-primitives = { git = "https://github.com/DioxusLabs/components", version = "0.0.1", default-features = false }
-time = { version = "0.3.46", features = ["wasm-bindgen"] }
-chrono = { workspace = true }
 dioxus-sdk = { version = "0.7.0", features = ["time"] }
+time = { workspace = true }
 
 [features]
 default = ["web"]

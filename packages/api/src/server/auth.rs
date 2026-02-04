@@ -5,7 +5,6 @@ use argon2::{
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 use base64::Engine;
-use chrono::DateTime;
 use dioxus::prelude::*;
 use entity::prelude::*;
 use regex::Regex;
@@ -14,7 +13,7 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, QueryFilter, Set,
     TryIntoModel,
 };
-use std::time::Duration;
+use time::{Duration, OffsetDateTime};
 
 pub fn hash_password(user_password: String) -> Result<String, ServerFnError> {
     let salt = SaltString::generate(&mut OsRng);
@@ -119,7 +118,7 @@ pub fn create_session_key() -> String {
     base64::prelude::BASE64_URL_SAFE.encode(bytes)
 }
 
-const SESSION_EXPIRATION_DURATION: u64 = 60 * 60 * 5;
+const SESSION_EXPIRATION_DURATION: i64 = 5;
 
 /// Creates a new session in the database and links it to the supplied user
 ///
@@ -133,15 +132,17 @@ const SESSION_EXPIRATION_DURATION: u64 = 60 * 60 * 5;
 pub async fn create_session(
     user_id: &i32,
     db: &DatabaseConnection,
-) -> Result<(String, DateTime<Local>), anyhow::Error> {
+) -> Result<(String, OffsetDateTime), anyhow::Error> {
     let session_key = create_session_key();
     let session_key_hash = hash_session_key(&session_key);
 
-    let expires_at = Local::now() + Duration::from_secs(SESSION_EXPIRATION_DURATION);
+    let now = OffsetDateTime::now_local()?;
+
+    let expires_at = now + Duration::hours(SESSION_EXPIRATION_DURATION);
 
     let session = entity::session::ActiveModel {
         token: Set(session_key_hash),
-        created_at: Set(Local::now()),
+        created_at: Set(now),
         expires_at: Set(expires_at),
         user_id: Set(*user_id),
         ..Default::default()

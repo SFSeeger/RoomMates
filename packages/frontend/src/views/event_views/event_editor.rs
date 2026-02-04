@@ -9,7 +9,6 @@ use crate::components::ui::{
     form::textarea::Textarea,
 };
 use api::routes::events::{retrieve_event, update_event};
-use chrono::{NaiveDate, NaiveTime};
 use dioxus::prelude::*;
 use entity::event::PartialEventModel;
 use form_hooks::use_form::{use_form, use_on_submit};
@@ -32,9 +31,9 @@ pub fn EditEventView(event_id: i32) -> Element {
     let private: FormField<bool> = use_form_field("private", event_clone.private);
     let desc: FormField<Option<String>> = use_form_field("description", event_clone.description);
     let loc: FormField<Option<String>> = use_form_field("location", event_clone.location);
-    let date: FormField<NaiveDate> = use_form_field("date", event_clone.date);
+    let date = use_form_field("date", event_clone.date);
     let start = use_form_field("start_time", event_clone.start_time);
-    let end: FormField<NaiveTime> = use_form_field("end_time", event_clone.end_time);
+    let end = use_form_field("end_time", event_clone.end_time);
     let weekday = use_form_field("weekday", event_clone.weekday);
 
     form_state.register_field(&title);

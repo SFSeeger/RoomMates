@@ -9,12 +9,12 @@ use crate::components::ui::{
     form::textarea::Textarea,
 };
 use api::routes::events::create_event;
-use chrono::{NaiveDate, NaiveTime};
 use dioxus::prelude::*;
 use entity::event::PartialEventModel;
 use form_hooks::use_form::{use_form, use_on_submit};
 use form_hooks::use_form_field::{FormField, use_form_field};
 use form_hooks::validators;
+use time::{Duration, OffsetDateTime, Time};
 
 #[component]
 pub fn AddEventView() -> Element {
@@ -23,16 +23,17 @@ pub fn AddEventView() -> Element {
 
     let mut form_errors = use_signal(Vec::<String>::new);
 
+    let date_time = OffsetDateTime::now_local()?;
+
     let title: FormField<String> = use_form_field("title", String::new())
         .with_validator(validators::required("event needs a title"));
     let reocurring: FormField<bool> = use_form_field("reoccurring", false);
     let private: FormField<bool> = use_form_field("private", false);
     let desc: FormField<Option<String>> = use_form_field("description", None);
     let loc: FormField<Option<String>> = use_form_field("location", None);
-    let date = use_form_field("date", NaiveDate::from_ymd_opt(2026, 1, 1).unwrap());
-    let start = use_form_field("start_time", NaiveTime::from_hms_opt(8, 30, 0).unwrap());
-    let end: FormField<NaiveTime> =
-        use_form_field("end_time", NaiveTime::from_hms_opt(23, 00, 0).unwrap());
+    let date = use_form_field("date", date_time.date());
+    let start = use_form_field("start_time", date_time.time());
+    let end: FormField<Time> = use_form_field("end_time", date_time.time() + Duration::hours(1));
     let weekday = use_form_field("weekday", entity::event::Weekday::Monday);
 
     form_state.register_field(&title);

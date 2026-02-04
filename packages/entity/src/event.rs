@@ -1,4 +1,3 @@
-use chrono::{NaiveDate, NaiveTime};
 use form_hooks::EnumSelectDefault;
 use form_hooks::prelude::{EnumSelect, FieldValue};
 use sea_orm::DeriveIntoActiveModel;
@@ -21,9 +20,9 @@ pub struct Model {
     #[sea_orm(nullable)]
     pub location: Option<String>,
 
-    pub date: ChronoDate,
-    pub start_time: ChronoTime,
-    pub end_time: ChronoTime,
+    pub date: TimeDate,
+    pub start_time: TimeTime,
+    pub end_time: TimeTime,
     pub weekday: Weekday,
 
     // Relation
@@ -87,8 +86,8 @@ pub struct PartialEventModel {
     pub private: bool,
     pub description: Option<String>,
     pub location: Option<String>,
-    pub date: NaiveDate,
-    pub start_time: NaiveTime,
-    pub end_time: NaiveTime,
+    pub date: TimeDate,
+    pub start_time: TimeTime,
+    pub end_time: TimeTime,
     pub weekday: Weekday,
 }
