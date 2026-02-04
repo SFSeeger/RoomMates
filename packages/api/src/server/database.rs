@@ -1,11 +1,17 @@
 use anyhow::Context;
-use sea_orm::{Database, DatabaseConnection};
+use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 
 pub async fn establish_connection() -> Result<DatabaseConnection, anyhow::Error> {
-    dotenvy::dotenv()?;
+    let _ = dotenvy::dotenv();
     let database_url =
         std::env::var("DATABASE_URL").context("Missing environment variable 'DATABASE_URL'")?;
-    let db = Database::connect(database_url)
+
+    #[allow(unused_mut)]
+    let mut options = ConnectOptions::new(database_url);
+    #[cfg(not(debug_assertions))]
+    options.sqlx_logging(false);
+
+    let db = Database::connect(options)
         .await
         .context("Failed to connect to the database")?;
     db.ping()

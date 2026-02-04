@@ -17,3 +17,11 @@ api = { path = "packages/api" }
 entity = { path = "packages/entity" }
 form_hooks_derive = { path = "packages/form_hooks/form_hooks_derive" }
 form_hooks = { path = "packages/form_hooks" }
+
+[profile.release]
+opt-level = "z"
+debug = false
+lto = true
+codegen-units = 1
+panic = "abort"
+incremental = false

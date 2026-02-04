@@ -14,7 +14,7 @@ use dioxus::prelude::*;
 use entity::todo_list_invitation::UpdateTodoListInvitation;
 use entity::user::UserWithTodoListInvitation;
 use form_hooks::prelude::{use_form_field, use_form_signal, use_on_submit};
-use frontend::message_from_captured_error;
+use roommates::message_from_captured_error;
 
 #[component]
 pub fn MemberPermissionEditButton(member: UserWithTodoListInvitation) -> Element {

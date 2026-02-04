@@ -26,7 +26,7 @@ jobs:
           dioxus-version: '0.7.3'
 
       - name: Run web build
-        run: dx bundle --package frontend
+        run: make PLATFORM=web
 
       - name: Run tests
         run: make tests

@@ -1,40 +1,40 @@
 {
-    "name": "RoomMates Dev Container",
-    "dockerComposeFile": [
-        "docker-compose.yaml"
-    ],
-    "service": "devcontainer",
-    "shutdownAction": "stopCompose",
-    "workspaceFolder": "/workspace",
-    "postStartCommand": "bash entrypoints/post_create_command.sh",
-    "customizations": {
-        "vscode": {
-            "extensions": [
-                "rust-lang.rust-analyzer",
-                "vadimcn.vscode-lldb",
-                "tamasfe.even-better-toml",
-                "eamodio.gitlens",
-                "mhutchie.git-graph",
-                "DioxusLabs.dioxus",
-                "bradlc.vscode-tailwindcss"
-            ],
-            "settings": {
-                "files.autoSave": "afterDelay",
-                "files.eol": "\n",
-                "files.insertFinalNewline": true,
-                "rust-analyzer.rustfmt.overrideCommand": [
-                    "/workspace/scripts/dioxusfmt.sh"
-                ],
-                "rust-analyzer.cargo.features": "all",
-                "rust-analyzer.check.features": "all",
-                "dioxus.formatOnSave": "disabled",
-                "tailwindCSS.experimental.classRegex": [
-                    "class: \"(.*)\""
-                ],
-                "tailwindCSS.includeLanguages": {
-                    "rust": "html"
-                }
-            }
+  "name": "RoomMates Dev Container",
+  "dockerComposeFile": [
+    "docker-compose.yaml"
+  ],
+  "service": "devcontainer",
+  "shutdownAction": "stopCompose",
+  "workspaceFolder": "/workspace",
+  "postStartCommand": "bash scripts/post_create_command.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "vadimcn.vscode-lldb",
+        "tamasfe.even-better-toml",
+        "eamodio.gitlens",
+        "mhutchie.git-graph",
+        "DioxusLabs.dioxus",
+        "bradlc.vscode-tailwindcss"
+      ],
+      "settings": {
+        "files.autoSave": "afterDelay",
+        "files.eol": "\n",
+        "files.insertFinalNewline": true,
+        "rust-analyzer.rustfmt.overrideCommand": [
+          "/workspace/scripts/dioxusfmt.sh"
+        ],
+        "rust-analyzer.cargo.features": "all",
+        "rust-analyzer.check.features": "all",
+        "dioxus.formatOnSave": "disabled",
+        "tailwindCSS.experimental.classRegex": [
+          "class: \"(.*)\""
+        ],
+        "tailwindCSS.includeLanguages": {
+          "rust": "html"
         }
+      }
     }
+  }
 }

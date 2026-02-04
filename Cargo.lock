@@ -2142,25 +2142,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "frontend"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "api",
- "dioxus",
- "dioxus-free-icons",
- "dioxus-primitives",
- "dioxus-sdk",
- "entity",
- "form_hooks",
- "regex",
- "serde",
- "serde_json",
- "time",
- "uuid",
-]
-
-[[package]]
 name = "funty"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4796,6 +4777,25 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "roommates"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "api",
+ "dioxus",
+ "dioxus-free-icons",
+ "dioxus-primitives",
+ "dioxus-sdk",
+ "entity",
+ "form_hooks",
+ "regex",
+ "serde",
+ "serde_json",
+ "time",
+ "uuid",
 ]
 
 [[package]]

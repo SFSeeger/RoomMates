@@ -25,7 +25,7 @@ repos:
         name: dioxus-check
         description: Check dioxus project for common mistakes.
         entry: dx check
-        args: ["--package", "frontend"]
+        args: ["--package", "roommates"]
         language: system
         types: [rust]
         pass_filenames: false

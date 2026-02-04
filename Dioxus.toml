@@ -28,5 +28,21 @@ watch_path = ["src", "assets"]
 script = []
 
 [bundle]
-identifier = "com.example.roommates"
+identifier = "io.github.sfseeger.roommates"
 publisher = "RoomMates"
+icon = [
+    "packages/frontend/assets/dist/app_icons/32x32.png",
+    "packages/frontend/assets/dist/app_icons/128x128.png",
+    "packages/frontend/assets/dist/app_icons/128x128@2x.png",
+    "packages/frontend/assets/dist/app_icons/icon.icns",
+    "packages/frontend/assets/dist/app_icons/icon.ico",
+]
+
+[android.app]
+min_sdk_version = 30
+target_sdk_version = 36
+compile_sdk_version = 34
+key_alias = "key0"
+jks_file = "secrets/keystore.jks"
+jks_password = "password"
+key_password = "password"

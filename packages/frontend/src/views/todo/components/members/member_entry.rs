@@ -12,7 +12,7 @@ use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{LdLogOut, LdUserRoundMinus};
 use entity::user::UserWithTodoListInvitation;
-use frontend::message_from_captured_error;
+use roommates::message_from_captured_error;
 
 #[component]
 pub fn MemberEntry(member: UserWithTodoListInvitation, onmemberkick: EventHandler<()>) -> Element {

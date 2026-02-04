@@ -20,7 +20,7 @@ struct ServerError {
 /// # Example
 /// ```
 /// # use dioxus::{prelude::ServerFnError, CapturedError};
-/// # use frontend::message_from_captured_error;
+/// # use roommates::message_from_captured_error;
 /// # let error: CapturedError = anyhow::anyhow!(ServerFnError::ServerError { message: "Internal Server Error".to_string(), code: 500, details: None }).into();
 /// let message = message_from_captured_error(&error);
 /// // This message can be used to display a user-friendly error message in the UI.

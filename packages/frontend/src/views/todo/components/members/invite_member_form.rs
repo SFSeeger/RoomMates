@@ -13,8 +13,8 @@ use dioxus_free_icons::icons::ld_icons::LdMail;
 use entity::todo_list_invitation::InvitationPermission;
 use form_hooks::prelude::{use_form, use_form_field, use_on_submit};
 use form_hooks::validators;
-use frontend::message_from_captured_error;
 use regex::Regex;
+use roommates::message_from_captured_error;
 
 #[component]
 pub fn InviteMemberForm(onmemberinvited: EventHandler<()>) -> Element {

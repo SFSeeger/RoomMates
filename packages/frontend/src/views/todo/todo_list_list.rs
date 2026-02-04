@@ -10,7 +10,7 @@ use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{LdHeart, LdPlus, LdTrash};
 use entity::todo_list_invitation::{TodoListInvitationPartialModel, UpdateMyTodoListInvitation};
-use frontend::message_from_captured_error;
+use roommates::message_from_captured_error;
 use std::default::Default;
 
 #[component]

@@ -1,5 +1,5 @@
 FROM mcr.microsoft.com/devcontainers/rust:trixie
-ARG NODE_VERSION=20
+ARG NODE_VERSION=24
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libwebkit2gtk-4.1-dev \

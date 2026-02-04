@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"]
 use crate::layouts::StandardAppLayout;
 use dioxus::prelude::*;
 use views::{
@@ -12,7 +13,7 @@ mod layouts;
 mod views;
 
 const TAILWIND_CSS: Asset = asset!("/assets/dist/tailwind.css");
-const FAVICON: Asset = asset!("/assets/favicon.svg");
+const FAVICON: Asset = asset!("/assets/favicon.ico");
 pub const ICON: Asset = asset!("/assets/icon.svg");
 
 // !! IMPORTANT: DO NOT FORMAT THIS! The formatting of the routing enum determines behaviour !!
@@ -38,36 +39,38 @@ enum Route {
             #[end_nest]
         #[end_nest]
 
-         #[nest("/event")]
+        #[nest("/event")]
             #[route("/")]
             ListEventView {},
             #[route("/:event_id/edit")]
             EditEventView {event_id: i32,},
             #[route("/add")]
             AddEventView {},
-       #[end_nest]
+        #[end_nest]
 
-       #[nest("/groups")]
-        #[route("/")]
-        GroupView {},
-        #[route("/:group_id/edit")]
-        EditGroup {group_id: i32},
-       #[end_nest]
+        #[nest("/groups")]
+            #[route("/")]
+            GroupView {},
+            #[route("/:group_id/edit")]
+            EditGroup {group_id: i32},
+        #[end_nest]
 
         #[route("/:..segments")]
         NotFound { segments: Vec<String> },
 }
-fn main() -> Result<(), anyhow::Error> {
-    info!("Starting Server");
 
+fn main() {
     #[cfg(feature = "server")]
     dioxus::serve(|| async move { api::server::setup_api(App).await });
 
+    #[cfg(not(debug_assertions))]
+    #[cfg(all(not(feature = "server"), any(feature = "desktop", feature = "mobile")))]
+    dioxus_fullstack::set_server_url(env!(
+        "SERVER_URL",
+        "SERVER_URL environment variable must be set when compiling"
+    ));
     #[cfg(not(feature = "server"))]
     dioxus::launch(App);
-
-    #[allow(unreachable_code)]
-    Ok(())
 }
 #[component]
 fn App() -> Element {

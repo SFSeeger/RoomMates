@@ -2,12 +2,13 @@
   "name": "frontend",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "dependencies": {
     "@tailwindcss/cli": "^4.1.17",
+    "@tauri-apps/cli": "^2.10.0",
     "daisyui": "^5.5.8",
-    "tailwindcss": "^4.1.17"
-  },
-  "devDependencies": {
+    "tailwindcss": "^4.1.17",
     "@catppuccin/daisyui": "^2.1.1"
-  }
+  },
+  "devDependencies": {}
 }
