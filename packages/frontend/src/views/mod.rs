@@ -13,3 +13,5 @@ mod group_view;
 pub use group_view::GroupView;
 mod new_group;
 pub use new_group::NewGroup;
+mod edit_group;
+pub use edit_group::EditGroup;

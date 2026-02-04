@@ -4,6 +4,7 @@ use views::{
     Home, LoginPage, NotFound, SignupView, GroupView, NewGroup, 
     event_views::{AddEventView, EditEventView, ListEventView},
     todo::{TodoListCreateView, TodoListListView, TodosCreateView, TodosGroupView},
+    EditGroup, GroupView, Home, LoginPage, NewGroup, NotFound, SignupView,
 };
 mod components;
 mod hooks;
@@ -50,7 +51,10 @@ enum Route {
         #[route("/groups")]
         GroupView {},
 
-        #[route("/new_groups")]
+        #[route("/:group_id")]
+        EditGroup {group_id: i32},
+
+        #[route("/new_group")]
         NewGroup {},
 
         #[route("/:..segments")]
