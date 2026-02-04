@@ -11,8 +11,9 @@ pub struct DialogContext {
 
 impl DialogContext {
     #[allow(dead_code)]
-    pub fn new() -> Self {
-        DialogContext { id: Uuid::new_v4() }
+    #[must_use]
+    pub fn new(uuid: Uuid) -> Self {
+        DialogContext { id: uuid }
     }
 }
 
@@ -33,7 +34,8 @@ impl DialogContext {
 /// ```
 #[component]
 pub fn Dialog(children: Element) -> Element {
-    use_context_provider(|| Signal::new(DialogContext::new()));
+    let dialog_id = use_server_cached(Uuid::new_v4);
+    use_context_provider(|| Signal::new(DialogContext::new(dialog_id)));
 
     children
 }
