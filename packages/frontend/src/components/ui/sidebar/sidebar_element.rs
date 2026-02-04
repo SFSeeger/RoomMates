@@ -4,7 +4,7 @@ use crate::components::ui::theme_controller::ThemeController;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::IconShape;
-use dioxus_free_icons::icons::ld_icons::{LdHome, LdListTodo};
+use dioxus_free_icons::icons::ld_icons::{LdHome, LdListTodo, LdUsers};
 
 #[component]
 pub fn Sidebar() -> Element {
@@ -23,6 +23,11 @@ pub fn Sidebar() -> Element {
                         title: "Todo Lists",
                         icon: LdListTodo,
                         to: Route::TodoListListView {},
+                    }
+                    SidebarItem {
+                        title: "Groups",
+                        icon: LdUsers,
+                        to: Route::GroupView {},
                     }
                 }
                 div { class: "md:hidden w-full is-drawer-close:hidden",

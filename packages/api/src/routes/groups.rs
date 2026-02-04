@@ -7,16 +7,11 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
 
-#[get("/api/groups", ext: Extension<server::AppState>)]
+#[get("/api/groups", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn list_groups() -> Result<Vec<entity::group::Model>, ServerFnError> {
-    use sea_orm::EntityTrait;
     use sea_orm::ModelTrait;
 
-    let user = User::find_by_id(1)
-        .one(&ext.database)
-        .await
-        .or_internal_server_error("Error loading user from database")?
-        .or_not_found("User not found")?;
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
     let groups = user
         .find_related(Group)
         .all(&ext.database)
@@ -26,6 +21,7 @@ pub async fn list_groups() -> Result<Vec<entity::group::Model>, ServerFnError> {
     Ok(groups)
 }
 
+/// Adds the many-to-many relation between user and group, extra function for simplicity
 #[post("/api/groups", ext: Extension<server::AppState>)]
 pub async fn add_user_to_table(user_id: i32, group_id: i32) -> Result<NoContent, ServerFnError> {
     use entity::is_in_group;
@@ -45,6 +41,7 @@ pub async fn add_user_to_table(user_id: i32, group_id: i32) -> Result<NoContent,
     Ok(NoContent)
 }
 
+/// Adds an user to a group
 #[post("/api/groups/{group_id}/add_user", ext: Extension<server::AppState>)]
 pub async fn add_user_to_group(email: i32, group_id: i32) -> Result<NoContent, ServerFnError> {
     use entity::user::Entity as User;
@@ -62,10 +59,29 @@ pub async fn add_user_to_group(email: i32, group_id: i32) -> Result<NoContent, S
     Ok(NoContent)
 }
 
+///Deletes an user from a group
+#[post("/api/groups/{group_id}/delete_user", ext: Extension<server::AppState>)]
+pub async fn delete_user_from_group(
+    user_id: i32,
+    group_id: i32,
+) -> Result<NoContent, ServerFnError> {
+    use entity::is_in_group;
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+    let _result = is_in_group::Entity::delete_many()
+        .filter(is_in_group::Column::UserId.eq(user_id))
+        .filter(is_in_group::Column::GroupId.eq(group_id))
+        .exec(&ext.database)
+        .await
+        .or_internal_server_error("Error deleting relation")?;
+
+    Ok(NoContent)
+}
+
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct GroupCardData {
     pub name: String,
-    pub members: Vec<entity::user::Model>,
+    pub members: Vec<entity::user::Model>, //ToDo: zu UserInfo Struct ändern
     pub events: Vec<entity::event::Model>,
 }
 

@@ -11,7 +11,7 @@ pub fn GroupView() -> Element {
 
     rsx! {
         div {
-            h1 { class: "text-2xl font-bold text-center relative ", "Your groups" }
+            h1 { class: "text-2xl font-bold text-center relative", "Your groups" }
             Link {
                 to: Route::NewGroup {},
                 class: "fixed bottom-16 lg:bottom-4 right-4 btn btn-primary btn-circle lg:btn-lg",
@@ -19,7 +19,7 @@ pub fn GroupView() -> Element {
             }
             match &*groups.read() {
                 Some(Ok(groups)) => rsx! {
-                    div { class: "space-y-4 grid grid-cols-1 md:grid-cols-2 gap-6",
+                    div { class: "space-y-4 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto",
                         for group in groups.iter() {
                             GroupCard { key: "{group.id}", group_id: group.id }
                         }

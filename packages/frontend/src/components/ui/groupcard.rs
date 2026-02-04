@@ -17,7 +17,7 @@ pub fn GroupCard(group_id: i32) -> Element {
                         Some(Ok(group)) => rsx! {
                             CardTitle { "{group.name}" }
                             Link {
-                                to: Route::NewGroup {},
+                                to: Route::EditGroup { group_id },
                                 class: "absolute top-2 right-2 btn btn-primary btn-circle lg:btn-lg",
                                 Icon { icon: LdSquarePen }
                             }

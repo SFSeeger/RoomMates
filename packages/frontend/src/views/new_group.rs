@@ -1,17 +1,17 @@
 use dioxus::prelude::*;
-//use crate::components::ui::forms::use_form_field;
+use form_hooks::use_form::use_form;
+use form_hooks::use_form_field::use_form_field;
+use form_hooks::validators;
 
 #[component]
 pub fn NewGroup() -> Element {
+    let mut form_state = use_form();
+    let group_name = use_form_field("Group name", String::new())
+        .with_validator(validators::required("Group name is required!"));
+
+    form_state.register_field(&group_name);
+
     rsx! {
-        div {
-            div {
-                h1 { class: "text-2xl font-bold text-center relative ", "Edit your group " }
-                div { class: "text-center", "group_name" }
-            }
-            div { class: "checkbox toggle display: none",
-                aside { class: "aside-wrapper" }
-            }
-        }
+        div {}
     }
 }
