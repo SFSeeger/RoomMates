@@ -13,6 +13,7 @@ uuid = { version = "1.19.0", features = ["js", "v4"] }
 serde = { workspace = true }
 form_hooks = { workspace = true }
 regex = { workspace = true }
+time = { workspace = true }
 
 [features]
 default = ["web"]

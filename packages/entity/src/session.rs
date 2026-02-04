@@ -8,8 +8,8 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub token: String,
-    pub created_at: ChronoDateTimeLocal,
-    pub expires_at: ChronoDateTimeLocal,
+    pub created_at: TimeDateTimeWithTimeZone,
+    pub expires_at: TimeDateTimeWithTimeZone,
 
     // Relation
     pub user_id: i32,
