@@ -152,34 +152,50 @@ pub async fn get_me() -> Result<UserInfo, ServerFnError> {
 }
 
 //change this when forms are implemented maybes
-#[patch("/api/users/{user_id}", ext: Extension<server::AppState>)]
+#[patch("/api/users", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn change_user_info(
-    user_id: i32,
     first_name: String,
     last_name: String,
     email: String,
-    password: String,
 ) -> dioxus::Result<NoContent, ServerFnError> {
     use entity::user::Entity as User;
     use sea_orm::EntityTrait;
+    use sea_orm::IntoActiveModel;
 
-    let user: Option<entity::user::Model> = User::find_by_id(user_id)
-        .one(&ext.database)
-        .await
-        .or_internal_server_error("horrible server error")?;
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
-    let mut user_active: entity::user::ActiveModel = Option::unwrap(user).into();
+    let mut user_active: entity::user::ActiveModel = user.clone().into_active_model();
 
-    // Update name attribute
     user_active.first_name = sea_orm::Set(first_name);
     user_active.last_name = sea_orm::Set(last_name);
     user_active.email = sea_orm::Set(email);
-    user_active.password = sea_orm::Set(password);
 
     User::update(user_active)
         .exec(&ext.database)
         .await
         .or_internal_server_error("cant update user")?;
+
+    Ok(NoContent)
+}
+
+#[patch("/api/users/password",  ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn change_password(password: String) -> dioxus::Result<NoContent, ServerFnError> {
+    use crate::server::auth::hash_password;
+    use entity::user::Entity as User;
+    use sea_orm::EntityTrait;
+    use sea_orm::IntoActiveModel;
+
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+
+    let hashed_pass = hash_password(password)?;
+
+    let mut user_active: entity::user::ActiveModel = user.clone().into_active_model();
+    user_active.password = sea_orm::Set(hashed_pass);
+
+    User::update(user_active)
+        .exec(&ext.database)
+        .await
+        .or_internal_server_error("couldnt change password")?;
 
     Ok(NoContent)
 }
