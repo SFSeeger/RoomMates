@@ -54,11 +54,9 @@ pub(crate) fn impl_enum_select_macro(ast: &syn::DeriveInput) -> TokenStream {
                 ]
             }
         }
-        impl EnumSelect for Option<#name> {
-            fn select_options() -> Vec<(String, &'static str)> {
-                let mut collection: Vec<(String, &str)> = vec![("".to_string(), #message_value)];
-                collection.append(&mut TestEnum::select_options());
-                collection
+        impl EnumSelectDefault for #name {
+            fn default_label() -> &'static str {
+                #message_value
             }
         }
     };

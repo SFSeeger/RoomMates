@@ -31,6 +31,7 @@ impl Default for FormState {
 }
 
 impl FormState {
+    #[must_use]
     pub fn new() -> Self {
         FormState {
             is_dirty: Signal::new(false),
@@ -43,7 +44,7 @@ impl FormState {
         }
     }
 
-    /// Registers a [FormField] into the form. Allows for updating errors, dirty and touched
+    /// Registers a [`FormField`] into the form. Allows for updating errors, dirty and touched
     /// # Examples
     /// ```ignore
     /// # use form_hooks::{use_form::use_form, use_form_field::use_form_field};
@@ -76,10 +77,11 @@ impl FormState {
             .read()
             .iter()
             .any(|field| field.borrow().is_touched());
-        self.is_touched.set(touched)
+        self.is_touched.set(touched);
     }
 
-    /// Returns true, if any registered field has an error. Does not alter has_errors
+    /// Returns true, if any registered field has an error. Does not alter `has_errors`
+    #[must_use]
     pub fn has_errors(&self) -> bool {
         if self.field_error_checkers.len() == 0 {
             return false;
@@ -91,9 +93,9 @@ impl FormState {
             .any(|checker| !checker().is_empty())
     }
 
-    /// Checks all registered fields for errors and updates has_errors accordingly
+    /// Checks all registered fields for errors and updates `has_errors` accordingly
     pub fn check_errors(&mut self) {
-        self.has_errors.set(self.has_errors())
+        self.has_errors.set(self.has_errors());
     }
 
     /// Checks all fields for updates
@@ -113,9 +115,13 @@ impl FormState {
         }
     }
 
-    /// Parses the forms values into a struct. The struct needs to implement [serde::Deserialize]
+    /// Parses the forms values into a struct. The struct needs to implement [`serde::Deserialize`]
     /// and all struct fields must have a form field registered with the same name.
-    /// Since [FieldValue] needs to implement [serde::Serialize] by default, any [FieldValue] can be used
+    /// Since [`FieldValue`] needs to implement [`serde::Serialize`] by default, any [`FieldValue`] can be used
+    ///
+    /// # Errors
+    ///
+    /// Returns [`serde_json::Error`] if any [`FieldValue`] could not be parsed
     ///
     /// # Examples
     /// ```ignore
@@ -154,7 +160,7 @@ impl FormState {
     }
 }
 
-/// Hook which returns a FormState.
+/// Hook which returns a `FormState`.
 /// # Examples
 /// ```ignore
 /// # use form_hooks::use_form::use_form;

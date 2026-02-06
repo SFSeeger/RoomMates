@@ -58,6 +58,7 @@ pub struct Validator<T> {
 // endregion
 
 impl<T> Validator<T> {
+    #[must_use]
     pub fn into_attribute(self) -> Option<Attribute> {
         self.meta.map(|meta| Attribute {
             name: meta.attribute,
@@ -67,12 +68,18 @@ impl<T> Validator<T> {
         })
     }
 
+    /// Validates a `FieldValue`
+    ///
+    /// # Errors
+    ///
+    /// Returns an error detailing why the validation failed
     pub fn validate(&self, value: &T) -> Result<(), String> {
         (self.validator_func)(value)
     }
 }
 
 #[allow(dead_code)]
+#[must_use]
 pub fn required<T: FieldValue + Default>(error_message: &str) -> Validator<T> {
     let message = error_message.to_string();
 
@@ -94,11 +101,13 @@ pub fn required<T: FieldValue + Default>(error_message: &str) -> Validator<T> {
 }
 
 #[allow(dead_code)]
+#[must_use]
 pub fn required_with_default_message<T: FieldValue + Default>() -> Validator<T> {
     required("Value is required")
 }
 
 #[allow(dead_code)]
+#[must_use]
 pub fn min_value<T: ValueRef<Value = i32> + Clone + 'static>(
     min: i32,
     error_message: &str,
@@ -124,6 +133,7 @@ pub fn min_value<T: ValueRef<Value = i32> + Clone + 'static>(
 }
 
 #[allow(dead_code)]
+#[must_use]
 pub fn max_value<T: ValueRef<Value = i32> + Clone + 'static>(
     max: i32,
     error_message: &str,
@@ -149,6 +159,7 @@ pub fn max_value<T: ValueRef<Value = i32> + Clone + 'static>(
 }
 
 #[allow(dead_code)]
+#[must_use]
 pub fn min_length<T: ValueRef<Value = String> + Clone + 'static>(
     min: usize,
     error_message: &str,
@@ -174,6 +185,7 @@ pub fn min_length<T: ValueRef<Value = String> + Clone + 'static>(
 }
 
 #[allow(dead_code)]
+#[must_use]
 pub fn max_length<T: ValueRef<Value = String> + Clone + 'static>(
     max: usize,
     error_message: &str,
@@ -202,7 +214,7 @@ pub fn max_length<T: ValueRef<Value = String> + Clone + 'static>(
 ///
 /// # Arguments
 ///
-/// * `pattern`: [regex::Regex] pattern to validate against
+/// * `pattern`: [`regex::Regex`] pattern to validate against
 /// * `error_message`: Error message to display when the pattern does not match
 ///
 /// returns: [`Validator<T>`]
@@ -218,6 +230,7 @@ pub fn max_length<T: ValueRef<Value = String> + Clone + 'static>(
 ///     );
 /// ```
 #[allow(dead_code)]
+#[must_use]
 pub fn pattern<T: ValueRef<Value = String> + Clone + 'static>(
     pattern: regex::Regex,
     error_message: &str,
@@ -226,10 +239,10 @@ pub fn pattern<T: ValueRef<Value = String> + Clone + 'static>(
     Validator {
         validator_func: Rc::new(move |value: &T| match value.as_ref() {
             Some(v) => {
-                if !pattern.is_match(v) {
-                    Err(message.clone())
-                } else {
+                if pattern.is_match(v) {
                     Ok(())
+                } else {
+                    Err(message.clone())
                 }
             }
             _ => Ok(()),
