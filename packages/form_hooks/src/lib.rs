@@ -5,7 +5,7 @@ pub mod validators;
 
 /// Utility Trait to enable automatic select generation
 pub trait EnumSelect {
-    /// Maps each enum variant's input_value to a label
+    /// Maps each enum variant's `input_value` to a label
     fn select_options() -> Vec<(String, &'static str)>;
 }
 
@@ -19,7 +19,7 @@ where
     T: EnumSelect + EnumSelectDefault,
 {
     fn select_options() -> Vec<(String, &'static str)> {
-        let mut options = vec![("".to_string(), T::default_label())];
+        let mut options = vec![(String::new(), T::default_label())];
         options.append(&mut T::select_options());
         options
     }

@@ -16,7 +16,7 @@ use serde_json::Value;
 /// - `bool`
 /// - `Option<T: FieldValue>`
 /// # Examples
-/// To use an enum in a form, the enum needs to implement [FieldValue]. FieldValue can derive it or imperilment manually.
+/// To use an enum in a form, the enum needs to implement [`FieldValue`]. `FieldValue` can derive it or imperilment manually.
 /// ```
 ///# use form_hooks_derive::FieldValue;
 ///# use form_hooks::use_form_field::FieldValue;
@@ -54,6 +54,11 @@ use serde_json::Value;
 pub trait FieldValue: Clone + PartialEq + Serialize + 'static {
     fn to_input_value(&self) -> String;
 
+    /// Converts the html representation back into the `FieldValue`
+    ///
+    /// # Errors
+    ///
+    /// Returns a error message if the value could not be converted
     fn from_input_value(value: &str) -> Result<Self, String>;
 }
 
@@ -84,7 +89,7 @@ impl FieldValue for bool {
         if *self {
             return "true".to_string();
         }
-        "".to_string()
+        String::new()
     }
 
     fn from_input_value(value: &str) -> Result<Self, String> {
@@ -98,7 +103,7 @@ impl FieldValue for bool {
 impl<T: FieldValue> FieldValue for Option<T> {
     fn to_input_value(&self) -> String {
         match self {
-            None => "".to_string(),
+            None => String::new(),
             Some(value) => value.to_input_value(),
         }
     }
@@ -114,7 +119,7 @@ impl<T: FieldValue> FieldValue for Option<T> {
 // endregion
 
 /// Representation of a form field.
-/// See [use_form_field] for example usages
+/// See [`use_form_field`] for example usages
 #[derive(Clone)]
 pub struct FormField<T: FieldValue> {
     /// Current value of the field
@@ -160,6 +165,7 @@ impl<T: FieldValue> FormField<T> {
     ///     .with_validator(validators::required("Name is required"))
     ///     .with_validator(validators::min_length(2, "Name needs to be at least 2 Characters long"));
     /// ```
+    #[must_use]
     pub fn with_validator(mut self, validator: Validator<T>) -> Self {
         self.validators.push(validator);
         self
@@ -171,7 +177,7 @@ impl<T: FieldValue> FormField<T> {
         for validator in &self.validators {
             let validation_result = validator.validate(&self.value.read());
             if let Err(error) = validation_result {
-                self.errors.push(error)
+                self.errors.push(error);
             }
         }
         self.errors.len() == 0
@@ -188,15 +194,15 @@ impl<T: FieldValue> FormField<T> {
         self.original_value = self.value.read().clone();
     }
 
-    /// Generates a [FieldAttributes] struct for the form field, which provides:
+    /// Generates a [`FieldAttributes`] struct for the form field, which provides:
     /// - The current value of the field as a string (`value`)
     /// - The field's name (`name`)
     /// - Event handlers for input changes (`oninput`) and blur events (`onblur`)
     /// - Any additional attributes required by validators (e.g. `min`, `max`, `required`)
     ///
     /// This method is used to easily bind form field state and validation to Dioxus input components.
-    /// The returned [FieldAttributes] can be converted into a vector of Dioxus [Attributes](dioxus_core::Attribute)
-    /// for different input types (e.g., text, checkbox) using methods like [into_input_attributes]() or [into_checkbox_attributes]().
+    /// The returned [`FieldAttributes`] can be converted into a vector of Dioxus [Attributes](dioxus_core::Attribute)
+    /// for different input types (e.g., text, checkbox) using methods like [`into_input_attributes`]() or [`into_checkbox_attributes`]().
     ///
     /// ## Example
     /// ```ignore
@@ -284,11 +290,13 @@ impl FieldAttributes {
     }
 
     /// Returns the field attributes for an generic input element
+    #[must_use]
     pub fn into_input_attributes(self) -> Vec<Attribute> {
         self.build_attributes("value")
     }
 
     /// Returns the field attributes for an input element of type checkbox
+    #[must_use]
     pub fn into_checkbox_attributes(self) -> Vec<Attribute> {
         self.build_attributes("checked")
     }
@@ -296,6 +304,11 @@ impl FieldAttributes {
 
 pub trait AnyField {
     fn name(&self) -> &str;
+    /// Returns the field's value as a json value
+    ///
+    /// # Errors
+    ///
+    /// [`serde_json::Error`] if the value could not be parsed
     fn value_json(&self) -> Result<Value, serde_json::Error>;
     fn is_touched(&self) -> bool;
     fn add_error(&mut self, error: String);
@@ -317,7 +330,7 @@ where
         *self.touched.read()
     }
     fn add_error(&mut self, error: String) {
-        self.errors.push(error)
+        self.errors.push(error);
     }
 
     fn reset(&mut self) {
@@ -332,7 +345,7 @@ where
 /// # Arguments
 ///
 /// * `name`: The field's name as a string.
-/// * `initial_value`: The initial value for the field (must implement [`FieldValue]).
+/// * `initial_value`: The initial value for the field (must implement [`FieldValue`]).
 ///
 /// returns: [`FormField<T>`]
 ///
