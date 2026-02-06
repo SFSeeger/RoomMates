@@ -6,7 +6,6 @@ mod field_value;
 #[proc_macro_derive(EnumSelect, attributes(enum_select, label))]
 pub fn enum_select_derive(input: TokenStream) -> TokenStream {
     let ast = syn::parse(input).unwrap();
-
     enum_select::impl_enum_select_macro(&ast)
 }
 
