@@ -1,0 +1,157 @@
+@layer components {
+    .calendar {
+        @apply flex flex-row border border-base-300 rounded-lg bg-base-200 shadow-2xl;
+
+        &[data-disabled="true"] {
+            @apply opacity-50 pointer-events-none;
+        }
+    }
+
+    .calendar-navigation {
+        @apply relative flex items-center justify-center p-1 gap-2;
+    }
+
+    .calendar-nav-title {
+        @apply text-secondary-content text-lg font-semibold;
+    }
+
+    .calendar-nav-prev,
+    .calendar-nav-next {
+        @apply absolute flex items-center justify-center size-7 border border-base-300 rounded-md bg-base-200 cursor-pointer;
+
+        &:hover {
+            @apply border-primary bg-primary text-primary-content;
+        }
+
+        &:focus-visible {
+            @apply ring ring-primary;
+        }
+
+        &:disabled {
+            @apply bg-base-100 cursor-not-allowed;
+        }
+    }
+
+    .calendar-nav-prev {
+        @apply left-1;
+    }
+
+    .calendar-nav-next {
+        @apply right-1;
+    }
+
+    .calendar-month-title {
+        @apply flex items-center justify-center w-full h-7;
+    }
+
+    .calendar-view {
+        @apply flex flex-col;
+    }
+
+    .calendar-grid {
+        @apply w-full p-2;
+    }
+
+    .calendar-grid-header {
+        @apply flex flex-row justify-around mb-2;
+    }
+
+    .calendar-grid-body {
+        @apply flex flex-col gap-1 w-full;
+    }
+
+    .calendar-grid-cell {
+        @apply w-8 aspect-square border-none rounded-sm bg-none cursor-pointer text-sm text-base-content;
+
+        &[data-month="current"] {
+            &:not([data-disabled="true"]):hover {
+                @apply bg-primary text-primary-content;
+            }
+
+            &:focus-visible {
+                @apply ring ring-primary;
+            }
+
+            &[data-selected="true"] {
+                @apply bg-primary text-primary-content;
+
+                &:hover {
+                    @apply bg-primary/90;
+                }
+            }
+
+            &[data-today="true"]:not([data-selected="true"]) {
+                @apply border-4 border-solid border-primary/60;
+            }
+
+            &[data-selection-between="true"] {
+                @apply rounded-none bg-primary/70 text-primary-content/60 data-[month=current]:text-primary-content;
+            }
+            &[data-selection-start="true"] {
+                @apply rounded-br-none rounded-tr-none;
+            }
+            &[data-selection-end="true"] {
+                @apply rounded-bl-none rounded-tl-none;
+            }
+        }
+
+
+        &[data-month="last"],
+        &[data-month="next"],
+        &[data-disabled="true"] {
+            @apply text-base-content/50 cursor-not-allowed;
+        }
+
+        &[data-month="last"],
+        &[data-month="next"] {
+            &[data-selected="true"] {
+                @apply bg-primary/30 text-primary-content;
+            }
+        }
+    }
+
+    .calendar-grid-week td {
+        @apply py-0;
+
+        &:first-child .calendar-grid-cell {
+            @apply rounded-bl-md rounded-tl-md;
+        }
+
+        &:last-child .calendar-grid-cell {
+            @apply rounded-br-md rounded-tr-md;
+        }
+    }
+
+    .calendar-grid-weeknum {
+        @apply rounded-md bg-base-200 text-base-content text-xs;
+    }
+
+    .calendar-grid-week {
+        @apply flex flex-row justify-between w-full;
+    }
+
+    .calendar-month-select-container,
+    .calendar-year-select-container {
+        @apply relative;
+
+        &:has(:focus-visible) {
+            @apply ring ring-primary;
+        }
+    }
+    .calendar-month-select,
+    .calendar-year-select {
+        @apply absolute size-full p-1 m-0 inset-0 opacity-0;
+    }
+
+    .calendar-month-select-value,
+    .calendar-year-select-value {
+        @apply inline-flex items-center justify-center p-1 border-none bg-transparent text-base cursor-pointer;
+        transition:
+            background-color 0.2s ease,
+            color 0.2s ease;
+    }
+
+    .select-expand-icon {
+         @apply size-4 fill-none stroke-base-content;
+    }
+}

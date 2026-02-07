@@ -3,6 +3,7 @@ pub mod collapse;
 pub mod navbar;
 pub mod sidebar;
 pub use navbar::Navbar;
+pub mod calendar;
 pub mod card;
 pub mod dialog;
 pub mod dock;
