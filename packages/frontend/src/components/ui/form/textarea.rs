@@ -1,3 +1,4 @@
+use crate::components::ui::fieldset::Fieldset;
 use dioxus::prelude::*;
 use form_hooks::use_form_field::{AnyField, FieldValue, FormField};
 
@@ -6,7 +7,7 @@ pub fn Textarea<T: FieldValue>(
     placeholder: Option<String>,
     label: Option<String>,
     field: FormField<T>,
-    #[props(extends=GlobalAttributes, extends=input)] attributes: Vec<Attribute>,
+    #[props(extends=GlobalAttributes, extends=textarea)] attributes: Vec<Attribute>,
 ) -> Element {
     let field_attributes = field.field_attributes();
     let errors = field.errors;
@@ -22,12 +23,12 @@ pub fn Textarea<T: FieldValue>(
     });
 
     rsx! {
-        div {
+        Fieldset {
             if label.is_some() {
                 legend { class: "fieldset_legend", {label.unwrap()} }
             }
             textarea {
-                class: "textarea",
+                class: "textarea w-full",
                 onblur: field_attributes.onblur,
                 oninput: field_attributes.oninput,
                 placeholder: if placeholder.is_some() { placeholder.unwrap() },
@@ -36,9 +37,9 @@ pub fn Textarea<T: FieldValue>(
             }
         }
         if is_invalid() && is_touched() {
-            p { class: "text-error", role: "alert",
+            ul { class: "text-error", role: "alert",
                 {errors.iter().map(|error| rsx! {
-                    span { "{error}" }
+                    li { "{error}" }
                 })}
             }
         }

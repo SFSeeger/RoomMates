@@ -11,13 +11,13 @@ use crate::components::ui::{
 use api::routes::events::create_event;
 use chrono::{NaiveDate, NaiveTime};
 use dioxus::prelude::*;
-use entity::event::PartialEvModel;
+use entity::event::PartialEventModel;
 use form_hooks::use_form::{use_form, use_on_submit};
-use form_hooks::use_form_field::{FormField, use_form_field};
+use form_hooks::use_form_field::{FieldValue, FormField, use_form_field};
 use form_hooks::validators;
 
 #[component]
-pub fn EventCreator() -> Element {
+pub fn AddEventView() -> Element {
     let mut form_state = use_form();
     let mut create_action = use_action(create_event);
 
@@ -26,7 +26,7 @@ pub fn EventCreator() -> Element {
 
     let title: FormField<String> = use_form_field("title", String::new())
         .with_validator(validators::required("event needs a title"));
-    let reocurring: FormField<bool> = use_form_field("reocurring", false);
+    let reocurring: FormField<bool> = use_form_field("reoccurring", false);
     let private: FormField<bool> = use_form_field("private", false);
     let desc: FormField<Option<String>> = use_form_field("description", None);
     let loc: FormField<Option<String>> = use_form_field("location", None);
@@ -35,9 +35,6 @@ pub fn EventCreator() -> Element {
     let end: FormField<NaiveTime> =
         use_form_field("end_time", NaiveTime::from_hms_opt(23, 00, 0).unwrap());
     let weekday = use_form_field("weekday", entity::event::Weekday::Monday);
-
-    // let reoc_att = reocurring.field_attributes();
-    //reoc_att.oninput = move |ev| reocuring_enabled.toggle();
 
     form_state.register_field(&title);
     form_state.register_field(&reocurring);
@@ -51,16 +48,18 @@ pub fn EventCreator() -> Element {
 
     form_state.revalidate();
 
+    let reoccurring_value = reocurring.value;
+
     let onsubmit = use_on_submit(&form_state, move |submit_state| async move {
         form_errors.clear();
-        let form_data: PartialEvModel = submit_state.parsed_values().unwrap();
+        let form_data: PartialEventModel = submit_state.parsed_values().unwrap();
 
         create_action.call(form_data).await;
 
         match create_action.value() {
             Some(Ok(_)) => {
                 let nav = navigator();
-                nav.push(Route::Events {});
+                nav.push(Route::ListEventView {});
             }
             Some(Err(error)) => {
                 form_errors.push(error.to_string());
@@ -92,20 +91,25 @@ pub fn EventCreator() -> Element {
                                     }
                                 }
                             }
-                            Input::<String> { field: title, label: "Title" }
-                            Checkbox::<bool> { label: "Reocurring", field: reocurring }
-                            Checkbox::<bool> { label: "Private", field: private }
+                            Input { field: title, label: "Title" }
+                            Checkbox { label: "Reocurring", field: reocurring }
+                            Checkbox { label: "Private", field: private }
                             Textarea {
                                 label: "Description(optional)",
                                 placeholder: "Describe your event",
                                 field: desc,
                             }
                             Textarea {
-                                placeholder: "Location(optional)",
-                                label: "Add a location",
+                                placeholder: "Add a location",
+                                label: "Location(optional)",
                                 field: loc,
                             }
-                            Input { label: "date", field: date, r#type: "date" }
+                            Input {
+                                label: "date",
+                                field: date,
+                                r#type: "date",
+                                disabled: *reoccurring_value.read(),
+                            }
 
                             Input {
                                 label: "start",
@@ -117,14 +121,14 @@ pub fn EventCreator() -> Element {
                             Select::<entity::event::Weekday> {
                                 label: "Choose Weekday when reocurring",
                                 field: weekday,
-                                                        //class: if reocurring.clone().value.peek() { "disabled" } else { "" },
+                                disabled: !(*reoccurring_value.read()),
                             }
 
                             CardActions {
                                 SubmitButton {
                                     form: form_state.clone(),
                                     label: "Create Event",
-                                    submitting_label: "creating event",
+                                    submitting_label: "Creating event...",
                                 }
                             }
                         }
@@ -135,20 +139,24 @@ pub fn EventCreator() -> Element {
     }
 }
 
-impl EnumSelect for entity::event::Weekday {
+use entity::event::Weekday;
+impl EnumSelect for Weekday {
     fn select_options() -> Vec<(String, &'static str)> {
-        let options = vec![
-            ("Monday".to_owned(), "Monday"),
-            ("Tuesday".to_owned(), "Tuesday"),
-            ("Wednesday".to_owned(), "Wednesday"),
-            ("Thursday".to_owned(), "Thursday"),
-            ("Friday".to_owned(), "Friday"),
-            ("Saturday".to_owned(), "Saturday"),
-            ("Sunday".to_owned(), "Sunday"),
-        ];
-        options
+        vec![
+            (Weekday::Monday.to_input_value(), "Monday"),
+            (Weekday::Tuesday.to_input_value(), "Tuesday"),
+            (Weekday::Wednesday.to_input_value(), "Wednesday"),
+            (Weekday::Thursday.to_input_value(), "Thursday"),
+            (Weekday::Friday.to_input_value(), "Friday"),
+            (Weekday::Saturday.to_input_value(), "Saturday"),
+            (Weekday::Sunday.to_input_value(), "Sunday"),
+        ]
     }
 }
-
-//fix day select
-//disable components
+impl EnumSelect for Option<Weekday> {
+    fn select_options() -> Vec<(String, &'static str)> {
+        let mut collection = vec![("".to_string(), "Select a Value")];
+        collection.append(&mut Weekday::select_options());
+        collection
+    }
+}

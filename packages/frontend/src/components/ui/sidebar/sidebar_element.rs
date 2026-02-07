@@ -28,7 +28,7 @@ pub fn Sidebar() -> Element {
                     SidebarItem {
                         title: "Events",
                         icon: LdCalendar,
-                        to: Route::Events {},
+                        to: Route::ListEventView {},
                     }
                 }
                 div { class: "md:hidden w-full is-drawer-close:hidden",

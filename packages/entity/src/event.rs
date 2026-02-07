@@ -12,7 +12,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub title: String,
-    pub reocurring: bool,
+    pub reoccurring: bool,
     pub private: bool,
 
     #[sea_orm(nullable)]
@@ -71,9 +71,9 @@ pub enum Weekday {
 }
 
 #[derive(Clone, PartialEq, Serialize, Deserialize, Debug, DeriveIntoActiveModel)]
-pub struct PartialEvModel {
+pub struct PartialEventModel {
     pub title: String,
-    pub reocurring: bool,
+    pub reoccurring: bool,
     pub private: bool,
     pub description: Option<String>,
     pub location: Option<String>,

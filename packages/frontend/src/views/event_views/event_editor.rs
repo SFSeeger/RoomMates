@@ -11,30 +11,31 @@ use crate::components::ui::{
 use api::routes::events::{retrieve_event, update_event};
 use chrono::{NaiveDate, NaiveTime};
 use dioxus::prelude::*;
-use entity::event::PartialEvModel;
+use entity::event::PartialEventModel;
 use form_hooks::use_form::{use_form, use_on_submit};
 use form_hooks::use_form_field::{FormField, use_form_field};
 use form_hooks::validators;
 
 #[component]
-pub fn EventEditor(event_id: i32) -> Element {
+pub fn EditEventView(event_id: i32) -> Element {
     let event = use_loader(move || async move { retrieve_event(event_id).await })?;
     let mut form_state = use_form();
-    let mut update_action: Action<(i32, PartialEvModel), entity::event::Model> =
+    let mut update_action: Action<(i32, PartialEventModel), entity::event::Model> =
         use_action(update_event);
     let mut form_errors = use_signal(Vec::<String>::new);
 
-    let title: FormField<String> = use_form_field("title", event.read().clone().title)
+    let event_clone = event();
+
+    let title: FormField<String> = use_form_field("title", event_clone.title)
         .with_validator(validators::required("event needs a title"));
-    let reocurring: FormField<bool> = use_form_field("reocurring", event.read().reocurring);
-    let private: FormField<bool> = use_form_field("private", event.read().private);
-    let desc: FormField<Option<String>> =
-        use_form_field("description", event.read().clone().description);
-    let loc: FormField<Option<String>> = use_form_field("location", event.read().clone().location);
-    let date: FormField<NaiveDate> = use_form_field("date", event.read().date);
-    let start = use_form_field("start_time", event.read().start_time);
-    let end: FormField<NaiveTime> = use_form_field("end_time", event.read().end_time);
-    let weekday = use_form_field("weekday", event.read().clone().weekday);
+    let reocurring: FormField<bool> = use_form_field("reoccurring", event_clone.reoccurring);
+    let private: FormField<bool> = use_form_field("private", event_clone.private);
+    let desc: FormField<Option<String>> = use_form_field("description", event_clone.description);
+    let loc: FormField<Option<String>> = use_form_field("location", event_clone.location);
+    let date: FormField<NaiveDate> = use_form_field("date", event_clone.date);
+    let start = use_form_field("start_time", event_clone.start_time);
+    let end: FormField<NaiveTime> = use_form_field("end_time", event_clone.end_time);
+    let weekday = use_form_field("weekday", event_clone.weekday);
 
     form_state.register_field(&title);
     form_state.register_field(&reocurring);
@@ -50,14 +51,14 @@ pub fn EventEditor(event_id: i32) -> Element {
 
     let onsubmit = use_on_submit(&form_state, move |submit_state| async move {
         form_errors.clear();
-        let form_data: PartialEvModel = submit_state.parsed_values().unwrap();
+        let form_data: PartialEventModel = submit_state.parsed_values().unwrap();
 
         update_action.call(event.read().id, form_data).await;
 
         match update_action.value() {
             Some(Ok(_)) => {
                 let nav = navigator();
-                nav.push(Route::Events {});
+                nav.push(Route::ListEventView {});
             }
             Some(Err(error)) => {
                 form_errors.push(error.to_string());
@@ -90,26 +91,33 @@ pub fn EventEditor(event_id: i32) -> Element {
                                 }
                             }
                             Input::<String> { field: title, label: "Title" }
-                            Checkbox::<bool> { label: "Reocurring", field: reocurring }
-                            Checkbox::<bool> { label: "Private", field: private }
+                            Checkbox { label: "Reocurring", field: reocurring }
+                            Checkbox { label: "Private", field: private }
                             Textarea {
                                 label: "Description(optional)",
                                 placeholder: "Describe your event",
                                 field: desc,
                             }
                             Textarea {
-                                placeholder: "Location(optional)",
-                                label: "Add a location",
+                                label: "Location(optional)",
+                                placeholder: "Add a location",
+
                                 field: loc,
                             }
                             Input { label: "date", field: date, r#type: "date" }
 
-                            Input {
-                                label: "start",
-                                field: start,
-                                r#type: "time",
+                            div { class: "flex flex-col sm:flex-row sm:gap-2",
+                                Input {
+                                    label: "start",
+                                    field: start,
+                                    r#type: "time",
+                                }
+                                Input {
+                                    label: "end",
+                                    field: end,
+                                    r#type: "time",
+                                }
                             }
-                            Input { label: "end", field: end, r#type: "time" }
 
                             Select::<entity::event::Weekday> {
                                 label: "Choose Weekday when reocurring",
@@ -119,8 +127,8 @@ pub fn EventEditor(event_id: i32) -> Element {
                             CardActions {
                                 SubmitButton {
                                     form: form_state.clone(),
-                                    label: "Confirm Edits",
-                                    submitting_label: "editing event",
+                                    label: "Save",
+                                    submitting_label: "Saving...",
                                 }
                             }
                         }

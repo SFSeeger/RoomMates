@@ -71,7 +71,7 @@ mod test_db_mod {
         let ev1: event::ActiveModel = event::ActiveModel {
             id: Set(1),
             title: Set("ev1".to_owned()),
-            reocurring: Set(false),
+            reoccurring: Set(false),
             private: Set(false),
             //desc: Set("nya".to_owned()),
             //location: Set("owo".to_owned()),
@@ -88,7 +88,7 @@ mod test_db_mod {
         let ev2: event::ActiveModel = event::ActiveModel {
             id: Set(2),
             title: Set("ev2".to_owned()),
-            reocurring: Set(true),
+            reoccurring: Set(true),
             private: Set(true),
             description: Set(Some("nya".to_owned())),
             location: Set(Some("owo".to_owned())),

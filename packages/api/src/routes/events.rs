@@ -2,7 +2,7 @@ use crate::server;
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
 use dioxus::{fullstack::NoContent, prelude::*};
-use entity::event::PartialEvModel;
+use entity::event::PartialEventModel;
 use entity::prelude::*;
 
 #[get("/api/events", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
@@ -33,7 +33,7 @@ pub async fn retrieve_event(event_id: i32) -> Result<entity::event::Model, Serve
     Ok(event)
 }
 
-#[delete("/api/events/", ext: Extension<server::AppState>)]
+#[delete("/api/events/{event_id}", ext: Extension<server::AppState>)]
 pub async fn delete_event(event_id: i32) -> Result<NoContent, ServerFnError> {
     use entity::event::Entity as Event;
     use sea_orm::EntityTrait;
@@ -41,21 +41,21 @@ pub async fn delete_event(event_id: i32) -> Result<NoContent, ServerFnError> {
     let delete_result = Event::delete_by_id(event_id)
         .exec(&ext.database)
         .await
-        .or_internal_server_error("Error deleting user")?;
+        .or_internal_server_error("Error deleting event")?;
 
-    (delete_result.rows_affected == 1).or_not_found("User not found")?;
+    (delete_result.rows_affected == 1).or_not_found("Event not found")?;
 
     Ok(NoContent)
 }
 
 #[post("/api/events", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
-pub async fn create_event(info: PartialEvModel) -> Result<entity::event::Model, ServerFnError> {
+pub async fn create_event(info: PartialEventModel) -> Result<entity::event::Model, ServerFnError> {
     use sea_orm::{ActiveModelTrait, TryIntoModel};
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
     let event = entity::event::ActiveModel {
         title: sea_orm::Set(info.title),
-        reocurring: sea_orm::Set(info.reocurring),
+        reoccurring: sea_orm::Set(info.reoccurring),
         private: sea_orm::Set(info.private),
         description: sea_orm::Set(info.description),
         location: sea_orm::Set(info.location),
@@ -77,12 +77,15 @@ pub async fn create_event(info: PartialEvModel) -> Result<entity::event::Model, 
 }
 
 //fix with into  active model
-#[patch("/api/events/{event_id}", ext: Extension<server::AppState>)]
+#[patch("/api/events/{event_id}", ext: Extension<server::AppState>,auth: Extension<server::AuthenticationState>)]
 pub async fn update_event(
     event_id: i32,
-    data: PartialEvModel,
+    data: PartialEventModel,
 ) -> Result<entity::event::Model, ServerFnError> {
     use sea_orm::{ActiveModelTrait, EntityTrait, TryIntoModel};
+
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+
     let event = entity::event::Entity::find_by_id(event_id)
         .one(&ext.database)
         .await
@@ -91,16 +94,19 @@ pub async fn update_event(
 
     let owner = event.owner_id;
 
+    (owner == user.id).or_unauthorized("Unauthorized to delete todo list")?;
+
     let mut active_event: entity::event::ActiveModel = event.into();
 
     active_event.title = sea_orm::Set(data.title);
-    active_event.reocurring = sea_orm::Set(data.reocurring);
+    active_event.reoccurring = sea_orm::Set(data.reoccurring);
     active_event.location = sea_orm::Set(data.location);
     active_event.private = sea_orm::Set(data.private);
     active_event.description = sea_orm::Set(data.description);
     active_event.date = sea_orm::Set(data.date);
     active_event.start_time = sea_orm::Set(data.start_time);
     active_event.end_time = sea_orm::Set(data.end_time);
+    active_event.weekday = sea_orm::Set(data.weekday);
 
     active_event.id = sea_orm::Unchanged(event_id);
     active_event.owner_id = sea_orm::Unchanged(owner);
@@ -108,7 +114,7 @@ pub async fn update_event(
     let event: entity::event::Model = active_event
         .update(&ext.database)
         .await
-        .or_internal_server_error("Failed to make changes")?;
+        .or_internal_server_error("Failed to update event")?;
 
     Ok(event
         .try_into_model()
