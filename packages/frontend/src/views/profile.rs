@@ -3,10 +3,11 @@ use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
 use crate::components::ui::fieldset::Fieldset;
 use crate::components::ui::form::input::Input;
 use crate::components::ui::form::submit_button::SubmitButton;
+//use crate::components::ui::toaster::{Toast, ToastVariant, ToasterState};
 use crate::{Route, components::ui::button::Button};
 use api::routes::users::EMAIL_REGEX;
 use api::routes::users::get_me;
-use api::routes::users::{change_password, change_user_info};
+use api::routes::users::{UserInfo, change_password, change_user_info};
 use dioxus::prelude::*;
 use form_hooks::use_form::{use_form, use_on_submit};
 use form_hooks::use_form_field::use_form_field;
@@ -26,8 +27,16 @@ struct UpdateFormData {
 
 #[component]
 pub fn Profile() -> Element {
-    rsx! {
+    let mut user = use_loader(move || async move { get_me().await })?;
+    let real_user = user.read().clone();
 
+    let onupdate = move |new: UserInfo| {
+        let mut write_user = user.write();
+        write_user.email = new.email;
+        write_user.first_name = new.first_name;
+        write_user.last_name = new.last_name;
+    };
+    rsx! {
         div { class: "flex flex-col items-center gap-4 justify-center h-full",
             div { class: "avatar",
                 div { class: "w-24 rounded",
@@ -51,7 +60,7 @@ pub fn Profile() -> Element {
                 {
                     rsx! {
                         CardTitle { "Profile Information" }
-                        List_Info_Display {}
+                        List_Info_Display { real_user, onupdate }
                         Password_Display {}
 
                     }
@@ -62,10 +71,7 @@ pub fn Profile() -> Element {
 }
 
 #[component]
-pub fn List_Info_Display() -> Element {
-    let user = use_loader(move || async move { get_me().await })?;
-    let real_user = user.read().clone();
-
+pub fn List_Info_Display(real_user: UserInfo, onupdate: EventHandler<UserInfo>) -> Element {
     let mut form_state = use_form();
     let mut update_action = use_action(move |form_data: UpdateFormData| async move {
         change_user_info(form_data.first_name, form_data.last_name, form_data.email).await
@@ -86,14 +92,12 @@ pub fn List_Info_Display() -> Element {
     let onsubmit = use_on_submit(&form_state, move |form| async move {
         let form_data: UpdateFormData = form.parsed_values().unwrap();
         update_action.call(form_data).await;
-        match update_action.value() {
-            Some(Ok(_)) => {
-                //reload page
-            }
-            Some(Err(_error)) => {
 
-                //add real error handeling
+        match update_action.value() {
+            Some(Ok(new_user)) => {
+                onupdate.call(new_user.read().clone());
             }
+            Some(Err(_)) => {}
             None => {
                 warn!("Error signing up user. API call did not complete")
             }
@@ -162,17 +166,31 @@ pub fn Password_Display() -> Element {
 
     let onsubmit = use_on_submit(&password_state, move |_| async move {
         let password_value = password.value.peek().clone();
+        //let toaster = use_context::<ToasterState>();
+        //let mut toaster_clone = toaster.clone();
+
         password_change.call(password_value);
         match password_change.value() {
             Some(Ok(_)) => {
-                //reload page
+                /*toaster_clone.toast(Toast::new(
+                    "Changed Password successfully!".to_owned(),
+                    None,
+                    true,
+                    ToastVariant::Success,
+                ));*/
             }
             Some(Err(_error)) => {
-
-                //add real error handeling
+                /*toaster_clone.toast(Toast::new(
+                    "Failed to change Password".to_owned(),
+                    Some(rsx! {
+                        span { "{error.to_string()}" }
+                    }),
+                    true,
+                    ToastVariant::Error,
+                ));*/
             }
             None => {
-                warn!("Error signing up user. API call did not complete")
+                warn!("Request did not finish!");
             }
         }
     });
@@ -203,19 +221,5 @@ pub fn Password_Display() -> Element {
                 }
             }
         }
-
     }
 }
-
-// div {
-//   label { class: "btn", r#for: "my_modal_6", "open modal" }
-//   input { class: "modal-toggle", id: "my_modal_6", r#type: "checkbox" }
-//   div { class: "modal", role: "dialog",
-//      div { class: "modal-box",
-//          div { class: "modal-action" }
-/*  Some(Err(err)) => rsx! {
-    p { class: "text-red-500", " failed with {err}" }
-},
-None => rsx! {
-    p { "cant connect to db" }
-},*/

@@ -157,10 +157,9 @@ pub async fn change_user_info(
     first_name: String,
     last_name: String,
     email: String,
-) -> dioxus::Result<NoContent, ServerFnError> {
+) -> dioxus::Result<UserInfo, ServerFnError> {
     use entity::user::Entity as User;
-    use sea_orm::EntityTrait;
-    use sea_orm::IntoActiveModel;
+    use sea_orm::{EntityTrait, IntoActiveModel};
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
@@ -170,12 +169,12 @@ pub async fn change_user_info(
     user_active.last_name = sea_orm::Set(last_name);
     user_active.email = sea_orm::Set(email);
 
-    User::update(user_active)
+    let res = User::update(user_active)
         .exec(&ext.database)
         .await
         .or_internal_server_error("cant update user")?;
 
-    Ok(NoContent)
+    Ok(UserInfo::from_user_model(res))
 }
 
 #[patch("/api/users/password",  ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
