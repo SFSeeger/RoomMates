@@ -11,7 +11,7 @@ pub struct Model {
     pub email: String,
     pub first_name: String,
     pub last_name: String,
-    #[serde(skip_serializing)]
+    #[serde(skip)]
     pub password: String,
 
     //events that belong to this user

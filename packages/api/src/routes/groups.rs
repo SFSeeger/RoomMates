@@ -1,4 +1,5 @@
 use crate::dioxus_fullstack::NoContent;
+use crate::routes::users::UserInfo;
 use crate::server;
 use dioxus::prelude::*;
 use entity::prelude::*;
@@ -21,14 +22,48 @@ pub async fn list_groups() -> Result<Vec<entity::group::Model>, ServerFnError> {
     Ok(groups)
 }
 
-/// Adds the many-to-many relation between user and group, extra function for simplicity
-#[post("/api/groups", ext: Extension<server::AppState>)]
-pub async fn add_user_to_table(user_id: i32, group_id: i32) -> Result<NoContent, ServerFnError> {
+#[get("/api/groups/{group_id}/is_user_in_group", ext: Extension<server::AppState>)]
+pub async fn is_user_in_group(group_id: i32, user_id: i32) -> Result<bool, ServerFnError> {
+    use entity::is_in_group::Entity as IsInGroup;
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+    Ok(IsInGroup::find()
+        .filter(entity::is_in_group::Column::GroupId.eq(group_id))
+        .filter(entity::is_in_group::Column::UserId.eq(user_id))
+        .one(&ext.database)
+        .await
+        .or_internal_server_error("Error loading from database")?
+        .is_some())
+}
+
+/// Adds an user to a group
+#[post("/api/groups/{group_id}/add_user", ext: Extension<server::AppState>)]
+pub async fn add_user_to_group(group_id: i32, email: String) -> Result<NoContent, ServerFnError> {
     use entity::is_in_group;
-    use sea_orm::{ActiveModelTrait, Set};
+    use entity::user::Entity as User;
+    use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+
+    let user = User::find()
+        .filter(entity::user::Column::Email.eq(email))
+        .one(&ext.database)
+        .await
+        .or_internal_server_error("Error loading user from database")?
+        .or_not_found("User not found")?;
+
+    let checker = is_user_in_group(group_id, user.id)
+        .await
+        .or_internal_server_error("Error checking if user is in group")?;
+
+    if checker {
+        return Err(ServerFnError::ServerError {
+            message: "User not in group".to_string(),
+            code: 409,
+            details: None,
+        });
+    };
 
     let pair = is_in_group::ActiveModel {
-        user_id: Set(user_id),
+        user_id: Set(user.id),
         group_id: Set(group_id),
     };
 
@@ -41,52 +76,38 @@ pub async fn add_user_to_table(user_id: i32, group_id: i32) -> Result<NoContent,
     Ok(NoContent)
 }
 
-/// Adds an user to a group
-#[post("/api/groups/{group_id}/add_user", ext: Extension<server::AppState>)]
-pub async fn add_user_to_group(email: i32, group_id: i32) -> Result<NoContent, ServerFnError> {
-    use entity::user::Entity as User;
-    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
-
-    let user = User::find()
-        .filter(entity::user::Column::Email.eq(email))
-        .one(&ext.database)
-        .await
-        .or_internal_server_error("Error loading user from database")?
-        .or_not_found("User not found")?;
-
-    add_user_to_table(user.id, group_id).await?;
-
-    Ok(NoContent)
-}
-
 ///Deletes an user from a group
-#[post("/api/groups/{group_id}/delete_user", ext: Extension<server::AppState>)]
-pub async fn delete_user_from_group(
-    user_id: i32,
+#[post("/api/groups/{group_id}/remove_user", ext: Extension<server::AppState>)]
+pub async fn remove_user_from_group(
     group_id: i32,
+    user_id: i32,
 ) -> Result<NoContent, ServerFnError> {
     use entity::is_in_group;
     use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
-    let _result = is_in_group::Entity::delete_many()
+    let result = is_in_group::Entity::delete_many()
         .filter(is_in_group::Column::UserId.eq(user_id))
         .filter(is_in_group::Column::GroupId.eq(group_id))
         .exec(&ext.database)
         .await
         .or_internal_server_error("Error deleting relation")?;
 
+    (result.rows_affected > 0).or_not_found(format!(
+        "Failed to remove user {user_id} from group {group_id}"
+    ))?;
+
     Ok(NoContent)
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct GroupCardData {
     pub name: String,
-    pub members: Vec<entity::user::Model>, //ToDo: zu UserInfo Struct ändern
+    pub members: Vec<UserInfo>,
     pub events: Vec<entity::event::Model>,
 }
 
 ///returns default struct of GroupCardData when trying to call a group which does not exist
-#[get("/api/groups", ext: Extension<server::AppState>)]
+#[get("/api/groups/{group_id}", ext: Extension<server::AppState>)]
 pub async fn retrieve_group(group_id: i32) -> Result<GroupCardData, ServerFnError> {
     use sea_orm::EntityTrait;
     use sea_orm::ModelTrait;
@@ -98,20 +119,58 @@ pub async fn retrieve_group(group_id: i32) -> Result<GroupCardData, ServerFnErro
         .or_internal_server_error("Error loading group from database")?;
 
     let name = &groups.name;
-    let members = groups
+    let member_info = groups
         .find_related(User)
         .all(&ext.database)
         .await
         .or_internal_server_error("Error loading members from database")?;
+    let mut members = Vec::new();
+    for member in member_info {
+        members.push(UserInfo {
+            id: member.id,
+            email: member.email,
+            first_name: member.first_name,
+            last_name: member.last_name,
+        })
+    }
+
     let events = groups
         .find_related(Event)
         .all(&ext.database)
         .await
         .or_internal_server_error("Error loading events from database")?;
+
     let group_data = GroupCardData {
         name: name.to_string(),
         members,
         events,
     };
     Ok(group_data)
+}
+
+#[post("/api/groups/{group_id}/change_group_name", ext: Extension<server::AppState>)]
+pub async fn change_group_name(
+    group_id: i32,
+    group_name_new: String,
+) -> Result<NoContent, ServerFnError> {
+    use entity::group;
+    use entity::group::Entity as Group;
+    use sea_orm::{ActiveModelTrait, EntityTrait, Set};
+
+    let group = Group::find_by_id(group_id)
+        .one(&ext.database)
+        .await
+        .or_not_found("Group not found")
+        .or_internal_server_error("Error loading Group")?;
+
+    let mut group: group::ActiveModel = group.unwrap().into();
+
+    group.name = Set(group_name_new.to_owned());
+
+    group
+        .update(&ext.database)
+        .await
+        .or_internal_server_error("Error updating database")?;
+
+    Ok(NoContent)
 }
