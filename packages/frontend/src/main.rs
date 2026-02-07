@@ -51,10 +51,10 @@ enum Route {
         #[route("/groups")]
         GroupView {},
 
-        #[route("/:group_id")]
+        #[route("/groups/:group_id/edit")]
         EditGroup {group_id: i32},
 
-        #[route("/new_group")]
+        #[route("/groups/add")]
         NewGroup {},
 
         #[route("/:..segments")]
