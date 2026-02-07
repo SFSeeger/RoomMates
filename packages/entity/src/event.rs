@@ -1,5 +1,9 @@
+use chrono::{NaiveDate, NaiveTime};
+use form_hooks::{FieldValue, use_form_field::FieldValue};
+use sea_orm::DeriveIntoActiveModel;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::string::ToString;
 
 #[sea_orm::model]
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
@@ -8,11 +12,11 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub title: String,
-    pub reocurring: bool,
-    pub is_private: bool,
+    pub reoccurring: bool,
+    pub private: bool,
 
     #[sea_orm(nullable)]
-    pub desc: Option<String>,
+    pub description: Option<String>,
     #[sea_orm(nullable)]
     pub location: Option<String>,
 
@@ -45,7 +49,9 @@ pub struct Model {
 
 impl ActiveModelBehavior for ActiveModel {}
 
-#[derive(EnumIter, DeriveActiveEnum, Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(
+    EnumIter, DeriveActiveEnum, Clone, Debug, PartialEq, Eq, Deserialize, Serialize, FieldValue,
+)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "Weekday")]
 pub enum Weekday {
     #[sea_orm(string_value = "Monday")]
@@ -62,4 +68,17 @@ pub enum Weekday {
     Saturday,
     #[sea_orm(string_value = "Sunday")]
     Sunday,
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize, Debug, DeriveIntoActiveModel)]
+pub struct PartialEventModel {
+    pub title: String,
+    pub reoccurring: bool,
+    pub private: bool,
+    pub description: Option<String>,
+    pub location: Option<String>,
+    pub date: NaiveDate,
+    pub start_time: NaiveTime,
+    pub end_time: NaiveTime,
+    pub weekday: Weekday,
 }

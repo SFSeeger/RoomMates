@@ -1879,6 +1879,8 @@ dependencies = [
 name = "entity"
 version = "0.1.0"
 dependencies = [
+ "chrono",
+ "form_hooks",
  "sea-orm",
  "serde",
 ]
@@ -2068,6 +2070,7 @@ checksum = "aa9a19cbb55df58761df49b23516a86d432839add4af60fc256da840f66ed35b"
 name = "form_hooks"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "dioxus",
  "form_hooks_derive",
  "regex",
@@ -2098,6 +2101,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "api",
+ "chrono",
  "dioxus",
  "dioxus-free-icons",
  "entity",

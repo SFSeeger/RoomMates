@@ -71,8 +71,8 @@ mod test_db_mod {
         let ev1: event::ActiveModel = event::ActiveModel {
             id: Set(1),
             title: Set("ev1".to_owned()),
-            reocurring: Set(false),
-            is_private: Set(false),
+            reoccurring: Set(false),
+            private: Set(false),
             //desc: Set("nya".to_owned()),
             //location: Set("owo".to_owned()),
             date: Set(NaiveDate::from_ymd_opt(2026, 1, 8).unwrap()),
@@ -88,9 +88,9 @@ mod test_db_mod {
         let ev2: event::ActiveModel = event::ActiveModel {
             id: Set(2),
             title: Set("ev2".to_owned()),
-            reocurring: Set(true),
-            is_private: Set(true),
-            desc: Set(Some("nya".to_owned())),
+            reoccurring: Set(true),
+            private: Set(true),
+            description: Set(Some("nya".to_owned())),
             location: Set(Some("owo".to_owned())),
             date: Set(NaiveDate::from_ymd_opt(2026, 1, 8).unwrap()),
             start_time: Set(NaiveTime::from_hms_milli_opt(8, 59, 59, 1_000).unwrap()),
