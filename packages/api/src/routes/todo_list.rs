@@ -37,6 +37,7 @@ pub async fn create_todo_list(
     let todo_list = todo_list
         .save(&state.database)
         .await
+        .inspect_err(|error| error!("{error:?}"))
         .or_internal_server_error("Error creating todo list")?;
     Ok(todo_list
         .try_into_model()

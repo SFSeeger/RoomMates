@@ -24,6 +24,19 @@ pub fn ListDetails(
     image_url: Option<String>,
 ) -> Element {
     rsx! {
+        ComplexListDetails {
+            title: rsx! {
+                h3 { {title()} }
+            },
+            children,
+            image_url,
+        }
+    }
+}
+
+#[component]
+pub fn ComplexListDetails(title: Element, children: Element, image_url: Option<String>) -> Element {
+    rsx! {
         div {
             if image_url.is_some() {
                 img { class: "size-10 rounded-box", src: image_url.unwrap() }
@@ -31,7 +44,7 @@ pub fn ListDetails(
         }
 
         div {
-            div { {title()} }
+            div { {title} }
             div { class: "text-xs font-semibold opacity-60", {children} }
         }
     }

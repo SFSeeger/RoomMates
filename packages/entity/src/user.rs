@@ -34,6 +34,10 @@ pub struct Model {
     // Todo Lists owned by this user
     #[sea_orm(has_many)]
     pub todo_lists: HasMany<super::todo_list::Entity>,
+
+    //Todos owned by this user
+    #[sea_orm(has_many)]
+    pub todos: HasMany<super::todo::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

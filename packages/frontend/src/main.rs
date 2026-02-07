@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 use views::{
     Home, LoginPage, NotFound, SignupView,
     event_views::{AddEventView, EditEventView, ListEventView},
-    todo::{TodoListCreateView, TodoListListView},
+    todo::{TodoListCreateView, TodoListListView, TodosCreateView, TodosGroupView},
 };
 mod components;
 mod hooks;
@@ -31,6 +31,12 @@ enum Route {
             TodoListListView {},
             #[route("/add")]
             TodoListCreateView {},
+            #[nest("/:todo_list_id")]
+                #[route("/")]
+                TodosGroupView {todo_list_id: i32},
+                #[route("/add")]
+                TodosCreateView {todo_list_id: i32},
+            #[end_nest]
         #[end_nest]
 
          #[nest("/event")]
