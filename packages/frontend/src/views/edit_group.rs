@@ -16,6 +16,16 @@ use form_hooks::use_form_field::use_form_field;
 use form_hooks::validators;
 use regex::Regex;
 
+#[derive(serde::Deserialize)]
+struct AddUserFormData {
+    email: String,
+}
+
+#[derive(serde::Deserialize)]
+struct GroupNameNew {
+    group_name: String,
+}
+
 #[component]
 pub fn EditGroup(group_id: i32) -> Element {
     let mut group = use_loader(move || async move { retrieve_group(group_id).await })?;
@@ -23,21 +33,25 @@ pub fn EditGroup(group_id: i32) -> Element {
     let toaster = use_context::<ToasterState>();
 
     let mut change_group_name = use_action(change_group_name);
-    let group_name = group.read().name.clone();
     let mut form_state_group_name = use_form();
-    let group_name_field = use_form_field("group name", group_name.clone())
+
+    let group_name_field = use_form_field("group_name", group.read().name.clone())
         .with_validator(validators::required("Group name is required!"));
+
     form_state_group_name.register_field(&group_name_field);
+
     form_state_group_name.revalidate();
+
     let onsubmitgroupname = use_on_submit(&form_state_group_name, move |form| async move {
-        let group_name_new: String = form.parsed_values().unwrap();
+        let group_name_new: GroupNameNew = form.parsed_values().unwrap();
         change_group_name
-            .call(group_id, group_name_new.clone())
+            .call(group_id, group_name_new.group_name.clone())
             .await;
+
         match change_group_name.value() {
             Some(Ok(_)) => {
                 debug!("Group name updated");
-                group.write().name = group_name_new;
+                group.restart();
             }
             Some(Err(error)) => {
                 debug!("Failed to change group name with error {:?}", error)
@@ -58,16 +72,18 @@ pub fn EditGroup(group_id: i32) -> Element {
     form_state_add.register_field(&email);
 
     let mut add_user_to_group = use_action(add_user_to_group);
-    let onsubmitadd = use_on_submit(&form_state_group_name, move |form| {
+    let onsubmitadd = use_on_submit(&form_state_add, move |form| {
         let value = toaster.clone();
         async move {
-            let email: String = form.parsed_values().unwrap();
+            let add_user_form_data: AddUserFormData = form.parsed_values().unwrap();
             let mut toaster_clone = value.clone();
-            add_user_to_group.call(group_id, email.clone()).await;
+            add_user_to_group
+                .call(group_id, add_user_form_data.email.clone())
+                .await;
             match add_user_to_group.value() {
                 Some(Ok(_)) => {
                     toaster_clone.toast(Toast::new(
-                        format!("Added user {} to group", email),
+                        format!("Added user {} to group", add_user_form_data.email),
                         None,
                         true,
                         ToastVariant::Success,
@@ -78,7 +94,7 @@ pub fn EditGroup(group_id: i32) -> Element {
                     toaster_clone.toast(Toast::new(
                         "Failed to add user".into(),
                         Some(rsx! {
-                            span { "{error}.to_string" }
+                            span { "{error}" }
                         }),
                         true,
                         ToastVariant::Error,
@@ -111,7 +127,7 @@ pub fn EditGroup(group_id: i32) -> Element {
                                         form { onsubmit: onsubmitgroupname,
                                             Input {
                                                 field: group_name_field,
-                                                label: "{group.read().name}",
+                                                label: "Group name",
                                                 r#type: "text",
                                                 class: "h-12 text-lg px-4",
                                                 icon: {
@@ -136,9 +152,9 @@ pub fn EditGroup(group_id: i32) -> Element {
                         }
                     }
                 }
-                div { class: "Member-Sidecard gap-4 flex flex-col w-66 overflow-y-auto",
+                div { class: "Member-Sidecard relative flex flex-col w-66 overflow-y-auto",
                     List { header: "Members",
-                        div { class: "flex justify-between items-center mb-2 w-full",
+                        div { class: "absolute top-3 right-4 z-10",
                             Dialog {
                                 DialogTrigger {
                                     variant: ButtonVariant::Primary,
@@ -148,9 +164,7 @@ pub fn EditGroup(group_id: i32) -> Element {
                                     Icon { icon: LdPlus }
                                 }
                                 DialogContent { title: "Enter the email of the person you want to add to {group.read().name}",
-                                    form {
-                                        onsubmit: onsubmitadd,
-                                        method: "dialog",
+                                    form { onsubmit: onsubmitadd,
                                         Input {
                                             field: email,
                                             label: "User email",
@@ -160,10 +174,12 @@ pub fn EditGroup(group_id: i32) -> Element {
                                             },
                                         }
                                         DialogAction {
-                                            Button {
-                                                r#type: "button",
-                                                variant: ButtonVariant::Secondary,
-                                                "Cancel"
+                                            form { method: "dialog",
+                                                Button {
+                                                    r#type: "button",
+                                                    variant: ButtonVariant::Secondary,
+                                                    "Cancel"
+                                                }
                                             }
                                             Button {
                                                 r#type: "submit",

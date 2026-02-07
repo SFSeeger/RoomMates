@@ -1,4 +1,5 @@
 use crate::dioxus_fullstack::NoContent;
+use crate::routes::users;
 use crate::routes::users::UserInfo;
 use crate::server;
 use dioxus::prelude::*;
@@ -7,6 +8,33 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
+
+#[post("/api/groups", ext: Extension<server::AppState>)]
+pub async fn create_group(group_name: String) -> Result<NoContent, ServerFnError> {
+    use entity::is_in_group;
+    use sea_orm::{ActiveModelTrait, Set};
+
+    let group = entity::group::ActiveModel {
+        name: Set(group_name),
+        ..Default::default()
+    };
+
+    let group = group
+        .insert(&ext.database)
+        .await
+        .or_internal_server_error("Error saving new group to database")?;
+
+    let user = users::get_me()
+        .await
+        .or_internal_server_error("Error loading user")?;
+
+    let _pair = is_in_group::ActiveModel {
+        user_id: Set(user.id),
+        group_id: Set(group.id),
+    };
+
+    Ok(NoContent)
+}
 
 #[get("/api/groups", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn list_groups() -> Result<Vec<entity::group::Model>, ServerFnError> {
