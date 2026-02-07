@@ -1,9 +1,9 @@
 use crate::components::ui::button;
-use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
+use crate::components::ui::card::{Card, CardActions, CardTitle};
 use crate::components::ui::fieldset::Fieldset;
 use crate::components::ui::form::input::Input;
 use crate::components::ui::form::submit_button::SubmitButton;
-//use crate::components::ui::toaster::{Toast, ToastVariant, ToasterState};
+use crate::components::ui::toaster::{Toast, ToastVariant, ToasterState};
 use crate::{Route, components::ui::button::Button};
 use api::routes::users::EMAIL_REGEX;
 use api::routes::users::get_me;
@@ -14,9 +14,6 @@ use form_hooks::use_form_field::use_form_field;
 use form_hooks::validators;
 use regex::Regex;
 use std::rc::Rc;
-
-//use dioxus_free_icons::Icon;
-//use dioxus_free_icons::icons::ld_icons::LdCircleHelp;
 
 #[derive(Clone, serde::Deserialize)]
 struct UpdateFormData {
@@ -40,7 +37,7 @@ pub fn Profile() -> Element {
         div { class: "flex flex-col items-center gap-4 justify-center h-full",
             div { class: "avatar",
                 div { class: "w-24 rounded",
-                    img { src: "https://img.daisyui.com/images/profile/demo/yellingcat@192.webp" }
+                    img { src: format!("https://api.dicebear.com/9.x/bottts/avif?seed={}", user().id) }
                 }
             }
             h1 { class: "text-2xl font-bold text-center", "you reached your profile, success" }
@@ -56,22 +53,16 @@ pub fn Profile() -> Element {
         }
         div { class: "divider divider-primar" }
         Card {
-            CardBody {
-                {
-                    rsx! {
-                        CardTitle { "Profile Information" }
-                        List_Info_Display { real_user, onupdate }
-                        Password_Display {}
 
-                    }
-                }
-            }
+            CardTitle { "Profile Information" }
+            ListInfoDisplay { real_user, onupdate }
+            PasswordDisplay {}
         }
     }
 }
 
 #[component]
-pub fn List_Info_Display(real_user: UserInfo, onupdate: EventHandler<UserInfo>) -> Element {
+pub fn ListInfoDisplay(real_user: UserInfo, onupdate: EventHandler<UserInfo>) -> Element {
     let mut form_state = use_form();
     let mut update_action = use_action(move |form_data: UpdateFormData| async move {
         change_user_info(form_data.first_name, form_data.last_name, form_data.email).await
@@ -88,18 +79,37 @@ pub fn List_Info_Display(real_user: UserInfo, onupdate: EventHandler<UserInfo>) 
     form_state.register_field(&email);
 
     form_state.revalidate();
+    let toaster = use_context::<ToasterState>();
 
-    let onsubmit = use_on_submit(&form_state, move |form| async move {
-        let form_data: UpdateFormData = form.parsed_values().unwrap();
-        update_action.call(form_data).await;
+    let onsubmit = use_on_submit(&form_state, move |form| {
+        let mut toaster_clone = toaster.clone();
+        async move {
+            let form_data: UpdateFormData = form.parsed_values().unwrap();
+            update_action.call(form_data).await;
 
-        match update_action.value() {
-            Some(Ok(new_user)) => {
-                onupdate.call(new_user.read().clone());
-            }
-            Some(Err(_)) => {}
-            None => {
-                warn!("Error signing up user. API call did not complete")
+            match update_action.value() {
+                Some(Ok(new_user)) => {
+                    onupdate.call(new_user.read().clone());
+                    toaster_clone.toast(Toast::new(
+                        "Successfully changed user info!".to_owned(),
+                        None,
+                        true,
+                        ToastVariant::Success,
+                    ));
+                }
+                Some(Err(error)) => {
+                    toaster_clone.toast(Toast::new(
+                        "Failed to update user information".to_owned(),
+                        Some(rsx! {
+                            span { "{error.to_string()}" }
+                        }),
+                        true,
+                        ToastVariant::Error,
+                    ));
+                }
+                None => {
+                    warn!("Error changing user info")
+                }
             }
         }
     });
@@ -107,8 +117,8 @@ pub fn List_Info_Display(real_user: UserInfo, onupdate: EventHandler<UserInfo>) 
     rsx! {
         form { onsubmit,
             Card {
-                CardBody {
-                    " Username: {real_user.first_name} {real_user.last_name}"
+                " Username: {real_user.first_name} {real_user.last_name}"
+                Fieldset {
                     div {
                         fieldset { class: "fieldset",
                             Input {
@@ -125,7 +135,7 @@ pub fn List_Info_Display(real_user: UserInfo, onupdate: EventHandler<UserInfo>) 
                     }
                 }
 
-                CardBody {
+                Fieldset {
                     p { "Email: {real_user.email}" }
                     Input { label: "Set Email", field: email, r#type: "email" }
                 }
@@ -139,7 +149,7 @@ pub fn List_Info_Display(real_user: UserInfo, onupdate: EventHandler<UserInfo>) 
 }
 
 #[component]
-pub fn Password_Display() -> Element {
+pub fn PasswordDisplay() -> Element {
     let mut password_state = use_form();
 
     let mut password_change = use_action(change_password);
@@ -163,34 +173,36 @@ pub fn Password_Display() -> Element {
     password_state.register_field(&password_repeat);
 
     password_state.revalidate();
+    let toaster = use_context::<ToasterState>();
 
-    let onsubmit = use_on_submit(&password_state, move |_| async move {
-        let password_value = password.value.peek().clone();
-        //let toaster = use_context::<ToasterState>();
-        //let mut toaster_clone = toaster.clone();
+    let onsubmit = use_on_submit(&password_state, move |_| {
+        let mut toaster_clone = toaster.clone();
+        async move {
+            let password_value = password.value.peek().clone();
 
-        password_change.call(password_value);
-        match password_change.value() {
-            Some(Ok(_)) => {
-                /*toaster_clone.toast(Toast::new(
-                    "Changed Password successfully!".to_owned(),
-                    None,
-                    true,
-                    ToastVariant::Success,
-                ));*/
-            }
-            Some(Err(_error)) => {
-                /*toaster_clone.toast(Toast::new(
-                    "Failed to change Password".to_owned(),
-                    Some(rsx! {
-                        span { "{error.to_string()}" }
-                    }),
-                    true,
-                    ToastVariant::Error,
-                ));*/
-            }
-            None => {
-                warn!("Request did not finish!");
+            password_change.call(password_value);
+            match password_change.value() {
+                Some(Ok(_)) => {
+                    toaster_clone.toast(Toast::new(
+                        "Changed Password successfully!".to_owned(),
+                        None,
+                        true,
+                        ToastVariant::Success,
+                    ));
+                }
+                Some(Err(error)) => {
+                    toaster_clone.toast(Toast::new(
+                        "Failed to change Password".to_owned(),
+                        Some(rsx! {
+                            span { "{error.to_string()}" }
+                        }),
+                        true,
+                        ToastVariant::Error,
+                    ));
+                }
+                None => {
+                    warn!("Request did not finish!");
+                }
             }
         }
     });
@@ -198,27 +210,22 @@ pub fn Password_Display() -> Element {
     rsx! {
         Card {
             form { onsubmit,
-                CardBody {
+                Fieldset {
                     p { "Set new password!" }
-                    Fieldset {
-                        Input {
-                            field: password,
-                            label: "Type New Password",
-                            r#type: "password",
-                        }
-                        Input {
-                            field: password_repeat,
-                            label: "Repeat New Password",
-                            r#type: "password",
-                        }
+                    Input {
+                        field: password,
+                        label: "Type New Password",
+                        r#type: "password",
+                    }
+                    Input {
+                        field: password_repeat,
+                        label: "Repeat New Password",
+                        r#type: "password",
                     }
                 }
-                CardActions {
-                    SubmitButton {
-                        form: password_state.clone(),
-                        label: "Change Password",
-                    }
-                }
+            }
+            CardActions {
+                SubmitButton { form: password_state.clone(), label: "Change Password" }
             }
         }
     }

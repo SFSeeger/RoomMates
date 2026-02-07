@@ -2,6 +2,7 @@ use crate::dioxus_fullstack::NoContent;
 use crate::server;
 use dioxus::fullstack::{SetCookie, SetHeader};
 use dioxus::prelude::*;
+use regex::Regex;
 
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
@@ -32,7 +33,6 @@ pub async fn retrieve_user(user_id: i32) -> dioxus::Result<UserInfo, ServerFnErr
     use sea_orm::EntityTrait;
 
     let user = User::find_by_id(user_id)
-        // make partial model for getting user info to the frontend, or just make password nullable/turn of deserialize, discucss
         .one(&ext.database)
         .await
         .or_internal_server_error("Error loading user from database")?
@@ -161,6 +161,12 @@ pub async fn change_user_info(
     use entity::user::Entity as User;
     use sea_orm::{EntityTrait, IntoActiveModel};
 
+    let email = email.trim().to_lowercase();
+    let email_regex = Regex::new(EMAIL_REGEX).expect("EMAIL_REGEX must be valid");
+    email_regex
+        .is_match(&email)
+        .or_bad_request("email is not a valid email")?;
+
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
     let mut user_active: entity::user::ActiveModel = user.clone().into_active_model();
@@ -177,7 +183,7 @@ pub async fn change_user_info(
     Ok(UserInfo::from_user_model(res))
 }
 
-#[patch("/api/users/password",  ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+#[put("/api/users/password",  ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn change_password(password: String) -> dioxus::Result<NoContent, ServerFnError> {
     use crate::server::auth::hash_password;
     use entity::user::Entity as User;
