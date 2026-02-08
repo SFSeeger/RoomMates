@@ -15,8 +15,9 @@ pub fn Home() -> Element {
             .user
             .read()
             .as_ref()
-            .map(|u| format!("{} {}", u.first_name, u.last_name))
-            .unwrap_or("???".to_string())
+            .map_or("???".to_string(), |u| {
+                format!("{} {}", u.first_name, u.last_name)
+            })
     });
 
     rsx! {

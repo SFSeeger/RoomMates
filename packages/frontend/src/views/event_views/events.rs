@@ -1,7 +1,7 @@
 use crate::Route;
 use crate::components::tooltip::Tooltip;
 use crate::components::ui::list::{List, ListDetails, ListRow};
-use crate::components::ui::toaster::{Toast, ToastVariant, ToasterState};
+use crate::components::ui::toaster::{ToastOptions, use_toaster};
 use crate::components::ui::{
     button::{Button, ButtonShape, ButtonVariant},
     card::{Card, CardBody},
@@ -54,7 +54,7 @@ pub fn EventList() -> Element {
 #[component]
 pub fn EventListEntry(event: entity::event::Model, ondelete: EventHandler<i32>) -> Element {
     let mut delete_action: Action<(i32,), dioxus_fullstack::NoContent> = use_action(delete_event);
-    let toaster = use_context::<ToasterState>();
+    let mut toaster = use_toaster();
     let title = event.title.clone();
 
     rsx! {
@@ -128,34 +128,20 @@ pub fn EventListEntry(event: entity::event::Model, ondelete: EventHandler<i32>) 
                         }
                         Button {
                             onclick: move |_| {
-                                let mut toaster_clone = toaster.clone();
                                 let title_clone = title.clone();
                                 async move {
                                     delete_action.call(event.id).await;
                                     match delete_action.value() {
                                         Some(Ok(_)) => {
-                                            toaster_clone
-                                                .toast(
-                                                    Toast::new(
-                                                        format!("Deleted {} successfully!", title_clone),
-                                                        None,
-                                                        true,
-                                                        ToastVariant::Success,
-                                                    ),
+                                            toaster
+                                                .success(
+                                                    &format!("Deleted {title_clone} successfully!"),
+                                                    ToastOptions::new(),
                                                 );
                                             ondelete.call(event.id);
-
                                         }
                                         Some(Err(_)) => {
-                                            toaster_clone
-                                                .toast(
-                                                    Toast::new(
-                                                        "Failed to delete event!".to_owned(),
-                                                        None,
-                                                        true,
-                                                        ToastVariant::Success,
-                                                    ),
-                                                );
+                                            toaster.error("Failed to delete event!", ToastOptions::new());
                                         }
                                         None => {
                                             warn!("Request did not finish!");

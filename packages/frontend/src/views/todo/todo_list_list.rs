@@ -2,7 +2,7 @@ use crate::Route;
 use crate::components::ui::button::{Button, ButtonShape, ButtonVariant};
 use crate::components::ui::dialog::{Dialog, DialogAction, DialogContent, DialogTrigger};
 use crate::components::ui::list::{List, ListDetails, ListRow};
-use crate::components::ui::toaster::{Toast, ToastVariant, ToasterState};
+use crate::components::ui::toaster::{ToastOptions, use_toaster};
 use api::routes::todo_list::{delete_todo_list, list_todo_lists, update_todo_list};
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
@@ -25,7 +25,7 @@ pub fn TodoListListView() -> Element {
             .iter_mut()
             .find(|list| list.id == model.id)
         {
-            *item = model
+            *item = model;
         }
     };
 
@@ -61,7 +61,7 @@ pub fn TodoListEntry(
     ondelete: EventHandler<i32>,
     onupdate: EventHandler<entity::todo_list::Model>,
 ) -> Element {
-    let toaster = use_context::<ToasterState>();
+    let mut toaster = use_toaster();
     let title = todo_list.title.clone();
 
     let mut delete_todo_list = use_action(delete_todo_list);
@@ -113,34 +113,26 @@ pub fn TodoListEntry(
                             Button { variant: ButtonVariant::Secondary, "Cancel" }
                             Button {
                                 onclick: move |_| {
-                                    let mut toaster_clone = toaster.clone();
                                     let title_clone = title.clone();
                                     async move {
                                         delete_todo_list.call(todo_list.id).await;
                                         match delete_todo_list.value() {
                                             Some(Ok(_)) => {
-                                                toaster_clone
-                                                    .toast(
-                                                        Toast::new(
-                                                            format!("Deleted {} successfully!", title_clone),
-                                                            None,
-                                                            true,
-                                                            ToastVariant::Success,
-                                                        ),
+                                                toaster
+
+                                                    .success(
+                                                        &format!("Deleted {title_clone} successfully!"),
+                                                        ToastOptions::new(),
                                                     );
                                                 ondelete.call(todo_list.id);
                                             }
                                             Some(Err(error)) => {
-                                                toaster_clone
-                                                    .toast(
-                                                        Toast::new(
-                                                            format!("Failed to delete {}!", title_clone),
-                                                            Some(rsx! {
-                                                                span { "{error.to_string()}" }
-                                                            }),
-                                                            true,
-                                                            ToastVariant::Error,
-                                                        ),
+                                                toaster
+                                                    .error(
+                                                        &format!("Failed to delete {title_clone}!"),
+                                                        ToastOptions::new().description(rsx! {
+                                                            span { "{error.to_string()}" }
+                                                        }),
                                                     );
                                             }
                                             None => {
