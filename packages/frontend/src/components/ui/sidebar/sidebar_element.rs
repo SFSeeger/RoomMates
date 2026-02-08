@@ -4,7 +4,7 @@ use crate::components::ui::theme_controller::ThemeController;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::IconShape;
-use dioxus_free_icons::icons::ld_icons::{LdCalendar, LdHome, LdListTodo, LdUsers};
+use dioxus_free_icons::icons::ld_icons::{LdCalendar, LdHome, LdListTodo, LdMail, LdUsers};
 
 #[component]
 pub fn Sidebar() -> Element {
@@ -34,6 +34,11 @@ pub fn Sidebar() -> Element {
                         title: "Groups",
                         icon: LdUsers,
                         to: Route::GroupView {},
+                    }
+                    SidebarItem {
+                        title: "Inbox",
+                        icon: LdMail,
+                        to: Route::ListInviteView {},
                     }
                 }
                 div { class: "md:hidden w-full is-drawer-close:hidden",

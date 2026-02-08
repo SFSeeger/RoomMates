@@ -5,6 +5,7 @@ use views::{
     Home, LoginPage, NotFound, Profile, SignupView,
     event_views::{AddEventView, EditEventView, ListEventView},
     groups::{EditGroup, GroupView},
+    invitation_views::{ListInviteView, SendInvite},
     todo::{TodoListCreateView, TodoListListView, TodosGroupView},
 };
 mod components;
@@ -46,7 +47,14 @@ enum Route {
             EditEventView {event_id: i32,},
             #[route("/add")]
             AddEventView {},
-        #[end_nest]
+       #[end_nest]
+
+       #[nest("/invitations")]
+            #[route("/")]
+            ListInviteView {},
+            #[route("/:invite_id/send_invite")]
+            SendInvite {invite_id : i32},
+         #[end_nest]
 
         #[nest("/groups")]
             #[route("/")]

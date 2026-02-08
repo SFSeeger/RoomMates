@@ -3,6 +3,7 @@ use crate::server;
 use dioxus::server::axum::Extension;
 use dioxus::{fullstack::NoContent, prelude::*};
 use entity::event::PartialEventModel;
+use entity::links::EventUserMembers;
 use entity::prelude::*;
 
 #[get("/api/events", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
@@ -206,4 +207,24 @@ pub async fn remove_event_from_group(
     //delete_event(event_id).await?;
 
     Ok(NoContent)
+}
+
+#[get("/api/events/members/{event_id}", ext: Extension<server::AppState>)]
+pub async fn list_event_members(event_id: i32) -> Result<Vec<entity::user::Model>, ServerFnError> {
+    use sea_orm::EntityTrait;
+    use sea_orm::ModelTrait;
+
+    let event = entity::event::Entity::find_by_id(event_id)
+        .one(&ext.database)
+        .await
+        .or_internal_server_error("could not load event")?
+        .or_not_found("could not find event")?;
+
+    let shares = event
+        .find_linked(EventUserMembers)
+        .all(&ext.database)
+        .await
+        .or_internal_server_error("failed to retrieve other members")?;
+
+    Ok(shares)
 }

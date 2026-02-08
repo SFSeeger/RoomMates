@@ -11,3 +11,4 @@ pub use sign_up::SignupView;
 pub mod event_views;
 mod profile;
 pub use profile::Profile;
+pub mod invitation_views;

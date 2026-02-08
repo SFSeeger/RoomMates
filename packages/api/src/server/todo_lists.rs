@@ -15,7 +15,7 @@ async fn find_active_todo_list_invitation(
     TodoListInvitation::find()
         .filter(InviteColumn::ReceivingUserId.eq(user_id))
         .filter(InviteColumn::TodoListId.eq(todo_list_id))
-        .filter(InviteColumn::IsAccepted.eq(true))
+        //.filter(InviteColumn::IsAccepted.eq(true))
         .one(database)
         .await
         .inspect_err(|e| error!("{e}"))

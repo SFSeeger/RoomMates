@@ -106,6 +106,29 @@ pub async fn accept_todo_list_invite(todo_list_id: i32) -> Result<NoContent, Ser
     Ok(NoContent)
 }
 
+#[delete("/api/todolists/{todo_list_id}/invite/decline", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState> )]
+pub async fn decline_todo_list_invite(todo_list_id: i32) -> Result<NoContent, ServerFnError> {
+    use entity::todo_list_invitation::Column as InviteColum;
+    use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter};
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+
+    let invitation = TodoListInvitation::find()
+        .filter(InviteColum::ReceivingUserId.eq(user.id))
+        .filter(InviteColum::TodoListId.eq(todo_list_id))
+        .one(&state.database)
+        .await
+        .inspect_err(|e| error!("{e}"))
+        .or_internal_server_error("Failed to retrieve Invite")?
+        .or_not_found("Cannot accept invite")?;
+
+    invitation
+        .delete(&state.database)
+        .await
+        .or_internal_server_error("could not delete invite")?;
+
+    Ok(NoContent)
+}
+
 #[post("/api/todolists/{todo_list_id}/invite/leave", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState> )]
 pub async fn leave_todo_list(todo_list_id: i32) -> Result<NoContent, ServerFnError> {
     use entity::todo_list_invitation::Column as InviteColum;
@@ -291,4 +314,23 @@ pub async fn update_my_todo_list_invitation(
         .or_not_found("User not found")?;
 
     Ok(user)
+}
+
+#[get("/api/todolists/invite", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn list_todo_invites() -> Result<Vec<entity::todo_list_invitation::Model>, ServerFnError>
+{
+    use entity::todo_list_invitation::Column as InviteColum;
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+
+    let invitations = TodoListInvitation::find()
+        .filter(InviteColum::ReceivingUserId.eq(user.id))
+        .filter(InviteColum::SenderUserId.ne(user.id))
+        .filter(InviteColum::IsAccepted.eq(false))
+        .all(&state.database)
+        .await
+        .or_internal_server_error("Failed to retrieve Invite")?;
+
+    Ok(invitations)
 }

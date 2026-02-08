@@ -53,11 +53,7 @@ pub async fn retrieve_todo_list(
 
     let todo_list = TodoList::find_by_id(todo_list_id)
         .inner_join(TodoListInvitation)
-        .filter(
-            Condition::all()
-                .add(InvitationColumn::ReceivingUserId.eq(user.id))
-                .add(InvitationColumn::IsAccepted.eq(true)),
-        )
+        .filter(Condition::all().add(InvitationColumn::ReceivingUserId.eq(user.id)))
         .into_partial_model()
         .one(&state.database)
         .await
