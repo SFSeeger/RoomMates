@@ -1,21 +1,104 @@
 use crate::Route;
+use crate::components::ui::button::{Button, ButtonShape, ButtonVariant};
+use crate::components::ui::dialog::{Dialog, DialogAction, DialogContent, DialogTrigger};
+use crate::components::ui::form::input::Input;
 use crate::components::ui::groupcard::GroupCard;
+use api::routes::groups::create_group;
 use api::routes::groups::list_groups;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::LdPlus;
+use dioxus_free_icons::icons::ld_icons::{LdPlus, LdUsers};
+use form_hooks::use_form::{use_form, use_on_submit};
+use form_hooks::use_form_field::use_form_field;
+use form_hooks::validators;
+
+#[derive(serde::Deserialize)]
+struct NewGroupName {
+    group_name: String,
+}
 
 #[component]
 pub fn GroupView() -> Element {
     let groups = use_server_future(move || async move { list_groups().await })?;
 
+    let nav = navigator();
+
+    let create_group = use_action(create_group);
+
+    let mut new_group_name_form = use_form();
+
+    let group_name_field = use_form_field("group_name", String::new())
+        .with_validator(validators::required("Group name is required!"));
+
+    new_group_name_form.register_field(&group_name_field);
+
+    new_group_name_form.revalidate();
+
+    let onsubmit = use_on_submit(&new_group_name_form, move |form| {
+        let nav = nav;
+        let mut create_group = create_group;
+
+        async move {
+            let new_group_name: NewGroupName = form.parsed_values().unwrap();
+
+            create_group.call(new_group_name.group_name.clone()).await;
+
+            match create_group.value() {
+                Some(Ok(group)) => {
+                    let group_id = group.read().id;
+                    nav.push(Route::EditGroup { group_id });
+                    debug!("Group name updated");
+                }
+                Some(Err(error)) => {
+                    debug!("Failed to change group name with error: {:?}", error)
+                }
+                None => {
+                    debug! {"No value present!"}
+                }
+            }
+        }
+    });
+
     rsx! {
         div {
             h1 { class: "text-2xl font-bold text-center relative", "Your groups" }
-            Link {
-                to: Route::NewGroup {},
-                class: "fixed bottom-16 lg:bottom-4 right-4 btn btn-primary btn-circle lg:btn-lg",
-                Icon { icon: LdPlus }
+            Dialog {
+                DialogTrigger {
+                    variant: ButtonVariant::Primary,
+                    shape: ButtonShape::Round,
+                    ghost: false,
+                    class: "fixed bottom-16 lg:bottom-4 right-4 btn btn-primary btn-circle lg:btn-lg",
+                    Icon { icon: LdPlus }
+                }
+                DialogContent { title: "Enter the new group's name",
+                    form { onsubmit,
+                        Input {
+                            field: group_name_field,
+                            label: "New group name",
+                            r#type: "text",
+                            class: "h-12 text-lg px4",
+                            icon: {
+                                rsx! {
+                                    Icon { icon: LdUsers }
+                                }
+                            },
+                        }
+                        DialogAction {
+                            form { method: "dialog",
+                                Button {
+                                    r#type: "button",
+                                    variant: ButtonVariant::Secondary,
+                                    "Cancel"
+                                }
+                            }
+                            Button {
+                                r#type: "submit",
+                                variant: ButtonVariant::Primary,
+                                "Add"
+                            }
+                        }
+                    }
+                }
             }
             match &*groups.read() {
                 Some(Ok(groups)) => rsx! {

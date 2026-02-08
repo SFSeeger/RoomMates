@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use dioxus::server::axum::Extension;
 
 #[post("/api/groups", ext: Extension<server::AppState>)]
-pub async fn create_group(group_name: String) -> Result<NoContent, ServerFnError> {
+pub async fn create_group(group_name: String) -> Result<entity::group::Model, ServerFnError> {
     use entity::is_in_group;
     use sea_orm::{ActiveModelTrait, Set};
 
@@ -28,12 +28,16 @@ pub async fn create_group(group_name: String) -> Result<NoContent, ServerFnError
         .await
         .or_internal_server_error("Error loading user")?;
 
-    let _pair = is_in_group::ActiveModel {
+    let pair = is_in_group::ActiveModel {
         user_id: Set(user.id),
         group_id: Set(group.id),
     };
 
-    Ok(NoContent)
+    pair.insert(&ext.database)
+        .await
+        .or_internal_server_error("Error inserting pair into database")?;
+
+    Ok(group)
 }
 
 #[get("/api/groups", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
