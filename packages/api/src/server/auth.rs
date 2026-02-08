@@ -1,4 +1,6 @@
 use crate::routes::users::EMAIL_REGEX;
+use crate::routes::users::UserInfo;
+
 use argon2::password_hash::rand_core::RngCore;
 use argon2::{
     Argon2,
@@ -179,6 +181,30 @@ pub async fn find_user_by_session(
             .map(|user| (user, session.id)));
     };
     Ok(None)
+}
+
+pub async fn find_user_by_email(
+    email: String,
+    db: &DatabaseConnection,
+) -> dioxus::Result<UserInfo, ServerFnError> {
+    use crate::routes::users::UserInfo;
+    use entity::user::Entity as User;
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+    let user_option = User::find()
+        .filter(entity::user::Column::Email.eq(&email))
+        .one(db)
+        .await
+        .or_internal_server_error("Error loading user from database")?;
+
+    match user_option {
+        Some(user) => Ok(UserInfo::from_user_model(user)),
+        None => Err(ServerFnError::ServerError {
+            message: ("Cannot find user with this email".to_string()),
+            code: (404),
+            details: None,
+        }),
+    }
 }
 
 #[cfg(test)]
