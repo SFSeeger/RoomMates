@@ -4,22 +4,40 @@ use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::LdX;
 use uuid::Uuid;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct DialogContext {
-    pub id: Uuid,
+    pub id: Signal<Uuid>,
 }
 
 impl DialogContext {
-    #[allow(dead_code)]
     #[must_use]
     pub fn new(uuid: Uuid) -> Self {
-        DialogContext { id: uuid }
+        DialogContext {
+            id: Signal::new(uuid),
+        }
+    }
+
+    pub fn open(&self) {
+        debug!("Opening Dialog with id {}", self.id);
+        let _eval = document::eval(&format!(
+            "document.getElementById('dialog-{}').showModal()",
+            self.id,
+        ));
+    }
+
+    #[allow(dead_code)]
+    pub fn close(&self) {
+        debug!("Closing Dialog with id {}", self.id);
+        let _eval = document::eval(&format!(
+            "document.getElementById('dialog-{}').close()",
+            self.id,
+        ));
     }
 }
 
 /// Root of the dialog component
-/// Provides a context of type Signal<[DialogContext]> which holds relevant information for the dialog.
-/// A Dialog should contain [DialogTrigger] and [DialogContent].
+/// Provides a context of type [`DialogContext`] which holds relevant information for the dialog.
+/// A Dialog should contain [`DialogTrigger`] and [`DialogContent`].
 ///
 /// # Example
 /// ```ignore
@@ -35,7 +53,7 @@ impl DialogContext {
 #[component]
 pub fn Dialog(children: Element) -> Element {
     let dialog_id = use_server_cached(Uuid::new_v4);
-    use_context_provider(|| Signal::new(DialogContext::new(dialog_id)));
+    use_context_provider(|| DialogContext::new(dialog_id));
 
     children
 }
@@ -55,7 +73,7 @@ pub fn Dialog(children: Element) -> Element {
 /// ```
 #[component]
 pub fn DialogTrigger(props: ButtonProps) -> Element {
-    let context = use_context::<Signal<DialogContext>>();
+    let context = use_dialog();
 
     rsx! {
         Button {
@@ -63,12 +81,7 @@ pub fn DialogTrigger(props: ButtonProps) -> Element {
                 if let Some(f) = &props.onclick {
                     f.call(event);
                 }
-                let _eval = document::eval(
-                    &format!(
-                        "document.getElementById('dialog-{}').showModal()",
-                        context.read().id,
-                    ),
-                );
+                context.open();
             },
             onmousedown: move |event| {
                 if let Some(f) = &props.onmousedown {
@@ -116,8 +129,8 @@ pub fn DialogContent(
     #[props(default = true)] close_button: bool,
     children: Element,
 ) -> Element {
-    let context = use_context::<Signal<DialogContext>>();
-    let id = context.read().id;
+    let context = use_dialog();
+    let id = context.id;
 
     rsx! {
         dialog {
@@ -150,12 +163,20 @@ pub fn DialogContent(
 }
 
 /// Actions for the dialog. Can be used to display e.g. a submit button.
-/// If you want to close the modal from a button inside the actions either consume the [DialogContext] and call
-/// `document::eval(&format!(document.getElementById('dialog-{}').showModal()", context.read().id))`
-/// or using a `form` with `method: "dialog"`
+/// If you want to close the modal from a button inside the actions either consume the [`DialogContext`] and call
+/// `DialogContext.close()` or using a `form` with `method: "dialog"`
 #[component]
 pub fn DialogAction(children: Element) -> Element {
     rsx! {
         div { class: "modal-action", {children} }
     }
+}
+
+/// Returns a [`DialogContext`] to enable control a dialog.
+///
+/// # Panics
+///
+/// Panics if used outside Dialog
+pub fn use_dialog() -> DialogContext {
+    try_use_context::<DialogContext>().expect("`use_dialog` can only be used inside Dialog!")
 }
