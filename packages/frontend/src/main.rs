@@ -1,7 +1,7 @@
 use crate::layouts::StandardAppLayout;
 use dioxus::prelude::*;
 use views::{
-    Home, LoginPage, NotFound, SignupView,
+    Home, LoginPage, NotFound, Profile, SignupView,
     todo::{TodoListCreateView, TodoListListView},
 };
 mod components;
@@ -31,6 +31,9 @@ enum Route {
             #[route("/add")]
             TodoListCreateView {},
         #[end_nest]
+
+        #[route("/profile")]
+        Profile {},
 
         #[route("/:..segments")]
         NotFound { segments: Vec<String> },
