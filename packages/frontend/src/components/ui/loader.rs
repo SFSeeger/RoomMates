@@ -28,11 +28,13 @@ impl LoaderSize {
 #[component]
 pub fn Loader(
     #[props(default)] size: LoaderSize,
+    class: Option<String>,
     #[props(extends=GlobalAttributes)] attributes: Vec<Attribute>,
 ) -> Element {
     let size_class = size.class();
+    let class = class.unwrap_or_default();
 
     rsx! {
-        span { class: "loading loading-spinner {size_class}", ..attributes }
+        span { class: "loading loading-spinner {size_class} {class}", ..attributes }
     }
 }

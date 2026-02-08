@@ -2,6 +2,7 @@ use crate::Route;
 use crate::components::ui::button::{Button, ButtonShape, ButtonVariant};
 use crate::components::ui::dialog::{Dialog, DialogAction, DialogContent, DialogTrigger};
 use crate::components::ui::list::{List, ListDetails, ListRow};
+use crate::components::ui::loader::{Loader, LoaderSize};
 use crate::components::ui::toaster::{ToastOptions, use_toaster};
 use api::routes::todo_list::{delete_todo_list, list_todo_lists, update_todo_list};
 use dioxus::prelude::*;
@@ -94,9 +95,14 @@ pub fn TodoListEntry(
                 shape: ButtonShape::Square,
                 ghost: true,
                 class: "btn-sm",
-                Icon {
-                    icon: LdHeart,
-                    class: if todo_list.is_favorite { "fill-primary" } else { "" },
+                disabled: update_favorite.pending(),
+                if update_favorite.pending() {
+                    Loader { size: LoaderSize::Small, class: "text-primary" }
+                } else {
+                    Icon {
+                        icon: LdHeart,
+                        class: if todo_list.is_favorite { "fill-primary" } else { "" },
+                    }
                 }
             }
             Dialog {
