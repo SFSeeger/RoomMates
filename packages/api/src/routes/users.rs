@@ -6,6 +6,7 @@ use dioxus::prelude::*;
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
 use serde::{Deserialize, Serialize};
+use time::format_description::well_known::Rfc2822;
 
 #[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
 pub struct UserInfo {
@@ -111,7 +112,9 @@ pub async fn login(email: String, password: String) -> Result<SetHeader<SetCooki
     Ok(SetHeader::new(format!(
         "session={}; HttpOnly; Expires={}; Path=/",
         session_key,
-        expires_at.to_rfc2822()
+        expires_at
+            .format(&Rfc2822)
+            .or_internal_server_error("Failed to convert time")?
     ))
     .or_internal_server_error("Error setting session cookie")?)
 }

@@ -4,12 +4,13 @@ members = ["packages/frontend", "packages/api", "packages/entity", "packages/for
 
 [workspace.dependencies]
 dioxus = { version = "0.7.3" }
-sea-orm = { version = "2.0.0-rc" }
+sea-orm = { version = "2.0.0-rc"}
 serde = { version = "1.0.228" }
 serde_json = { version = "1.0.145" }
 anyhow = { version = "1.0.71" }
 regex = "1.12.2"
-chrono = { version = "0.4.43", features = ["serde", "wasmbind"] }
+time = { version = "0.3.46", features = ["serde", "wasm-bindgen", "local-offset"] }
+
 
 # workspace
 api = { path = "packages/api" }
