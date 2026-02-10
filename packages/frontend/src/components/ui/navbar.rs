@@ -1,5 +1,5 @@
 use crate::Route;
-use crate::components::contexts::AuthState;
+use crate::components::contexts::use_auth;
 use crate::components::ui::sidebar::SidebarState;
 use crate::components::ui::theme_controller::ThemeController;
 use api::routes::users::logout;
@@ -10,8 +10,7 @@ use dioxus_free_icons::icons::ld_icons::LdMenu;
 #[component]
 pub fn Navbar() -> Element {
     let mut sidebar_state = use_context::<SidebarState>();
-    let auth_state = use_context::<AuthState>();
-    let auth_state_clone = auth_state.clone();
+    let mut auth_state = use_auth();
     let nav = navigator();
 
     rsx! {
@@ -52,13 +51,10 @@ pub fn Navbar() -> Element {
                             }
                             li {
                                 button {
-                                    onclick: move |_| {
-                                        let mut auth_state_clone = auth_state_clone.clone();
-                                        async move {
-                                            let _ = logout().await;
-                                            auth_state_clone.logout();
-                                            nav.push(Route::Home {});
-                                        }
+                                    onclick: move |_| async move {
+                                        let _ = logout().await;
+                                        auth_state.logout();
+                                        nav.push(Route::Home {});
                                     },
                                     "Logout"
                                 }

@@ -3,7 +3,7 @@ use dioxus::prelude::*;
 
 use crate::Route;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct AuthState {
     pub user: Signal<Option<UserInfo>>,
 }
@@ -42,7 +42,7 @@ pub fn AuthProvider(children: Element) -> Element {
 /// `````
 #[component]
 pub fn AuthGuard(children: Element) -> Element {
-    let auth_state = use_context::<AuthState>();
+    let auth_state = use_auth();
 
     rsx! {
         if auth_state.user.read().is_some() {
@@ -55,4 +55,8 @@ pub fn AuthGuard(children: Element) -> Element {
             }
         }
     }
+}
+
+pub fn use_auth() -> AuthState {
+    try_use_context::<AuthState>().expect("AuthState can only be used within an AuthProvider")
 }
