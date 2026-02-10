@@ -10,9 +10,11 @@ pub fn List(children: Element, header: ReadSignal<String>) -> Element {
 }
 
 #[component]
-pub fn ListRow(children: Element) -> Element {
+pub fn ListRow(children: Element, class: Option<String>) -> Element {
+    let class = class.unwrap_or_default();
+
     rsx! {
-        li { class: "list-row", {children} }
+        li { class: "list-row items-center {class}", {children} }
 
     }
 }

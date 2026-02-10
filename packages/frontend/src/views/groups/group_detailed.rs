@@ -44,33 +44,28 @@ pub fn EditGroup(group_id: i32) -> Element {
 
     form_state_group_name.revalidate();
 
-    let value = group_name_field.clone();
+    let onsubmitgroupname = use_on_submit(&form_state_group_name, move |mut form| async move {
+        let group_name_new: GroupNameNew = form.parsed_values().unwrap();
+        change_group_name
+            .call(group_id, group_name_new.group_name.clone())
+            .await;
 
-    let onsubmitgroupname = use_on_submit(&form_state_group_name, move |form| {
-        let mut group_name_field = value.clone();
-        async move {
-            let group_name_new: GroupNameNew = form.parsed_values().unwrap();
-            change_group_name
-                .call(group_id, group_name_new.group_name.clone())
-                .await;
-
-            match change_group_name.value() {
-                Some(Ok(_)) => {
-                    toaster.success("Changed group name successfully!", ToastOptions::new());
-                    group_name_field.mark_clean();
-                    group.restart();
-                }
-                Some(Err(error)) => {
-                    toaster.error(
-                        "Failed to change group name!",
-                        ToastOptions::new().description(rsx! {
-                            span { "{error.to_string()}" }
-                        }),
-                    );
-                }
-                None => {
-                    warn! {"No value present!"}
-                }
+        match change_group_name.value() {
+            Some(Ok(_)) => {
+                toaster.success("Changed group name successfully!", ToastOptions::new());
+                form.mark_clean();
+                group.restart();
+            }
+            Some(Err(error)) => {
+                toaster.error(
+                    "Failed to change group name!",
+                    ToastOptions::new().description(rsx! {
+                        span { "{error.to_string()}" }
+                    }),
+                );
+            }
+            None => {
+                warn! {"No value present!"}
             }
         }
     });

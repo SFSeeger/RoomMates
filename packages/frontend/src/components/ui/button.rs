@@ -62,6 +62,8 @@ pub struct ButtonProps {
     #[props(default)]
     pub ghost: bool,
     #[props(default)]
+    pub outline: bool,
+    #[props(default)]
     pub shape: ButtonShape,
     #[props(default)]
     pub disabled: bool,
@@ -83,6 +85,7 @@ pub fn Button(props: ButtonProps) -> Element {
         button {
             class: "btn {variant_class} {shape_class} {class}",
             class: if props.ghost { "btn-ghost" },
+            class: if props.outline { "btn-outline" },
             class: if props.disabled { "btn-disabled" },
             disabled: props.disabled,
             onclick: move |event| {

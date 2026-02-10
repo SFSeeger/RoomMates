@@ -94,6 +94,7 @@ pub fn DialogTrigger(props: ButtonProps) -> Element {
             variant: props.variant,
             disabled: props.disabled,
             ghost: props.ghost,
+            outline: props.outline,
             shape: props.shape,
             class: props.class,
             attributes: props.attributes,

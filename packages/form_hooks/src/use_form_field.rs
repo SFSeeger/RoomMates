@@ -75,7 +75,7 @@ impl FieldValue for String {
 
 impl FieldValue for i32 {
     fn to_input_value(&self) -> String {
-        std::string::ToString::to_string(&self)
+        ToString::to_string(&self)
     }
 
     fn from_input_value(value: &str) -> Result<Self, String> {
@@ -161,7 +161,7 @@ impl FieldValue for Time {
 pub struct FormField<T: FieldValue> {
     /// Current value of the field
     pub value: Signal<T>,
-    original_value: T,
+    original_value: Signal<T>,
     /// Name of the field. Used in parsing
     pub name: String,
     /// Vector of field errors
@@ -186,7 +186,7 @@ impl<T: FieldValue> FormField<T> {
     pub fn new(name: &str, initial_value: T) -> Self {
         FormField {
             value: Signal::new(initial_value.clone()),
-            original_value: initial_value,
+            original_value: Signal::new(initial_value),
             name: name.to_string(),
             errors: Signal::new(Vec::new()),
             touched: Signal::new(false),
@@ -221,14 +221,9 @@ impl<T: FieldValue> FormField<T> {
     }
 
     /// Returns true if the field's value has been changed
+    #[must_use]
     pub fn is_dirty(&self) -> bool {
-        self.value.read().clone() != self.original_value
-    }
-
-    /// Sets the current value as the new original value. Can be used for forms that perform a "save"
-    #[allow(dead_code)]
-    pub fn mark_clean(&mut self) {
-        self.original_value = self.value.read().clone();
+        *self.value.read() != *self.original_value.read()
     }
 
     /// Generates a [`FieldAttributes`] struct for the form field, which provides:
@@ -350,6 +345,7 @@ pub trait AnyField {
     fn is_touched(&self) -> bool;
     fn add_error(&mut self, error: String);
     fn reset(&mut self);
+    fn mark_clean(&mut self);
 }
 
 impl<T> AnyField for FormField<T>
@@ -371,9 +367,14 @@ where
     }
 
     fn reset(&mut self) {
-        self.value.set(self.original_value.clone());
+        self.value.set(self.original_value.cloned());
         self.errors.set(Vec::new());
         self.touched.set(false);
+    }
+
+    /// Sets the current value as the new original value. Can be used for forms that perform a "save"
+    fn mark_clean(&mut self) {
+        self.original_value.set(self.value.read().cloned());
     }
 }
 

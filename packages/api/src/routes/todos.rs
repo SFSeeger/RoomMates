@@ -22,7 +22,9 @@ pub async fn list_todo(todo_list_id: i32) -> Result<Vec<entity::todo::Model>, Se
         .or_internal_server_error("Error loading To-Do List")?
         .or_not_found("To-Do List not found")?;
 
-    (todo_list.owner_id == user.id).or_unauthorized("Not authenticated")?;
+    let _ = server::todo_lists::get_todo_list_permission(todo_list.id, user.id, &state.database)
+        .await?
+        .or_forbidden("You are not permitted to view Tasks in this To-Do List")?;
 
     let todos = Todo::find()
         .filter(entity::todo::Column::TodoListId.eq(todo_list_id))
@@ -42,7 +44,7 @@ pub async fn create_todo(
 ) -> Result<entity::todo::Model, ServerFnError> {
     use sea_orm::{ActiveModelTrait, EntityTrait, IntoActiveModel, Set};
 
-    let user = auth.user.as_ref().or_not_found("Not authenticated")?;
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
     let todo_list = TodoList::find_by_id(todo_list_id)
         .one(&state.database)
@@ -50,9 +52,14 @@ pub async fn create_todo(
         .or_internal_server_error("Failed to load To-Do List")?
         .or_not_found("To-Do List not founds")?;
 
-    (todo_list.owner_id == user.id).or_unauthorized("Not authenticated")?;
+    server::todo_lists::get_todo_list_permission(todo_list.id, user.id, &state.database)
+        .await?
+        .or_forbidden("You are not permitted to add Tasks in this To-Do List")?
+        .can_write()
+        .or_forbidden("You are not permitted to add Tasks to this To-Do List")?;
 
     let mut todo = data.into_active_model();
+    todo.completed = Set(false);
     todo.owner_id = Set(user.id);
     todo.todo_list_id = Set(todo_list_id);
 
@@ -78,7 +85,11 @@ pub async fn update_todo(
         .or_internal_server_error("Failed to load To-do Task")?
         .or_not_found("To-do Task not found")?;
 
-    (todo.owner_id == user.id).or_unauthorized("Unauthorized to update Task")?;
+    server::todo_lists::get_todo_list_permission(todo.todo_list_id, user.id, &state.database)
+        .await?
+        .or_forbidden("You are not permitted to update Tasks in this To-Do List")?
+        .can_write()
+        .or_forbidden("You are not permitted to update Tasks in this To-Do List")?;
 
     let mut todo = todo.into_active_model();
     if let Some(title) = data.title {
@@ -112,7 +123,12 @@ pub async fn delete_todo(todo_id: i32) -> Result<NoContent, ServerFnError> {
         .await
         .or_internal_server_error("Failed to load To-do Task")?
         .or_not_found("To-do Task not found")?;
-    (todo.owner_id == user.id).or_unauthorized("Not autheticated")?;
+
+    server::todo_lists::get_todo_list_permission(todo.todo_list_id, user.id, &state.database)
+        .await?
+        .or_forbidden("You are not permitted to delete Tasks in this To-Do List")?
+        .can_write()
+        .or_forbidden("You are not permitted to delete Tasks in this To-Do List")?;
 
     todo.delete(&state.database)
         .await

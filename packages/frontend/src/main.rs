@@ -4,7 +4,7 @@ use views::{
     Home, LoginPage, NotFound, SignupView,
     event_views::{AddEventView, EditEventView, ListEventView},
     groups::{EditGroup, GroupView},
-    todo::{TodoListCreateView, TodoListListView, TodosCreateView, TodosGroupView},
+    todo::{TodoListCreateView, TodoListListView, TodosGroupView},
 };
 mod components;
 mod hooks;
@@ -35,8 +35,6 @@ enum Route {
             #[nest("/:todo_list_id")]
                 #[route("/")]
                 TodosGroupView {todo_list_id: i32},
-                #[route("/add")]
-                TodosCreateView {todo_list_id: i32},
             #[end_nest]
         #[end_nest]
 

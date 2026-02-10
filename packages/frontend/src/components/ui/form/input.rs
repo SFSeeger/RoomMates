@@ -23,7 +23,7 @@ pub fn Input<T: FieldValue>(
     });
 
     rsx! {
-        div { class: "my-2",
+        div { class: "my-2 grow",
             label {
                 class: "input w-full",
                 class: if *is_invalid.read() { "input-error" },
@@ -43,7 +43,7 @@ pub fn Input<T: FieldValue>(
                 }
             }
             if is_invalid() && is_touched() {
-                ul { class: "text-error", role: "alert",
+                ul { class: "text-error text-sm", role: "alert",
                     {errors.iter().map(|error| rsx! {
                         li { "{error}" }
                     })}

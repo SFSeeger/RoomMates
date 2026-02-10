@@ -11,18 +11,17 @@ pub struct Model {
     pub title: String,
     #[sea_orm(nullable)]
     pub description: Option<String>,
-    pub is_favorite: bool,
 
     //relations
-    pub owner_id: i32,
+    pub created_by_id: Option<i32>,
     #[sea_orm(
         belongs_to,
-        from = "owner_id",
+        from = "created_by_id",
         to = "id",
         on_update = "Restrict",
-        on_delete = "Cascade"
+        on_delete = "SetNull"
     )]
-    pub user: HasOne<super::user::Entity>,
+    pub created_by: HasOne<super::user::Entity>,
 
     #[sea_orm(has_many)]
     pub todos: HasMany<super::todo::Entity>,
@@ -45,6 +44,14 @@ pub struct UpdateTodoList {
     pub title: Option<String>,
     #[serde(default)]
     pub description: Option<Option<String>>,
-    #[serde(default)]
-    pub is_favorite: Option<bool>,
+}
+
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq, DerivePartialModel)]
+#[sea_orm(entity = "Entity")]
+pub struct TodoListWithPermission {
+    pub id: i32,
+    pub title: String,
+    pub description: Option<String>,
+    #[sea_orm(nested)]
+    pub invitation: super::todo_list_invitation::TodoListInvitationPartialModel,
 }

@@ -41,7 +41,6 @@ impl ActiveModelBehavior for ActiveModel {}
 pub struct CreateToDo {
     pub title: String,
     pub details: Option<String>,
-    pub completed: bool,
 }
 
 #[derive(Serialize, Deserialize, Default, DeriveIntoActiveModel)]

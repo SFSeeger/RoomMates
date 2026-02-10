@@ -34,7 +34,7 @@ pub fn Textarea<T: FieldValue>(
             }
         }
         if is_invalid() && is_touched() {
-            ul { class: "text-error", role: "alert",
+            ul { class: "text-error text-sm", role: "alert",
                 {errors.iter().map(|error| rsx! {
                     li { "{error}" }
                 })}

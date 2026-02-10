@@ -115,6 +115,15 @@ impl FormState {
         }
     }
 
+    pub fn mark_clean(&mut self) {
+        self.is_touched.set(false);
+        self.is_dirty.set(false);
+        self.has_errors.set(false);
+        for field in self.fields.read().iter() {
+            field.borrow_mut().mark_clean();
+        }
+    }
+
     /// Parses the forms values into a struct. The struct needs to implement [`serde::Deserialize`]
     /// and all struct fields must have a form field registered with the same name.
     /// Since [`FieldValue`] needs to implement [`serde::Serialize`] by default, any [`FieldValue`] can be used
@@ -168,6 +177,15 @@ impl FormState {
 /// ```
 pub fn use_form() -> FormState {
     use_signal(FormState::new)()
+}
+
+/// Hook which returns a `Signal<FormState>`. Useful when copying a `FormState` around a lot.
+/// # Examples
+/// ```ignore
+/// let mut form_state = use_form_signal();
+/// ```
+pub fn use_form_signal() -> Signal<FormState> {
+    use_signal(FormState::new)
 }
 
 /// Creates an event handler to handle form submission.

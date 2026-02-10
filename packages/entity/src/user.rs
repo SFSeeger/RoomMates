@@ -33,7 +33,7 @@ pub struct Model {
 
     // TodoLists owned by this user
     #[sea_orm(has_many)]
-    pub todo_lists: HasMany<super::todo_list::Entity>,
+    pub created_todo_lists: HasMany<super::todo_list::Entity>,
 
     //Todos owned by this user
     #[sea_orm(has_many)]
@@ -56,3 +56,14 @@ pub struct Model {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
+
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq, DerivePartialModel)]
+#[sea_orm(entity = "Entity")]
+pub struct UserWithTodoListInvitation {
+    pub id: i32,
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+    #[sea_orm(nested)]
+    pub invitation: super::todo_list_invitation::TodoListInvitationPartialModel,
+}
