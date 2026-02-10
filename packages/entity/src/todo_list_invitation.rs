@@ -9,7 +9,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
 
-    pub permissions: InvitationPermission,
+    pub permission: InvitationPermission,
     pub is_accepted: bool,
 
     pub receiving_user_id: i32,
@@ -60,4 +60,16 @@ pub enum InvitationPermission {
     Write,
     #[sea_orm(string_value = "Admin")]
     Admin,
+}
+
+impl InvitationPermission {
+    #[must_use]
+    pub fn can_write(self) -> bool {
+        matches!(self, Self::Write | Self::Admin)
+    }
+
+    #[must_use]
+    pub fn can_admin(self) -> bool {
+        matches!(self, Self::Admin)
+    }
 }

@@ -5,9 +5,46 @@ use dioxus::prelude::*;
 use dioxus::server::axum::Extension;
 use entity::prelude::*;
 use entity::todo_list::{CreateTodoList, UpdateTodoList};
+use serde::{Deserialize, Serialize};
 
-#[get("/api/todolists", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>
-)]
+#[cfg(feature = "server")]
+mod server_functions {
+    use super::*;
+
+    pub(crate) async fn get_todo_list_permission(
+        todo_list_id: i32,
+        user_id: i32,
+        database: &sea_orm::DatabaseConnection,
+    ) -> Result<Option<entity::todo_list_invitation::InvitationPermission>, ServerFnError> {
+        use sea_orm::ColumnTrait;
+        use sea_orm::EntityTrait;
+        use sea_orm::QueryFilter;
+
+        let todo_list = TodoList::find_by_id(todo_list_id)
+            .one(database)
+            .await
+            .or_internal_server_error("Failed to load todo list")?
+            .or_not_found("Todo list not found")?;
+
+        if todo_list.owner_id == user_id {
+            return Ok(Some(
+                entity::todo_list_invitation::InvitationPermission::Admin,
+            ));
+        }
+
+        let invitation = TodoListInvitation::find()
+            .filter(entity::todo_list_invitation::Column::ReceivingUserId.eq(user_id))
+            .filter(entity::todo_list_invitation::Column::TodoListId.eq(todo_list_id))
+            .filter(entity::todo_list_invitation::Column::IsAccepted.eq(true))
+            .one(database)
+            .await
+            .or_internal_server_error("Failed to load todo list invitation")?;
+
+        Ok(invitation.map(|inv| inv.permission))
+    }
+}
+
+#[get("/api/todolists", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn list_todo_lists() -> Result<Vec<entity::todo_list::Model>, ServerFnError> {
     use sea_orm::ColumnTrait;
     use sea_orm::Condition;
@@ -36,8 +73,7 @@ pub async fn list_todo_lists() -> Result<Vec<entity::todo_list::Model>, ServerFn
     Ok(todo_lists)
 }
 
-#[post("/api/todolists", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>
-)]
+#[post("/api/todolists", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn create_todo_list(
     data: CreateTodoList,
 ) -> Result<entity::todo_list::Model, ServerFnError> {
@@ -58,20 +94,24 @@ pub async fn create_todo_list(
         .or_internal_server_error("Error parsing todo list")?)
 }
 
-#[patch("/api/todolists/{todo_list_id}", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>
-)]
+#[patch("/api/todolists/{todo_list_id}", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn update_todo_list(
     todo_list_id: i32,
     data: UpdateTodoList,
 ) -> Result<entity::todo_list::Model, ServerFnError> {
-    use sea_orm::{ActiveModelTrait, EntityTrait, IntoActiveModel, TryIntoModel};
+    use sea_orm::{ActiveModelTrait, IntoActiveModel, TryIntoModel};
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
-    let todo_list = TodoList::find_by_id(todo_list_id)
-        .one(&state.database)
-        .await
-        .or_internal_server_error("Failed to load todo list")?
-        .or_not_found("Todo list not found")?;
-    (todo_list.owner_id == user.id).or_unauthorized("Unauthorized to update todo list")?;
+
+    let permission =
+        server_functions::get_todo_list_permission(todo_list_id, user.id, &state.database)
+            .await
+            .inspect_err(|e| error!("{e}"))?
+            .or_unauthorized("Unauthorized to update todo list")?;
+
+    permission
+        .can_write()
+        .or_unauthorized("Unauthorized to update todo list")?;
+
     let mut todo_list = data.into_active_model();
     todo_list.id = sea_orm::Unchanged(todo_list_id);
     let todo_list = todo_list
@@ -83,22 +123,94 @@ pub async fn update_todo_list(
         .or_internal_server_error("Error parsing todo list")?)
 }
 
-#[delete("/api/todolists/{todo_list_id}", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>
-)]
+#[delete("/api/todolists/{todo_list_id}", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn delete_todo_list(todo_list_id: i32) -> Result<NoContent, ServerFnError> {
     use sea_orm::EntityTrait;
-    use sea_orm::ModelTrait;
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
-    let todo_list = TodoList::find_by_id(todo_list_id)
-        .one(&state.database)
-        .await
-        .or_internal_server_error("Failed to load todo list")?
-        .or_not_found("Todo List not found")?;
-    (todo_list.owner_id == user.id).or_unauthorized("Unauthorized to delete todo list")?;
-    todo_list
-        .delete(&state.database)
+
+    let permission =
+        server_functions::get_todo_list_permission(todo_list_id, user.id, &state.database)
+            .await
+            .inspect_err(|e| error!("{e}"))?
+            .or_unauthorized("Unauthorized to update todo list")?;
+
+    permission
+        .can_write()
+        .or_unauthorized("Unauthorized to update todo list")?;
+
+    TodoList::delete_by_id(todo_list_id)
+        .exec(&state.database)
         .await
         .or_internal_server_error("Failed to delete todo list")?;
+
+    Ok(NoContent)
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct InviteToTodoListData {
+    email: String,
+    #[serde(default)]
+    permission: entity::todo_list_invitation::InvitationPermission,
+}
+
+#[post("/api/todolists/{todo_list_id}/invite", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn invite_to_todo_list(
+    todo_list_id: i32,
+    data: InviteToTodoListData,
+) -> Result<NoContent, ServerFnError> {
+    use crate::routes::users::EMAIL_REGEX;
+    use regex::Regex;
+    use sea_orm::ColumnTrait;
+    use sea_orm::EntityTrait;
+    use sea_orm::QueryFilter;
+    use sea_orm::{ActiveModelTrait, SelectExt};
+
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+
+    let email_regex = Regex::new(EMAIL_REGEX).expect("EMAIL_REGEX must be valid");
+    email_regex
+        .is_match(&data.email)
+        .or_bad_request("email is not a valid email")?;
+
+    let to_user = User::find()
+        .filter(entity::user::Column::Email.eq(data.email))
+        .one(&state.database)
+        .await
+        .or_internal_server_error("Failed to load user")?
+        .or_not_found("User not found")?;
+
+    let permission =
+        server_functions::get_todo_list_permission(todo_list_id, user.id, &state.database)
+            .await
+            .inspect_err(|e| error!("{e}"))?
+            .or_unauthorized("Unauthorized to update todo list")?;
+
+    permission
+        .can_admin()
+        .or_unauthorized("Unauthorized to update todo list")?;
+
+    let existing_invitation = TodoListInvitation::find()
+        .filter(entity::todo_list_invitation::Column::ReceivingUserId.eq(to_user.id))
+        .filter(entity::todo_list_invitation::Column::TodoListId.eq(todo_list_id))
+        .exists(&state.database)
+        .await
+        .or_internal_server_error("Failed to load todo list invitation")?;
+
+    (!existing_invitation).or_bad_request("User is already invited to this todo list")?;
+
+    let invitation = entity::todo_list_invitation::ActiveModel {
+        receiving_user_id: sea_orm::Set(to_user.id),
+        sender_user_id: sea_orm::Set(user.id),
+        todo_list_id: sea_orm::Set(todo_list_id),
+        permission: sea_orm::Set(data.permission),
+        is_accepted: sea_orm::Set(false),
+        ..Default::default()
+    };
+
+    let _ = invitation
+        .save(&state.database)
+        .await
+        .or_internal_server_error("Failed to invite user")?;
 
     Ok(NoContent)
 }
