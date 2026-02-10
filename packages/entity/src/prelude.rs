@@ -7,4 +7,5 @@ pub use super::shared_friend_event::Entity as FriendShare;
 pub use super::shared_group_event::Entity as GroupShare;
 pub use super::todo::Entity as Todo;
 pub use super::todo_list::Entity as TodoList;
+pub use super::todo_list_invitation::Entity as TodoListInvitation;
 pub use super::user::Entity as User;

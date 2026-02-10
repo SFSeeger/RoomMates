@@ -31,13 +31,28 @@ pub struct Model {
     #[sea_orm(has_many)]
     pub sessions: HasMany<super::session::Entity>,
 
-    // Todo Lists owned by this user
+    // TodoLists owned by this user
     #[sea_orm(has_many)]
     pub todo_lists: HasMany<super::todo_list::Entity>,
 
     //Todos owned by this user
     #[sea_orm(has_many)]
     pub todos: HasMany<super::todo::Entity>,
+
+    // TodoLists Invitation Relations
+    #[sea_orm(
+        has_many,
+        relation_enum = "TodoListInvitationSender",
+        via_rel = "Sender"
+    )]
+    pub send_todo_list_invitations: HasMany<super::todo_list_invitation::Entity>,
+
+    #[sea_orm(
+        has_many,
+        relation_enum = "TodoListInvitationReceiver",
+        via_rel = "Receiver"
+    )]
+    pub received_todo_list_invitations: HasMany<super::todo_list_invitation::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

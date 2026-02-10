@@ -26,6 +26,9 @@ pub struct Model {
 
     #[sea_orm(has_many)]
     pub todos: HasMany<super::todo::Entity>,
+
+    #[sea_orm(has_many)]
+    pub invitations: HasMany<super::todo_list_invitation::Entity>,
 }
 
 impl ActiveModelBehavior for ActiveModel {}
