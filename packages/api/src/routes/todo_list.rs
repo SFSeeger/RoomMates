@@ -3,18 +3,31 @@ use dioxus::fullstack::NoContent;
 use dioxus::prelude::*;
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
-use entity::prelude::TodoList;
+use entity::prelude::*;
 use entity::todo_list::{CreateTodoList, UpdateTodoList};
 
-#[get("/api/todolists", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+#[get("/api/todolists", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>
+)]
 pub async fn list_todo_lists() -> Result<Vec<entity::todo_list::Model>, ServerFnError> {
-    use sea_orm::ModelTrait;
+    use sea_orm::ColumnTrait;
+    use sea_orm::Condition;
+    use sea_orm::EntityTrait;
+    use sea_orm::QueryFilter;
     use sea_orm::QueryOrder;
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
-    let todo_lists = user
-        .find_related(TodoList)
+    let todo_lists = TodoList::find()
+        .left_join(TodoListInvitation)
+        .filter(
+            Condition::any()
+                .add(entity::todo_list::Column::OwnerId.eq(user.id))
+                .add(
+                    Condition::all()
+                        .add(entity::todo_list_invitation::Column::ReceivingUserId.eq(user.id))
+                        .add(entity::todo_list_invitation::Column::IsAccepted.eq(true)),
+                ),
+        )
         .order_by_asc(entity::todo_list::Column::Title)
         .all(&state.database)
         .await
@@ -23,7 +36,8 @@ pub async fn list_todo_lists() -> Result<Vec<entity::todo_list::Model>, ServerFn
     Ok(todo_lists)
 }
 
-#[post("/api/todolists", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+#[post("/api/todolists", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>
+)]
 pub async fn create_todo_list(
     data: CreateTodoList,
 ) -> Result<entity::todo_list::Model, ServerFnError> {
@@ -44,7 +58,8 @@ pub async fn create_todo_list(
         .or_internal_server_error("Error parsing todo list")?)
 }
 
-#[patch("/api/todolists/{todo_list_id}", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+#[patch("/api/todolists/{todo_list_id}", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>
+)]
 pub async fn update_todo_list(
     todo_list_id: i32,
     data: UpdateTodoList,
@@ -68,7 +83,8 @@ pub async fn update_todo_list(
         .or_internal_server_error("Error parsing todo list")?)
 }
 
-#[delete("/api/todolists/{todo_list_id}", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+#[delete("/api/todolists/{todo_list_id}", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>
+)]
 pub async fn delete_todo_list(todo_list_id: i32) -> Result<NoContent, ServerFnError> {
     use sea_orm::EntityTrait;
     use sea_orm::ModelTrait;
