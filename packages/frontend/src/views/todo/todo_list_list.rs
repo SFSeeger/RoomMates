@@ -1,13 +1,15 @@
 use crate::Route;
+use crate::components::contexts::use_auth;
+use crate::components::tooltip::Tooltip;
 use crate::components::ui::button::{Button, ButtonShape, ButtonVariant};
 use crate::components::ui::dialog::{Dialog, DialogAction, DialogContent, DialogTrigger};
-use crate::components::ui::list::{List, ListDetails, ListRow};
+use crate::components::ui::list::{ComplexListDetails, List, ListDetails, ListRow};
 use crate::components::ui::loader::{Loader, LoaderSize};
 use crate::components::ui::toaster::{ToastOptions, use_toaster};
 use api::routes::todo_list::{delete_todo_list, list_todo_lists, update_todo_list};
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::{LdHeart, LdPlus, LdTrash};
+use dioxus_free_icons::icons::ld_icons::{LdCrown, LdHeart, LdPlus, LdTrash};
 use entity::todo_list::UpdateTodoList;
 use std::default::Default;
 
@@ -64,6 +66,7 @@ pub fn TodoListEntry(
 ) -> Element {
     let mut toaster = use_toaster();
     let title = todo_list.title.clone();
+    let auth_state = use_auth();
 
     let mut delete_todo_list = use_action(delete_todo_list);
     let mut update_favorite = use_action(move |is_favorite: bool| async move {
@@ -79,7 +82,17 @@ pub fn TodoListEntry(
 
     rsx! {
         ListRow {
-            ListDetails { title: todo_list.title,
+            ComplexListDetails {
+                title: rsx! {
+                    h3 { class: "flex items-center gap-2",
+                        "{title}"
+                        if todo_list.owner_id == auth_state.user.read().as_ref().map_or(-1, |u| u.id) {
+                            Tooltip { tooltip: "You are the owner of this todo list",
+                                Icon { icon: LdCrown, class: "size-4 stroke-yellow-500" }
+                            }
+                        }
+                    }
+                },
                 if let Some(description) = todo_list.description {
                     p { class: "text-ellipsis", "{description}" }
                 }
