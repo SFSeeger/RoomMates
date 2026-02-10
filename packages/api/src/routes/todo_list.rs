@@ -7,43 +7,6 @@ use entity::prelude::*;
 use entity::todo_list::{CreateTodoList, UpdateTodoList};
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "server")]
-mod server_functions {
-    use super::*;
-
-    pub(crate) async fn get_todo_list_permission(
-        todo_list_id: i32,
-        user_id: i32,
-        database: &sea_orm::DatabaseConnection,
-    ) -> Result<Option<entity::todo_list_invitation::InvitationPermission>, ServerFnError> {
-        use sea_orm::ColumnTrait;
-        use sea_orm::EntityTrait;
-        use sea_orm::QueryFilter;
-
-        let todo_list = TodoList::find_by_id(todo_list_id)
-            .one(database)
-            .await
-            .or_internal_server_error("Failed to load todo list")?
-            .or_not_found("Todo list not found")?;
-
-        if todo_list.owner_id == user_id {
-            return Ok(Some(
-                entity::todo_list_invitation::InvitationPermission::Admin,
-            ));
-        }
-
-        let invitation = TodoListInvitation::find()
-            .filter(entity::todo_list_invitation::Column::ReceivingUserId.eq(user_id))
-            .filter(entity::todo_list_invitation::Column::TodoListId.eq(todo_list_id))
-            .filter(entity::todo_list_invitation::Column::IsAccepted.eq(true))
-            .one(database)
-            .await
-            .or_internal_server_error("Failed to load todo list invitation")?;
-
-        Ok(invitation.map(|inv| inv.permission))
-    }
-}
-
 #[get("/api/todolists", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn list_todo_lists() -> Result<Vec<entity::todo_list::Model>, ServerFnError> {
     use sea_orm::ColumnTrait;
@@ -103,9 +66,8 @@ pub async fn update_todo_list(
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
     let permission =
-        server_functions::get_todo_list_permission(todo_list_id, user.id, &state.database)
-            .await
-            .inspect_err(|e| error!("{e}"))?
+        server::todo_lists::get_todo_list_permission(todo_list_id, user.id, &state.database)
+            .await?
             .or_unauthorized("Unauthorized to update todo list")?;
 
     permission
@@ -129,13 +91,12 @@ pub async fn delete_todo_list(todo_list_id: i32) -> Result<NoContent, ServerFnEr
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
     let permission =
-        server_functions::get_todo_list_permission(todo_list_id, user.id, &state.database)
-            .await
-            .inspect_err(|e| error!("{e}"))?
+        server::todo_lists::get_todo_list_permission(todo_list_id, user.id, &state.database)
+            .await?
             .or_unauthorized("Unauthorized to update todo list")?;
 
     permission
-        .can_write()
+        .can_admin()
         .or_unauthorized("Unauthorized to update todo list")?;
 
     TodoList::delete_by_id(todo_list_id)
@@ -180,14 +141,13 @@ pub async fn invite_to_todo_list(
         .or_not_found("User not found")?;
 
     let permission =
-        server_functions::get_todo_list_permission(todo_list_id, user.id, &state.database)
-            .await
-            .inspect_err(|e| error!("{e}"))?
-            .or_unauthorized("Unauthorized to update todo list")?;
+        server::todo_lists::get_todo_list_permission(todo_list_id, user.id, &state.database)
+            .await?
+            .or_unauthorized("Unauthorized to invite")?;
 
     permission
         .can_admin()
-        .or_unauthorized("Unauthorized to update todo list")?;
+        .or_unauthorized("Unauthorized to invite")?;
 
     let existing_invitation = TodoListInvitation::find()
         .filter(entity::todo_list_invitation::Column::ReceivingUserId.eq(to_user.id))
@@ -227,7 +187,7 @@ pub async fn accept_todo_list_invite(todo_list_id: i32) -> Result<NoContent, Ser
         .one(&state.database)
         .await
         .inspect_err(|e| error!("{e}"))
-        .or_internal_server_error("Failed to retrive user")?
+        .or_internal_server_error("Failed to retrieve Invite")?
         .or_not_found("Cannot accept invite")?;
 
     let mut invitation = invitation.into_active_model();
@@ -238,5 +198,57 @@ pub async fn accept_todo_list_invite(todo_list_id: i32) -> Result<NoContent, Ser
         .inspect_err(|e| error!("{e}"))
         .or_internal_server_error("Failed to accept Invite")?;
 
+    Ok(NoContent)
+}
+
+#[post("/api/todolists/{todo_list_id}/invite/leave", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn leave_todo_list(todo_list_id: i32) -> Result<NoContent, ServerFnError> {
+    use entity::todo_list_invitation::Column as InviteColum;
+    use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter};
+
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+
+    let todo_list = TodoList::find_by_id(todo_list_id)
+        .one(&state.database)
+        .await
+        .inspect_err(|e| error!("{e}"))
+        .or_internal_server_error("Failed to load todo list")?
+        .or_not_found("Todo list not found")?;
+
+    (todo_list.owner_id != user.id).or_bad_request("Owner cannot leave todo list")?;
+
+    let invitation = TodoListInvitation::find()
+        .filter(InviteColum::ReceivingUserId.eq(user.id))
+        .filter(InviteColum::TodoListId.eq(todo_list_id))
+        .filter(InviteColum::IsAccepted.eq(true))
+        .one(&state.database)
+        .await
+        .inspect_err(|e| error!("{e}"))
+        .or_internal_server_error("Failed to retrieve Invite")?
+        .or_not_found("Cannot leave todo list")?;
+
+    invitation
+        .delete(&state.database)
+        .await
+        .or_internal_server_error("Failed to leave todo list")?;
+
+    Ok(NoContent)
+}
+
+/// Kicks a user from a `TodoList`. Can only be performed by the owner or an admin of the `TodoList`.
+/// If the owner was kicked, the ownership will be transferred to the next user with the highest permissions.
+#[post("/api/todolists/{todo_list_id}/remove-user", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn remove_user_from_todo_list(
+    todo_list_id: i32,
+    user_id: i32,
+) -> Result<NoContent, ServerFnError> {
+    let request_user_id = auth.user.as_ref().or_unauthorized("Not authenticated")?.id;
+    server::todo_lists::remove_user_from_todo_list(
+        todo_list_id,
+        user_id,
+        request_user_id,
+        &state.database,
+    )
+    .await?;
     Ok(NoContent)
 }
