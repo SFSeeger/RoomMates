@@ -1,15 +1,14 @@
+use crate::components::ErrorDisplay;
 use crate::components::contexts::AuthProvider;
 use crate::components::ui::dock::Dock;
 use crate::components::ui::loader::Loader;
 use crate::components::ui::toaster::ToastProvider;
-use crate::views::NotFound;
 use crate::{
     Route,
     components::ui::{Navbar, sidebar::SidebarProvider},
 };
 use dioxus::{fullstack::FullstackContext, prelude::*};
-use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::LdCircleX;
+use dioxus_free_icons::icons::ld_icons::{LdCircleHelp, LdCircleX};
 
 #[component]
 pub fn StandardAppLayout(children: Element) -> Element {
@@ -25,32 +24,60 @@ pub fn StandardAppLayout(children: Element) -> Element {
                     Navbar {}
                     ToastProvider {
                         main { class: "grow mx-10 mt-5",
-                            SuspenseBoundary {
-                                fallback: |_| {
+                            ErrorBoundary {
+                                handle_error: |error: ErrorContext| {
+                                    let http_error = FullstackContext::commit_error_status(error.error().unwrap());
+                                    let error_component = match http_error.status {
+                                        StatusCode::NOT_FOUND => rsx! {
+                                            ErrorDisplay {
+                                                title: "Page Not Found",
+                                                description: "The page you are looking for does not exist.",
+                                                action_text: "Return to Home",
+                                                icon: LdCircleHelp,
+                                                redirect_route: Route::Home {},
+                                                error_context: Some(error),
+                                            }
+                                        },
+                                        StatusCode::UNAUTHORIZED => rsx! {
+                                            ErrorDisplay::<LdCircleX> {
+                                                title: "Access Denied",
+                                                description: "You must be logged in to access this page.",
+                                                action_text: "Go to Login",
+                                                redirect_route: Route::LoginPage {},
+                                                error_context: Some(error),
+                                            }
+                                        },
+                                        StatusCode::FORBIDDEN => rsx! {
+                                            ErrorDisplay::<LdCircleX> {
+                                                title: "Access Denied",
+                                                description: "You do not have permission to access this page.",
+                                                action_text: "Go to Home",
+                                                redirect_route: Route::Home {},
+                                                error_context: Some(error),
+                                            }
+                                        },
+                                        _ => rsx! {
+                                            ErrorDisplay {
+                                                title: "An unknown error occurred",
+                                                description: "Something went wrong while loading the page. Please try again later.",
+                                                action_text: "Return to Home",
+                                                icon: LdCircleX,
+                                                redirect_route: Route::Home {},
+                                                error_context: Some(error),
+                                            }
+                                        },
+                                    };
                                     rsx! {
-                                        div { class: "flex items-center justify-center gap-2",
-                                            Loader {}
-                                            "RoomMates is loading..."
-                                        }
+                                        {error_component}
                                     }
                                 },
-                                ErrorBoundary {
-                                    handle_error: |error: ErrorContext| {
-                                        let http_error = FullstackContext::commit_error_status(error.error().unwrap());
-                                        let error_component = match http_error.status {
-                                            StatusCode::NOT_FOUND => rsx! {
-                                                NotFound { segments: vec![] }
-                                            },
-                                            _ => rsx! {
-                                                div { class: "flex flex-col items-center gap-4 justify-center h-full text-error",
-                                                    Icon { class: "size-30", icon: LdCircleX }
-                                                    h1 { class: "text-2xl font-bold text-center", "An unknown error occurred" }
-                                                    Link { class: "btn btn-lg btn-outline", to: Route::Home {}, "Return to start" }
-                                                }
-                                            },
-                                        };
+                                SuspenseBoundary {
+                                    fallback: |_| {
                                         rsx! {
-                                            {error_component}
+                                            div { class: "flex items-center justify-center gap-2",
+                                                Loader {}
+                                                "RoomMates is loading..."
+                                            }
                                         }
                                     },
                                     Outlet::<Route> {}

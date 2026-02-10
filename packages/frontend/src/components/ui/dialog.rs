@@ -18,7 +18,6 @@ impl DialogContext {
     }
 
     pub fn open(&self) {
-        debug!("Opening Dialog with id {}", self.id);
         let _eval = document::eval(&format!(
             "document.getElementById('dialog-{}').showModal()",
             self.id,
@@ -27,7 +26,6 @@ impl DialogContext {
 
     #[allow(dead_code)]
     pub fn close(&self) {
-        debug!("Closing Dialog with id {}", self.id);
         let _eval = document::eval(&format!(
             "document.getElementById('dialog-{}').close()",
             self.id,
