@@ -214,3 +214,29 @@ pub async fn invite_to_todo_list(
 
     Ok(NoContent)
 }
+
+#[post("/api/todolists/{todo_list_id}/invite/accept", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn accept_todo_list_invite(todo_list_id: i32) -> Result<NoContent, ServerFnError> {
+    use entity::todo_list_invitation::Column as InviteColum;
+    use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter};
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+
+    let invitation = TodoListInvitation::find()
+        .filter(InviteColum::ReceivingUserId.eq(user.id))
+        .filter(InviteColum::TodoListId.eq(todo_list_id))
+        .one(&state.database)
+        .await
+        .inspect_err(|e| error!("{e}"))
+        .or_internal_server_error("Failed to retrive user")?
+        .or_not_found("Cannot accept invite")?;
+
+    let mut invitation = invitation.into_active_model();
+    invitation.is_accepted = sea_orm::Set(true);
+    invitation
+        .save(&state.database)
+        .await
+        .inspect_err(|e| error!("{e}"))
+        .or_internal_server_error("Failed to accept Invite")?;
+
+    Ok(NoContent)
+}
