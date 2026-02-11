@@ -3,15 +3,18 @@ use crate::components::ui::button::{Button, ButtonShape, ButtonVariant};
 use crate::components::ui::dialog::{Dialog, DialogAction, DialogContent, DialogTrigger};
 use crate::components::ui::list::{ComplexListDetails, List, ListDetails, ListRow};
 use crate::components::ui::toaster::{ToastOptions, use_toaster};
+use api::routes::todo_list::retrieve_todo_list;
 use api::routes::todos::{delete_todo, list_todo, update_todo};
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{LdCircle, LdCircleCheckBig, LdPlus, LdTrash};
 use entity::todo::UpdateToDo;
+use entity::todo_list_invitation::InvitationPermission;
 use std::default::Default;
 
 #[component]
 pub fn TodosGroupView(todo_list_id: i32) -> Element {
+    let todo_list = use_loader(move || retrieve_todo_list(todo_list_id))?;
     let mut todos = use_loader(move || list_todo(todo_list_id))?;
     let completed_todos = use_memo(move || {
         todos
@@ -49,6 +52,7 @@ pub fn TodosGroupView(todo_list_id: i32) -> Element {
     };
 
     rsx! {
+        h1 { class: "text-2xl font-bold mb-4", "{todo_list.read().title}" }
         List { header: "Your To-Do's",
             if uncompleted_todos.read().is_empty() {
                 ListRow {
@@ -59,6 +63,7 @@ pub fn TodosGroupView(todo_list_id: i32) -> Element {
                 TodoEntry {
                     key: "{todo.id}",
                     todo: todo.clone(),
+                    permission: todo_list.read().permission.unwrap_or(InvitationPermission::Admin),
                     ondelete,
                     onupdate,
                 }
@@ -75,19 +80,22 @@ pub fn TodosGroupView(todo_list_id: i32) -> Element {
                 TodoEntry {
                     key: "{todo.id}",
                     todo: todo.clone(),
+                    permission: todo_list.read().permission.unwrap_or(InvitationPermission::Admin),
                     ondelete,
                     onupdate,
                 }
             }
         }
 
-        div { class: "fixed bottom-16 lg:bottom-4 right-4",
-            Link {
-                to: Route::TodosCreateView {
-                    todo_list_id,
-                },
-                class: "btn btn-primary btn-circle lg:btn-lg",
-                Icon { icon: LdPlus }
+        if todo_list.read().permission.unwrap_or(InvitationPermission::Admin).can_write() {
+            div { class: "fixed bottom-16 lg:bottom-4 right-4",
+                Link {
+                    to: Route::TodosCreateView {
+                        todo_list_id,
+                    },
+                    class: "btn btn-primary btn-circle lg:btn-lg",
+                    Icon { icon: LdPlus }
+                }
             }
         }
     }
@@ -96,6 +104,7 @@ pub fn TodosGroupView(todo_list_id: i32) -> Element {
 #[component]
 pub fn TodoEntry(
     todo: entity::todo::Model,
+    permission: InvitationPermission,
     ondelete: EventHandler<i32>,
     onupdate: EventHandler<entity::todo::Model>,
 ) -> Element {
@@ -125,28 +134,24 @@ pub fn TodoEntry(
                     p { class: "text-ellipsis", "{details}" }
                 }
             }
-            div { class: "flex items-center gap-2",
-
+            div { class: "grid grid-cols-2 items-center gap-2",
                 Button {
                     onclick: move |_| {
+                        if !permission.can_write() {
+                            return;
+                        }
                         let title_clone = title_for_update.clone();
                         spawn(async move {
                             update_completed.call(!todo.completed).await;
 
                             match update_completed.value() {
                                 Some(Ok(updated_todo)) => {
-                                    toaster
-
-                                        .success(
-                                            &format!("Updated {} successfully!", title_clone),
-                                            ToastOptions::new(),
-                                        );
                                     onupdate.call(updated_todo());
                                 }
                                 Some(Err(error)) => {
                                     toaster
                                         .error(
-                                            &format!("Failed to update {}!", title_clone),
+                                            &format!("Failed to update {title_clone}!"),
                                             ToastOptions::new().description(rsx! {
                                                 span { "{error.to_string()}" }
                                             }),
@@ -162,60 +167,65 @@ pub fn TodoEntry(
                     shape: ButtonShape::Square,
                     ghost: true,
                     class: "btn-sm",
+                    disabled: !permission.can_write(),
                     if todo.completed {
                         Icon { icon: LdCircleCheckBig, class: "stroke-success" }
                     } else {
                         Icon { icon: LdCircle }
                     }
                 }
-
-                Dialog {
-                    DialogTrigger {
-                        variant: ButtonVariant::Error,
-                        shape: ButtonShape::Square,
-                        ghost: true,
-                        class: "btn-sm",
-                        Icon { icon: LdTrash }
-                    }
-                    DialogContent { title: "Do you want to delete {title.clone()}?",
-                        form { method: "dialog",
-                            DialogAction {
-                                Button { variant: ButtonVariant::Secondary, "Cancel" }
-                                Button {
-                                    onclick: move |_| {
-                                        let title_clone = title.clone();
-                                        async move {
-                                            delete_todo.call(todo.id).await;
-                                            match delete_todo.value() {
-                                                Some(Ok(_)) => {
-                                                    toaster
-                                                        .success(
-                                                            &format!("Deleted {} successfully!", title_clone),
-                                                            ToastOptions::new(),
-                                                        );
-                                                    ondelete.call(todo.id);
-                                                }
-                                                Some(Err(error)) => {
-                                                    toaster
-                                                        .error(
-                                                            &format!("Failed to delete {}!", title_clone),
-                                                            ToastOptions::new().description(rsx! {
-                                                                span { "{error.to_string()}" }
-                                                            }),
-                                                        );
-                                                }
-                                                None => {
-                                                    warn!("Request did not finish!");
+                if permission.can_write() {
+                    Dialog {
+                        DialogTrigger {
+                            variant: ButtonVariant::Error,
+                            shape: ButtonShape::Square,
+                            ghost: true,
+                            class: "btn-sm",
+                            Icon { icon: LdTrash }
+                        }
+                        DialogContent { title: "Do you want to delete {title.clone()}?",
+                            form { method: "dialog",
+                                DialogAction {
+                                    Button { variant: ButtonVariant::Secondary, "Cancel" }
+                                    Button {
+                                        onclick: move |_| {
+                                            let title_clone = title.clone();
+                                            async move {
+                                                delete_todo.call(todo.id).await;
+                                                match delete_todo.value() {
+                                                    Some(Ok(_)) => {
+                                                        toaster
+                                                            .success(
+                                                                &format!("Deleted {} successfully!", title_clone),
+                                                                ToastOptions::new(),
+                                                            );
+                                                        ondelete.call(todo.id);
+                                                    }
+                                                    Some(Err(error)) => {
+                                                        toaster
+                                                            .error(
+                                                                &format!("Failed to delete {}!", title_clone),
+                                                                ToastOptions::new().description(rsx! {
+                                                                    span { "{error.to_string()}" }
+                                                                }),
+                                                            );
+                                                    }
+                                                    None => {
+                                                        warn!("Request did not finish!");
+                                                    }
                                                 }
                                             }
-                                        }
-                                    },
-                                    variant: ButtonVariant::Error,
-                                    "Delete"
+                                        },
+                                        variant: ButtonVariant::Error,
+                                        "Delete"
+                                    }
                                 }
                             }
                         }
                     }
+                } else {
+                    // Placeholder to keep the grid layout consistent
+                    div {}
                 }
             }
         }

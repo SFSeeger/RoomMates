@@ -97,7 +97,12 @@ pub fn TodoListEntry(
             ComplexListDetails {
                 title: rsx! {
                     h3 { class: "flex items-center gap-2",
-                        "{title}"
+                        Link {
+                            to: Route::TodosGroupView {
+                                todo_list_id: todo_list.id,
+                            },
+                            "{title}"
+                        }
                         if todo_list.owner_id == auth_state.user.read().as_ref().map_or(-1, |u| u.id) {
                             Tooltip { tooltip: "You are the owner of this todo list",
                                 Icon { icon: LdCrown, class: "size-4 stroke-yellow-500" }
@@ -106,7 +111,12 @@ pub fn TodoListEntry(
                     }
                 },
                 if let Some(description) = todo_list.description {
-                    p { class: "text-ellipsis", "{description}" }
+                    Link {
+                        to: Route::TodosGroupView {
+                            todo_list_id: todo_list.id,
+                        },
+                        p { class: "overflow-hidden text-ellipsis", "{description}" }
+                    }
                 }
             }
             div { class: "grid grid-cols-2 gap-2",

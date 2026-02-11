@@ -49,6 +49,34 @@ pub async fn list_todo_lists()
     Ok(todo_lists)
 }
 
+#[get("/api/todolists/{todo_list_id}", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn retrieve_todo_list(
+    todo_list_id: i32,
+) -> Result<entity::todo_list::TodoListWithPermission, ServerFnError> {
+    use sea_orm::EntityTrait;
+    use sea_orm::QuerySelect;
+    use sea_orm::prelude::Expr;
+
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+
+    let permission =
+        server::todo_lists::get_todo_list_permission(todo_list_id, user.id, &state.database)
+            .await
+            .or_internal_server_error("Error loading To-Do List")?
+            .or_forbidden("You are not permitted to view Tasks in this To-Do List")?;
+
+    let todo_list = TodoList::find_by_id(todo_list_id)
+        .column_as(Expr::Constant(permission.into()), "permission")
+        .into_model::<entity::todo_list::TodoListWithPermission>()
+        .one(&state.database)
+        .await
+        .inspect_err(|e| error!("{e}"))
+        .or_internal_server_error("Error loading To-Do List")?
+        .or_not_found("To-Do List not found")?;
+
+    Ok(todo_list)
+}
+
 #[post("/api/todolists", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn create_todo_list(
     data: CreateTodoList,
