@@ -12,7 +12,7 @@ pub fn List(children: Element, header: ReadSignal<String>) -> Element {
 #[component]
 pub fn ListRow(children: Element) -> Element {
     rsx! {
-        li { class: "list-row", {children} }
+        li { class: "list-row items-center", {children} }
 
     }
 }

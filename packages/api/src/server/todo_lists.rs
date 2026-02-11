@@ -24,7 +24,7 @@ async fn find_active_todo_list_invitation(
 pub(crate) async fn get_todo_list_permission(
     todo_list_id: i32,
     user_id: i32,
-    database: &sea_orm::DatabaseConnection,
+    database: &DatabaseConnection,
 ) -> Result<Option<entity::todo_list_invitation::InvitationPermission>, ServerFnError> {
     let todo_list = TodoList::find_by_id(todo_list_id)
         .one(database)
@@ -167,7 +167,6 @@ mod tests {
         permission: entity::todo_list_invitation::InvitationPermission,
     ) -> entity::todo_list_invitation::Model {
         entity::todo_list_invitation::ActiveModel {
-            id: sea_orm::NotSet,
             todo_list_id: sea_orm::Set(todo_list_id),
             receiving_user_id: sea_orm::Set(receiver),
             permission: sea_orm::Set(permission),

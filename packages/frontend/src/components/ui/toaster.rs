@@ -274,7 +274,7 @@ pub fn ToastProvider(children: Element) -> Element {
 
     rsx! {
         {children}
-        div { class: "toast toast-top max-w-1/3",
+        div { class: "toast toast-top md:max-w-1/3",
             {toasts.iter().map(|toast| rsx! {
                 ToastComponent { key: "{toast.id}", toast: toast.clone() }
             })}

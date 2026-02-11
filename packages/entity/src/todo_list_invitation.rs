@@ -7,11 +7,11 @@ use serde::{Deserialize, Serialize};
 #[sea_orm(table_name = "todo_list_invitation")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub id: i32,
+    pub todo_list_id: i32,
+    #[sea_orm(belongs_to, from = "todo_list_id", to = "id")]
+    pub todo_list: HasOne<super::todo_list::Entity>,
 
-    pub permission: InvitationPermission,
-    pub is_accepted: bool,
-
+    #[sea_orm(primary_key)]
     pub receiving_user_id: i32,
     #[sea_orm(
         belongs_to,
@@ -30,9 +30,8 @@ pub struct Model {
     )]
     pub sender: HasOne<super::user::Entity>,
 
-    pub todo_list_id: i32,
-    #[sea_orm(belongs_to, from = "todo_list_id", to = "id")]
-    pub todo_list: HasOne<super::todo_list::Entity>,
+    pub permission: InvitationPermission,
+    pub is_accepted: bool,
 }
 
 impl ActiveModelBehavior for ActiveModel {}

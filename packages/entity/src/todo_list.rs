@@ -1,5 +1,5 @@
-use sea_orm::DeriveIntoActiveModel;
 use sea_orm::entity::prelude::*;
+use sea_orm::{DeriveIntoActiveModel, FromQueryResult};
 use serde::{Deserialize, Serialize};
 
 #[sea_orm::model]
@@ -47,4 +47,14 @@ pub struct UpdateTodoList {
     pub description: Option<Option<String>>,
     #[serde(default)]
     pub is_favorite: Option<bool>,
+}
+
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq, FromQueryResult)]
+pub struct TodoListWithPermission {
+    pub id: i32,
+    pub title: String,
+    pub description: Option<String>,
+    pub is_favorite: bool,
+    pub owner_id: i32,
+    pub permission: Option<super::todo_list_invitation::InvitationPermission>,
 }

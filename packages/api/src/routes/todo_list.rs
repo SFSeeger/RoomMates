@@ -8,29 +8,42 @@ use entity::todo_list::{CreateTodoList, UpdateTodoList};
 use serde::{Deserialize, Serialize};
 
 #[get("/api/todolists", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
-pub async fn list_todo_lists() -> Result<Vec<entity::todo_list::Model>, ServerFnError> {
+pub async fn list_todo_lists()
+-> Result<Vec<entity::todo_list::TodoListWithPermission>, ServerFnError> {
+    use entity::todo_list::Column as TodoListColumn;
+    use entity::todo_list_invitation::Column as InvitationColumn;
     use sea_orm::ColumnTrait;
     use sea_orm::Condition;
     use sea_orm::EntityTrait;
     use sea_orm::QueryFilter;
     use sea_orm::QueryOrder;
+    use sea_orm::QuerySelect;
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
     let todo_lists = TodoList::find()
+        .select_only()
+        .column(TodoListColumn::Id)
+        .column(TodoListColumn::Title)
+        .column(TodoListColumn::Description)
+        .column(TodoListColumn::IsFavorite)
+        .column(TodoListColumn::OwnerId)
+        .column_as(InvitationColumn::Permission, "permission")
         .left_join(TodoListInvitation)
         .filter(
             Condition::any()
                 .add(entity::todo_list::Column::OwnerId.eq(user.id))
                 .add(
                     Condition::all()
-                        .add(entity::todo_list_invitation::Column::ReceivingUserId.eq(user.id))
-                        .add(entity::todo_list_invitation::Column::IsAccepted.eq(true)),
+                        .add(InvitationColumn::ReceivingUserId.eq(user.id))
+                        .add(InvitationColumn::IsAccepted.eq(true)),
                 ),
         )
-        .order_by_asc(entity::todo_list::Column::Title)
+        .order_by_asc(TodoListColumn::Title)
+        .into_model::<entity::todo_list::TodoListWithPermission>()
         .all(&state.database)
         .await
+        .inspect_err(|e| error!("{e}"))
         .or_internal_server_error("Error loading todo lists")?;
 
     Ok(todo_lists)
@@ -164,7 +177,6 @@ pub async fn invite_to_todo_list(
         todo_list_id: sea_orm::Set(todo_list_id),
         permission: sea_orm::Set(data.permission),
         is_accepted: sea_orm::Set(false),
-        ..Default::default()
     };
 
     let _ = invitation

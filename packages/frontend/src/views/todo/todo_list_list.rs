@@ -28,7 +28,15 @@ pub fn TodoListListView() -> Element {
             .iter_mut()
             .find(|list| list.id == model.id)
         {
-            *item = model;
+            let new_item = entity::todo_list::TodoListWithPermission {
+                id: model.id,
+                title: model.title,
+                description: model.description,
+                is_favorite: model.is_favorite,
+                owner_id: model.owner_id,
+                permission: item.permission,
+            };
+            *item = new_item;
         }
     };
 
@@ -60,13 +68,17 @@ pub fn TodoListListView() -> Element {
 
 #[component]
 pub fn TodoListEntry(
-    todo_list: entity::todo_list::Model,
+    todo_list: entity::todo_list::TodoListWithPermission,
     ondelete: EventHandler<i32>,
     onupdate: EventHandler<entity::todo_list::Model>,
 ) -> Element {
     let mut toaster = use_toaster();
     let title = todo_list.title.clone();
     let auth_state = use_auth();
+
+    let permission = todo_list
+        .permission
+        .unwrap_or(entity::todo_list_invitation::InvitationPermission::Admin);
 
     let mut delete_todo_list = use_action(delete_todo_list);
     let mut update_favorite = use_action(move |is_favorite: bool| async move {
@@ -97,74 +109,85 @@ pub fn TodoListEntry(
                     p { class: "text-ellipsis", "{description}" }
                 }
             }
-            Button {
-                onclick: move |_| async move {
-                    update_favorite.call(!todo_list.is_favorite).await;
-                    if let Some(Ok(updated_todo_list)) = update_favorite.value() {
-                        onupdate.call(updated_todo_list());
-                    }
-                },
-                variant: ButtonVariant::Primary,
-                shape: ButtonShape::Square,
-                ghost: true,
-                class: "btn-sm",
-                disabled: update_favorite.pending(),
-                if update_favorite.pending() {
-                    Loader { size: LoaderSize::Small, class: "text-primary" }
-                } else {
-                    Icon {
-                        icon: LdHeart,
-                        class: if todo_list.is_favorite { "fill-primary" } else { "" },
-                    }
-                }
-            }
-            Dialog {
-                DialogTrigger {
-                    variant: ButtonVariant::Error,
-                    shape: ButtonShape::Square,
-                    ghost: true,
-                    class: "btn-sm",
-                    Icon { icon: LdTrash }
-                }
-                DialogContent { title: "Do you want to delete {title.clone()}?",
-                    form { method: "dialog",
-                        DialogAction {
-                            Button { variant: ButtonVariant::Secondary, "Cancel" }
-                            Button {
-                                onclick: move |_| {
-                                    let title_clone = title.clone();
-                                    async move {
-                                        delete_todo_list.call(todo_list.id).await;
-                                        match delete_todo_list.value() {
-                                            Some(Ok(_)) => {
-                                                toaster
-
-                                                    .success(
-                                                        &format!("Deleted {title_clone} successfully!"),
-                                                        ToastOptions::new(),
-                                                    );
-                                                ondelete.call(todo_list.id);
-                                            }
-                                            Some(Err(error)) => {
-                                                toaster
-                                                    .error(
-                                                        &format!("Failed to delete {title_clone}!"),
-                                                        ToastOptions::new().description(rsx! {
-                                                            span { "{error.to_string()}" }
-                                                        }),
-                                                    );
-                                            }
-                                            None => {
-                                                warn!("Request did not finish!");
-                                            }
-                                        }
-                                    }
-                                },
-                                variant: ButtonVariant::Error,
-                                "Delete"
+            div { class: "grid grid-cols-2 gap-2",
+                if permission.can_write() {
+                    Button {
+                        onclick: move |_| async move {
+                            update_favorite.call(!todo_list.is_favorite).await;
+                            if let Some(Ok(updated_todo_list)) = update_favorite.value() {
+                                onupdate.call(updated_todo_list());
+                            }
+                        },
+                        variant: ButtonVariant::Primary,
+                        shape: ButtonShape::Square,
+                        ghost: true,
+                        class: "btn-sm",
+                        disabled: update_favorite.pending(),
+                        if update_favorite.pending() {
+                            Loader {
+                                size: LoaderSize::Small,
+                                class: "text-primary",
+                            }
+                        } else {
+                            Icon {
+                                icon: LdHeart,
+                                class: if todo_list.is_favorite { "fill-primary" } else { "" },
                             }
                         }
                     }
+                }
+                if permission.can_admin() {
+                    Dialog {
+                        DialogTrigger {
+                            variant: ButtonVariant::Error,
+                            shape: ButtonShape::Square,
+                            ghost: true,
+                            class: "btn-sm",
+                            Icon { icon: LdTrash }
+                        }
+                        DialogContent { title: "Do you want to delete {title.clone()}?",
+                            form { method: "dialog",
+                                DialogAction {
+                                    Button { variant: ButtonVariant::Secondary, "Cancel" }
+                                    Button {
+                                        onclick: move |_| {
+                                            let title_clone = title.clone();
+                                            async move {
+                                                delete_todo_list.call(todo_list.id).await;
+                                                match delete_todo_list.value() {
+                                                    Some(Ok(_)) => {
+                                                        toaster
+
+                                                            .success(
+                                                                &format!("Deleted {title_clone} successfully!"),
+                                                                ToastOptions::new(),
+                                                            );
+                                                        ondelete.call(todo_list.id);
+                                                    }
+                                                    Some(Err(error)) => {
+                                                        toaster
+                                                            .error(
+                                                                &format!("Failed to delete {title_clone}!"),
+                                                                ToastOptions::new().description(rsx! {
+                                                                    span { "{error.to_string()}" }
+                                                                }),
+                                                            );
+                                                    }
+                                                    None => {
+                                                        warn!("Request did not finish!");
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        variant: ButtonVariant::Error,
+                                        "Delete"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    div {}
                 }
             }
         }
