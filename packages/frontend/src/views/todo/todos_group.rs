@@ -158,17 +158,15 @@ pub fn TodoEntry(
                             }
                         });
                     },
+                    variant: ButtonVariant::Primary,
+                    shape: ButtonShape::Square,
+                    ghost: true,
+                    class: "btn-sm",
                     if todo.completed {
                         Icon { icon: LdCircleCheckBig, class: "stroke-success" }
                     } else {
                         Icon { icon: LdCircle }
                     }
-                }
-                Button {
-                    variant: ButtonVariant::Primary,
-                    shape: ButtonShape::Square,
-                    ghost: true,
-                    class: "btn-sm",
                 }
 
                 Dialog {
