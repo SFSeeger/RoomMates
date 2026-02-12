@@ -1,5 +1,6 @@
 use crate::Route;
 use crate::components::ui::button::{Button, ButtonShape, ButtonVariant};
+use crate::components::ui::card::{Card, CardBody, CardTitle};
 use crate::components::ui::dialog::{Dialog, DialogAction, DialogContent, DialogTrigger};
 use crate::components::ui::list::{ComplexListDetails, List, ListDetails, ListRow};
 use crate::components::ui::toaster::{ToastOptions, use_toaster};
@@ -7,7 +8,9 @@ use api::routes::todo_list::retrieve_todo_list;
 use api::routes::todos::{delete_todo, list_todo, update_todo};
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::{LdCircle, LdCircleCheckBig, LdPlus, LdTrash};
+use dioxus_free_icons::icons::ld_icons::{
+    LdCircle, LdCircleCheckBig, LdPlus, LdTrash, LdUserRoundMinus,
+};
 use entity::todo::UpdateToDo;
 use entity::todo_list_invitation::InvitationPermission;
 use std::default::Default;
@@ -52,37 +55,58 @@ pub fn TodosGroupView(todo_list_id: i32) -> Element {
     };
 
     rsx! {
-        h1 { class: "text-2xl font-bold mb-4", "{todo_list.read().title}" }
-        List { header: "Your To-Do's",
-            if uncompleted_todos.read().is_empty() {
-                ListRow {
-                    ListDetails { title: "No To-Do's yet" }
-                }
-            }
-            for todo in uncompleted_todos.iter() {
-                TodoEntry {
-                    key: "{todo.id}",
-                    todo: todo.clone(),
-                    permission: todo_list.read().permission.unwrap_or(InvitationPermission::Admin),
-                    ondelete,
-                    onupdate,
-                }
-            }
-        }
+        div { class: "flex gap-2 flex-col md:flex-row",
+            Card { class: "grow w-full",
+                CardBody {
+                    CardTitle { "{todo_list.read().title}" }
+                    List { header: "Your To-Do's",
+                        if uncompleted_todos.read().is_empty() {
+                            ListRow {
+                                ListDetails { title: "No To-Do's yet" }
+                            }
+                        }
+                        for todo in uncompleted_todos.iter() {
+                            TodoEntry {
+                                key: "{todo.id}",
+                                todo: todo.clone(),
+                                permission: todo_list.read().permission.unwrap_or(InvitationPermission::Admin),
+                                ondelete,
+                                onupdate,
+                            }
+                        }
+                    }
 
-        List { header: "Completed",
-            if completed_todos.read().is_empty() {
-                ListRow {
-                    ListDetails { title: "No To-Do's yet" }
+                    List { header: "Completed",
+                        if completed_todos.read().is_empty() {
+                            ListRow {
+                                ListDetails { title: "No To-Do's yet" }
+                            }
+                        }
+                        for todo in completed_todos.iter() {
+                            TodoEntry {
+                                key: "{todo.id}",
+                                todo: todo.clone(),
+                                permission: todo_list.read().permission.unwrap_or(InvitationPermission::Admin),
+                                ondelete,
+                                onupdate,
+                            }
+                        }
+                    }
                 }
             }
-            for todo in completed_todos.iter() {
-                TodoEntry {
-                    key: "{todo.id}",
-                    todo: todo.clone(),
-                    permission: todo_list.read().permission.unwrap_or(InvitationPermission::Admin),
-                    ondelete,
-                    onupdate,
+            Card {
+                CardBody {
+                    CardTitle { "Members" }
+                    List { header: "",
+                        ListRow {
+                            ListDetails { title: "Member 1" }
+                            if todo_list.read().permission.unwrap_or(InvitationPermission::Admin).can_admin() {
+                                Button { variant: ButtonVariant::Error,
+                                    Icon { icon: LdUserRoundMinus }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
