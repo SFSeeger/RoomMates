@@ -41,9 +41,18 @@ pub fn StandardAppLayout(children: Element) -> Element {
                                         StatusCode::UNAUTHORIZED => rsx! {
                                             ErrorDisplay::<LdCircleX> {
                                                 title: "Access Denied",
-                                                description: "You must be logged in to access this page. If you are, check if you have the necessary permissions.",
+                                                description: "You must be logged in to access this page.",
                                                 action_text: "Go to Login",
                                                 redirect_route: Route::LoginPage {},
+                                                error_context: Some(error),
+                                            }
+                                        },
+                                        StatusCode::FORBIDDEN => rsx! {
+                                            ErrorDisplay::<LdCircleX> {
+                                                title: "Access Denied",
+                                                description: "You do not have permission to access this page.",
+                                                action_text: "Go to Home",
+                                                redirect_route: Route::Home {},
                                                 error_context: Some(error),
                                             }
                                         },
