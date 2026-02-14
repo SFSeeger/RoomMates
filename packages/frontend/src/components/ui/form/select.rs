@@ -29,7 +29,7 @@ pub fn Select<T: FieldValue + EnumSelect>(
                 legend { class: "fieldset_legend", {label.unwrap()} }
             }
             select {
-                class: "select",
+                class: "select w-full",
                 class: if is_invalid() { "input-error" },
                 aria_invalid: is_invalid,
                 onblur: field_attributes.onblur,
@@ -59,7 +59,7 @@ pub fn Select<T: FieldValue + EnumSelect>(
                 })}
             }
             if is_invalid() && field.is_touched() {
-                ul { class: "text-error", role: "alert",
+                ul { class: "text-error text-sm", role: "alert",
                     {field.errors.iter().map(|error| rsx! {
                         li { "{error}" }
                     })}

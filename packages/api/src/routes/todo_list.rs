@@ -269,8 +269,9 @@ pub async fn invite_to_todo_list(
     };
 
     let _ = invitation
-        .save(&state.database)
+        .insert(&state.database)
         .await
+        .inspect_err(|e| error!("{e}"))
         .or_internal_server_error("Failed to invite user")?;
 
     Ok(NoContent)

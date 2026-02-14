@@ -7,12 +7,42 @@ use api::routes::todos::list_todo;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::LdPlus;
+use entity::todo_list::TodoListWithPermission;
 use entity::todo_list_invitation::InvitationPermission;
+
+#[derive(Clone, Copy, PartialEq)]
+pub struct TodoListContext {
+    todo_list: Signal<TodoListWithPermission>,
+}
+
+impl TodoListContext {
+    pub fn new(todo_list: Signal<TodoListWithPermission>) -> Self {
+        Self { todo_list }
+    }
+
+    /// Returns the To-Do List
+    pub fn todo_list(&self) -> TodoListWithPermission {
+        (self.todo_list)()
+    }
+
+    /// Returns the user permission or Admin if permission is None
+    pub fn permission(&self) -> InvitationPermission {
+        if let Some(permission) = (self.todo_list)().permission {
+            permission
+        } else {
+            InvitationPermission::Admin
+        }
+    }
+}
 
 #[component]
 pub fn TodosGroupView(todo_list_id: i32) -> Element {
     let todo_list = use_loader(move || retrieve_todo_list(todo_list_id))?;
     let mut todos = use_loader(move || list_todo(todo_list_id))?;
+
+    let todo_list_signal = use_signal(|| todo_list.cloned());
+
+    use_context_provider(|| TodoListContext::new(todo_list_signal));
 
     let completed_todos = use_memo(move || {
         todos
@@ -94,12 +124,7 @@ pub fn TodosGroupView(todo_list_id: i32) -> Element {
                     }
                 }
             }
-            Card { class: "w-full md:w-1/3",
-                CardBody {
-                    CardTitle { "Members" }
-                    MemberList { todo_list_id, user_permission }
-                }
-            }
+            MemberList { todo_list_id, user_permission }
         }
 
         if user_permission.can_write() {
@@ -114,4 +139,9 @@ pub fn TodosGroupView(todo_list_id: i32) -> Element {
             }
         }
     }
+}
+
+pub fn use_todo_list() -> TodoListContext {
+    try_use_context::<TodoListContext>()
+        .expect("Cannot use 'use_todo_list' outside of TodosGroupView!")
 }
