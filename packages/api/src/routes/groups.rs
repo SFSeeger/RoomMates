@@ -1,5 +1,4 @@
 use crate::dioxus_fullstack::NoContent;
-use crate::routes::users;
 use crate::routes::users::UserInfo;
 use crate::server;
 use dioxus::prelude::*;
@@ -9,35 +8,50 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
 
-#[post("/api/groups", ext: Extension<server::AppState>)]
+#[post("/api/groups", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn create_group(group_name: String) -> Result<entity::group::Model, ServerFnError> {
     use entity::is_in_group;
-    use sea_orm::{ActiveModelTrait, Set};
+    use sea_orm::{ActiveModelTrait, Set, TransactionError, TransactionTrait};
 
-    let group = entity::group::ActiveModel {
-        name: Set(group_name),
-        ..Default::default()
-    };
+    ext.database
+        .transaction::<_, entity::group::Model, ServerFnError>(|txn| {
+            Box::pin(async move {
+                let group = entity::group::ActiveModel {
+                    name: Set(group_name),
+                    ..Default::default()
+                };
 
-    let group = group
-        .insert(&ext.database)
+                let group = group
+                    .insert(txn)
+                    .await
+                    .or_internal_server_error("Error creating group")?;
+
+                let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+
+                let pair = is_in_group::ActiveModel {
+                    user_id: Set(user.id),
+                    group_id: Set(group.id),
+                };
+
+                pair.insert(txn)
+                    .await
+                    .or_internal_server_error("Error assigning user to group")?;
+
+                Ok(group)
+            })
+        })
         .await
-        .or_internal_server_error("Error saving new group to database")?;
-
-    let user = users::get_me()
-        .await
-        .or_internal_server_error("Error loading user")?;
-
-    let pair = is_in_group::ActiveModel {
-        user_id: Set(user.id),
-        group_id: Set(group.id),
-    };
-
-    pair.insert(&ext.database)
-        .await
-        .or_internal_server_error("Error inserting pair into database")?;
-
-    Ok(group)
+        .map_err(|error| {
+            error!("{error}");
+            match error {
+                TransactionError::Connection(_) => ServerFnError::ServerError {
+                    message: String::from("Error creating group"),
+                    code: 500,
+                    details: None,
+                },
+                TransactionError::Transaction(error) => error,
+            }
+        })
 }
 
 #[get("/api/groups", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
@@ -54,137 +68,139 @@ pub async fn list_groups() -> Result<Vec<entity::group::Model>, ServerFnError> {
     Ok(groups)
 }
 
-#[get("/api/groups/{group_id}/is_user_in_group", ext: Extension<server::AppState>)]
-pub async fn is_user_in_group(group_id: i32, user_id: i32) -> Result<bool, ServerFnError> {
-    use entity::is_in_group::Entity as IsInGroup;
-    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
-
-    Ok(IsInGroup::find()
-        .filter(entity::is_in_group::Column::GroupId.eq(group_id))
-        .filter(entity::is_in_group::Column::UserId.eq(user_id))
-        .one(&ext.database)
-        .await
-        .or_internal_server_error("Error loading from database")?
-        .is_some())
-}
-
 /// Adds an user to a group
-#[post("/api/groups/{group_id}/add_user", ext: Extension<server::AppState>)]
+#[post("/api/groups/{group_id}/add-user", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn add_user_to_group(group_id: i32, email: String) -> Result<NoContent, ServerFnError> {
+    use crate::routes::groups::server_functions::is_user_in_group;
     use entity::is_in_group;
     use entity::user::Entity as User;
     use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 
-    let user = User::find()
-        .filter(entity::user::Column::Email.eq(email))
-        .one(&ext.database)
-        .await
-        .or_internal_server_error("Error loading user from database")?
-        .or_not_found("User not found")?;
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
-    let checker = is_user_in_group(group_id, user.id)
-        .await
-        .or_internal_server_error("Error checking if user is in group")?;
+    let authenticated = is_user_in_group(&ext.database, group_id, user.id).await?;
+    if authenticated {
+        let new_user = User::find()
+            .filter(entity::user::Column::Email.eq(email))
+            .one(&ext.database)
+            .await
+            .or_internal_server_error("Error loading user from database")?
+            .or_not_found("User not found")?;
 
-    if checker {
-        return Err(ServerFnError::ServerError {
-            message: "User not in group".to_string(),
-            code: 409,
+        let checker = is_user_in_group(&ext.database, group_id, new_user.id).await?;
+
+        (!checker).or_bad_request("User already in group")?;
+
+        let pair = is_in_group::ActiveModel {
+            user_id: Set(new_user.id),
+            group_id: Set(group_id),
+        };
+
+        let _pair = pair
+            .insert(&ext.database)
+            .await
+            .or_internal_server_error("Error inserting pair into database")?;
+
+        Ok(NoContent)
+    } else {
+        Err(ServerFnError::ServerError {
+            message: "No permission to add a new user.".to_string(),
+            code: 401,
             details: None,
-        });
-    };
-
-    let pair = is_in_group::ActiveModel {
-        user_id: Set(user.id),
-        group_id: Set(group_id),
-    };
-
-    let _pair: is_in_group::ActiveModel = pair
-        .insert(&ext.database)
-        .await
-        .or_internal_server_error("Error inserting pair into database")?
-        .into();
-
-    Ok(NoContent)
+        })
+    }
 }
 
 ///Deletes an user from a group
-#[post("/api/groups/{group_id}/remove_user", ext: Extension<server::AppState>)]
+#[post("/api/groups/{group_id}/remove-user", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn remove_user_from_group(
     group_id: i32,
     user_id: i32,
 ) -> Result<NoContent, ServerFnError> {
+    use crate::routes::groups::server_functions::is_user_in_group;
     use entity::is_in_group;
     use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
-    let result = is_in_group::Entity::delete_many()
-        .filter(is_in_group::Column::UserId.eq(user_id))
-        .filter(is_in_group::Column::GroupId.eq(group_id))
-        .exec(&ext.database)
-        .await
-        .or_internal_server_error("Error deleting relation")?;
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+    let authenticated = is_user_in_group(&ext.database, group_id, user.id).await?;
 
-    (result.rows_affected > 0).or_not_found(format!(
-        "Failed to remove user {user_id} from group {group_id}"
-    ))?;
+    let group = retrieve_group(group_id).await?;
+    let group_size = group.members.len();
 
-    Ok(NoContent)
+    if authenticated {
+        if group_size > 1 {
+            let result = is_in_group::Entity::delete_many()
+                .filter(is_in_group::Column::UserId.eq(user_id))
+                .filter(is_in_group::Column::GroupId.eq(group_id))
+                .exec(&ext.database)
+                .await
+                .or_internal_server_error("Error deleting relation")?;
+
+            (result.rows_affected > 0).or_not_found(format!(
+                "Failed to remove user {user_id} from group {group_id}"
+            ))?;
+
+            Ok(NoContent)
+        } else {
+            delete_group(group_id).await?;
+            Ok(NoContent)
+        }
+    } else {
+        Err(ServerFnError::ServerError {
+            message: "No permission to remove a user from this group.".to_string(),
+            code: 401,
+            details: None,
+        })
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct GroupCardData {
+pub struct GroupDetailData {
     pub name: String,
     pub members: Vec<UserInfo>,
     pub events: Vec<entity::event::Model>,
 }
 
-///returns default struct of GroupCardData when trying to call a group which does not exist
+///returns default struct of GroupDetailData when trying to call a group which does not exist
 #[get("/api/groups/{group_id}", ext: Extension<server::AppState>)]
-pub async fn retrieve_group(group_id: i32) -> Result<GroupCardData, ServerFnError> {
+pub async fn retrieve_group(group_id: i32) -> Result<GroupDetailData, ServerFnError> {
     use sea_orm::EntityTrait;
     use sea_orm::ModelTrait;
 
-    let groups = Group::find_by_id(group_id)
+    let group = Group::find_by_id(group_id)
         .one(&ext.database)
         .await
-        .or_not_found("Group not found")?
-        .or_internal_server_error("Error loading group from database")?;
+        .or_internal_server_error("Error loading group from database")?
+        .or_not_found("Group not found")?;
 
-    let name = &groups.name;
-    let member_info = groups
+    let members = group
         .find_related(User)
         .all(&ext.database)
         .await
-        .or_internal_server_error("Error loading members from database")?;
-    let mut members = Vec::new();
-    for member in member_info {
-        members.push(UserInfo {
-            id: member.id,
-            email: member.email,
-            first_name: member.first_name,
-            last_name: member.last_name,
-        })
-    }
+        .or_internal_server_error("Error loading members from database")?
+        .into_iter()
+        .map(UserInfo::from_user_model)
+        .collect();
 
-    let events = groups
+    let events = group
         .find_related(Event)
         .all(&ext.database)
         .await
         .or_internal_server_error("Error loading events from database")?;
 
-    let group_data = GroupCardData {
-        name: name.to_string(),
+    let group_data = GroupDetailData {
+        name: group.name,
         members,
         events,
     };
     Ok(group_data)
 }
 
-#[post("/api/groups/{group_id}/change_group_name", ext: Extension<server::AppState>)]
+#[put("/api/groups/{group_id}", ext: Extension<server::AppState>)]
 pub async fn change_group_name(
     group_id: i32,
     group_name_new: String,
-) -> Result<NoContent, ServerFnError> {
+) -> Result<entity::group::Model, ServerFnError> {
     use entity::group;
     use entity::group::Entity as Group;
     use sea_orm::{ActiveModelTrait, EntityTrait, Set};
@@ -192,17 +208,65 @@ pub async fn change_group_name(
     let group = Group::find_by_id(group_id)
         .one(&ext.database)
         .await
-        .or_not_found("Group not found")
-        .or_internal_server_error("Error loading Group")?;
+        .or_internal_server_error("Error loading Group")?
+        .or_not_found("Group not found")?;
 
-    let mut group: group::ActiveModel = group.unwrap().into();
+    let mut group: group::ActiveModel = group.into();
 
-    group.name = Set(group_name_new.to_owned());
+    group.name = Set(group_name_new);
 
-    group
+    let group = group
         .update(&ext.database)
         .await
         .or_internal_server_error("Error updating database")?;
 
-    Ok(NoContent)
+    Ok(group)
+}
+
+#[delete("/api/groups/{group_id}", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn delete_group(group_id: i32) -> Result<NoContent, ServerFnError> {
+    use crate::routes::groups::server_functions::is_user_in_group;
+    use entity::group::Entity as Group;
+    use sea_orm::EntityTrait;
+
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+    let authenticated = is_user_in_group(&ext.database, group_id, user.id).await?;
+    if authenticated {
+        let delete_result = Group::delete_by_id(group_id)
+            .exec(&ext.database)
+            .await
+            .or_internal_server_error("Error deleting user")?;
+
+        (delete_result.rows_affected == 1).or_not_found("User not found")?;
+        Ok(NoContent)
+    } else {
+        Err(ServerFnError::ServerError {
+            message: "No permission to delte group.".to_string(),
+            code: 401,
+            details: None,
+        })
+    }
+}
+
+#[cfg(feature = "server")]
+mod server_functions {
+    use super::*;
+    use sea_orm::DatabaseConnection;
+
+    pub async fn is_user_in_group(
+        db: &DatabaseConnection,
+        group_id: i32,
+        user_id: i32,
+    ) -> Result<bool, ServerFnError> {
+        use entity::is_in_group::Entity as IsInGroup;
+        use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+        Ok(IsInGroup::find()
+            .filter(entity::is_in_group::Column::GroupId.eq(group_id))
+            .filter(entity::is_in_group::Column::UserId.eq(user_id))
+            .one(db)
+            .await
+            .or_internal_server_error("Error loading from database")?
+            .is_some())
+    }
 }

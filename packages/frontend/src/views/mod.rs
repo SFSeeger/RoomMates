@@ -4,12 +4,8 @@ mod not_found;
 pub use not_found::NotFound;
 mod login;
 pub use login::LoginPage;
+pub mod groups;
 mod sign_up;
 pub mod todo;
-
 pub use sign_up::SignupView;
 pub mod event_views;
-mod group_view;
-pub use group_view::GroupView;
-mod group_detailed;
-pub use group_detailed::EditGroup;

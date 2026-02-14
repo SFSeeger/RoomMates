@@ -5,7 +5,7 @@ use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::LdSquarePen;
 
-#[component()]
+#[component]
 pub fn GroupCard(group_id: i32) -> Element {
     let group_data = use_server_future(move || async move { retrieve_group(group_id).await })?;
 

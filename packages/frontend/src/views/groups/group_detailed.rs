@@ -1,10 +1,12 @@
 use crate::components::ui::button::{Button, ButtonShape, ButtonVariant};
 use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
-use crate::components::ui::dialog::{Dialog, DialogAction, DialogContent, DialogTrigger};
+use crate::components::ui::dialog::{
+    Dialog, DialogAction, DialogContent, DialogTrigger, use_dialog,
+};
 use crate::components::ui::form::input::Input;
 use crate::components::ui::form::submit_button::SubmitButton;
 use crate::components::ui::list::{List, ListDetails, ListRow};
-use crate::components::ui::toaster::{Toast, ToastVariant, ToasterState};
+use crate::components::ui::toaster::{ToastOptions, use_toaster};
 use api::routes::groups::retrieve_group;
 use api::routes::groups::{add_user_to_group, change_group_name, remove_user_from_group};
 use api::routes::users::{EMAIL_REGEX, UserInfo};
@@ -30,7 +32,7 @@ struct GroupNameNew {
 pub fn EditGroup(group_id: i32) -> Element {
     let mut group = use_loader(move || async move { retrieve_group(group_id).await })?;
 
-    let toaster = use_context::<ToasterState>();
+    let mut toaster = use_toaster();
 
     let mut change_group_name = use_action(change_group_name);
     let mut form_state_group_name = use_form();
@@ -42,66 +44,32 @@ pub fn EditGroup(group_id: i32) -> Element {
 
     form_state_group_name.revalidate();
 
-    let onsubmitgroupname = use_on_submit(&form_state_group_name, move |form| async move {
-        let group_name_new: GroupNameNew = form.parsed_values().unwrap();
-        change_group_name
-            .call(group_id, group_name_new.group_name.clone())
-            .await;
+    let value = group_name_field.clone();
 
-        match change_group_name.value() {
-            Some(Ok(_)) => {
-                debug!("Group name updated");
-                group.restart();
-            }
-            Some(Err(error)) => {
-                debug!("Failed to change group name with error {:?}", error)
-            }
-            None => {
-                debug! {"No value present!"}
-            }
-        }
-    });
-
-    let mut form_state_add = use_form();
-    let email = use_form_field("email", String::new())
-        .with_validator(validators::required("Email is required"))
-        .with_validator(validators::pattern(
-            Regex::new(EMAIL_REGEX)?,
-            "Email must be a valid email",
-        ));
-    form_state_add.register_field(&email);
-
-    let mut add_user_to_group = use_action(add_user_to_group);
-    let onsubmitadd = use_on_submit(&form_state_add, move |form| {
-        let value = toaster.clone();
+    let onsubmitgroupname = use_on_submit(&form_state_group_name, move |form| {
+        let mut group_name_field = value.clone();
         async move {
-            let add_user_form_data: AddUserFormData = form.parsed_values().unwrap();
-            let mut toaster_clone = value.clone();
-            add_user_to_group
-                .call(group_id, add_user_form_data.email.clone())
+            let group_name_new: GroupNameNew = form.parsed_values().unwrap();
+            change_group_name
+                .call(group_id, group_name_new.group_name.clone())
                 .await;
-            match add_user_to_group.value() {
+
+            match change_group_name.value() {
                 Some(Ok(_)) => {
-                    toaster_clone.toast(Toast::new(
-                        format!("Added user {} to group", add_user_form_data.email),
-                        None,
-                        true,
-                        ToastVariant::Success,
-                    ));
+                    toaster.success("Changed group name successfully!", ToastOptions::new());
+                    group_name_field.mark_clean();
                     group.restart();
                 }
                 Some(Err(error)) => {
-                    toaster_clone.toast(Toast::new(
-                        "Failed to add user".into(),
-                        Some(rsx! {
-                            span { "{error}" }
+                    toaster.error(
+                        "Failed to change group name!",
+                        ToastOptions::new().description(rsx! {
+                            span { "{error.to_string()}" }
                         }),
-                        true,
-                        ToastVariant::Error,
-                    ));
+                    );
                 }
                 None => {
-                    debug! {"Add user did not finish"}
+                    warn! {"No value present!"}
                 }
             }
         }
@@ -117,8 +85,8 @@ pub fn EditGroup(group_id: i32) -> Element {
     rsx! {
         div {
             h1 { class: "relative text-2xl font-bold text-center", "Edit your groups" }
-            div { class: "flex w-full flex-col items-start md:flex-row",
-                div { class: "Group-Events flex-1 items-center grow justify-center",
+            div { class: "flex w-full flex-col items-start md:flex-row gap-2",
+                div { class: "flex-1 items-center w-full justify-center",
                     Card { class: "w-full",
                         CardBody {
                             CardTitle { class: "flex items-center justify-center",
@@ -152,7 +120,7 @@ pub fn EditGroup(group_id: i32) -> Element {
                         }
                     }
                 }
-                div { class: "Member-Sidecard relative flex flex-col w-66 overflow-y-auto",
+                div { class: "relative flex flex-col md:w-1/6 overflow-y-auto",
                     List { header: "Members",
                         div { class: "absolute top-3 right-4 z-10",
                             Dialog {
@@ -164,30 +132,7 @@ pub fn EditGroup(group_id: i32) -> Element {
                                     Icon { icon: LdPlus }
                                 }
                                 DialogContent { title: "Enter the email of the person you want to add to {group.read().name}",
-                                    form { onsubmit: onsubmitadd,
-                                        Input {
-                                            field: email,
-                                            label: "User email",
-                                            r#type: "email",
-                                            icon: rsx! {
-                                                Icon { icon: LdMail }
-                                            },
-                                        }
-                                        DialogAction {
-                                            form { method: "dialog",
-                                                Button {
-                                                    r#type: "button",
-                                                    variant: ButtonVariant::Secondary,
-                                                    "Cancel"
-                                                }
-                                            }
-                                            Button {
-                                                r#type: "submit",
-                                                variant: ButtonVariant::Primary,
-                                                "Add"
-                                            }
-                                        }
-                                    }
+                                    AddUserForm { group_id }
                                 }
                             }
                         }
@@ -221,8 +166,8 @@ pub fn GroupListEntry(
     group_id: i32,
     onmemberremove: EventHandler<i32>,
 ) -> Element {
-    let toaster = use_context::<ToasterState>();
-    let name = format! {"{} {}", member.first_name, member.last_name};
+    let mut toaster = use_toaster();
+    let name = use_memo(move || format! {"{} {}", member.first_name, member.last_name});
     let mut remove_user_from_group = use_action(remove_user_from_group);
     rsx! {
         div { class: "flex justify-between items-center mb-2 w-full",
@@ -243,46 +188,104 @@ pub fn GroupListEntry(
                                 onclick: move |_| {
                                     let member_id = member.id;
                                     let group_id = group_id;
-                                    let mut toaster_clone = toaster.clone();
-                                    let name_clone = name.clone();
                                     async move {
                                         remove_user_from_group.call(group_id, member_id).await;
                                         match remove_user_from_group.value() {
                                             Some(Ok(_)) => {
-                                                toaster_clone
-                                                    .toast(
-                                                        Toast::new(
-                                                            format!("Deleted {} successfully!", name_clone),
-                                                            None,
-                                                            true,
-                                                            ToastVariant::Success,
-                                                        ),
+                                                toaster
+                                                    .success(
+                                                        &format!("Removed {} successfully!", name),
+                                                        ToastOptions::new(),
                                                     );
                                                 onmemberremove.call(member_id);
                                             }
                                             Some(Err(error)) => {
-                                                toaster_clone
-                                                    .toast(
-                                                        Toast::new(
-                                                            format!("Failed to delete {}!", name_clone),
-                                                            Some(rsx! {
-                                                                span { "{error.to_string()}" }
-                                                            }),
-                                                            true,
-                                                            ToastVariant::Error,
-                                                        ),
+                                                toaster
+                                                    .error(
+                                                        &format!("Failed to remove {}!", name),
+                                                        ToastOptions::new().description(rsx! {
+                                                            span { "{error.to_string()}" }
+                                                        }),
                                                     );
                                             }
-                                            None => warn!("Delete member did not finish!"),
+                                            None => warn!("Remove member did not finish!"),
                                         }
                                     }
                                 },
                                 variant: ButtonVariant::Error {},
-                                "Delete"
+                                "Remove"
                             }
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+#[component]
+pub fn AddUserForm(group_id: i32) -> Element {
+    let mut group = use_loader(move || async move { retrieve_group(group_id).await })?;
+    let mut toaster = use_toaster();
+    let dialog = use_dialog();
+    let mut form_state_add = use_form();
+    let email = use_form_field("email", String::new())
+        .with_validator(validators::required("Email is required"))
+        .with_validator(validators::pattern(
+            Regex::new(EMAIL_REGEX)?,
+            "Email must be a valid email",
+        ));
+    form_state_add.register_field(&email);
+    let mut add_user_to_group = use_action(add_user_to_group);
+    let onsubmitadd = use_on_submit(&form_state_add, move |mut form| async move {
+        let add_user_form_data: AddUserFormData = form.parsed_values().unwrap();
+        add_user_to_group
+            .call(group_id, add_user_form_data.email.clone())
+            .await;
+        match add_user_to_group.value() {
+            Some(Ok(_)) => {
+                toaster.success(
+                    &format!("Added user {} to group!", add_user_form_data.email),
+                    ToastOptions::new(),
+                );
+                group.restart();
+                dialog.close();
+                form.reset();
+            }
+            Some(Err(error)) => {
+                toaster.error(
+                    "Failed to add user!",
+                    ToastOptions::new().description(rsx! {
+                        span { "{error.to_string()}" }
+                    }),
+                );
+            }
+            None => {
+                warn! {"Add user did not finish"}
+            }
+        }
+    });
+    rsx! {
+        form { onsubmit: onsubmitadd,
+            Input {
+                field: email,
+                label: "User email",
+                r#type: "email",
+                icon: rsx! {
+                    Icon { icon: LdMail }
+                },
+            }
+            DialogAction {
+                Button {
+                    onclick: move |_| {
+                        dialog.close();
+                    },
+                    r#type: "button",
+                    variant: ButtonVariant::Secondary,
+                    "Cancel"
+                }
+
+                Button { r#type: "submit", variant: ButtonVariant::Primary, "Add" }
             }
         }
     }
