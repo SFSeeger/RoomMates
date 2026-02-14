@@ -65,4 +65,5 @@ pub struct UserWithTodoListPermission {
     pub first_name: String,
     pub last_name: String,
     pub permission: super::todo_list_invitation::InvitationPermission,
+    pub invitation_accepted: bool,
 }

@@ -75,10 +75,8 @@ pub async fn retrieve_todo_list(
 pub async fn list_todo_list_members(
     todo_list_id: i32,
 ) -> Result<Vec<entity::user::UserWithTodoListPermission>, ServerFnError> {
-    use sea_orm::DatabaseBackend;
     use sea_orm::EntityTrait;
     use sea_orm::JoinType;
-    use sea_orm::QueryTrait;
     use sea_orm::prelude::Expr;
     use sea_orm::{ColumnTrait, QueryFilter, QuerySelect, RelationTrait};
 
@@ -95,28 +93,13 @@ pub async fn list_todo_list_members(
             Expr::Constant(entity::todo_list_invitation::InvitationPermission::Admin.into()),
             "permission",
         )
+        .column_as(Expr::Constant(true.into()), "invitation_accepted")
         .into_model::<entity::user::UserWithTodoListPermission>()
         .one(&state.database)
         .await
         .inspect_err(|e| error!("Owner Query Failed: {e}"))
         .or_internal_server_error("Failed to load members")?
         .or_not_found("Todo list not found")?;
-
-    debug!(
-        "{:#?}",
-        User::find()
-            .filter(entity::todo_list_invitation::Column::TodoListId.eq(todo_list_id))
-            .join(
-                JoinType::InnerJoin,
-                entity::todo_list_invitation::Relation::Receiver.def().rev(),
-            )
-            .column_as(
-                entity::todo_list_invitation::Column::Permission,
-                "permission",
-            )
-            .build(DatabaseBackend::MySql)
-            .to_string()
-    );
 
     let mut members = User::find()
         .filter(entity::todo_list_invitation::Column::TodoListId.eq(todo_list_id))
@@ -127,6 +110,10 @@ pub async fn list_todo_list_members(
         .column_as(
             entity::todo_list_invitation::Column::Permission,
             "permission",
+        )
+        .column_as(
+            entity::todo_list_invitation::Column::IsAccepted,
+            "invitation_accepted",
         )
         .into_model::<entity::user::UserWithTodoListPermission>()
         .all(&state.database)
@@ -174,7 +161,7 @@ pub async fn update_todo_list(
 
     permission
         .can_write()
-        .or_unauthorized("Unauthorized to update todo list")?;
+        .or_forbidden("Unauthorized to update todo list")?;
 
     let mut todo_list = data.into_active_model();
     todo_list.id = sea_orm::Unchanged(todo_list_id);
@@ -195,11 +182,11 @@ pub async fn delete_todo_list(todo_list_id: i32) -> Result<NoContent, ServerFnEr
     let permission =
         server::todo_lists::get_todo_list_permission(todo_list_id, user.id, &state.database)
             .await?
-            .or_unauthorized("Unauthorized to update todo list")?;
+            .or_forbidden("Unauthorized to update todo list")?;
 
     permission
         .can_admin()
-        .or_unauthorized("Unauthorized to update todo list")?;
+        .or_forbidden("Unauthorized to update todo list")?;
 
     TodoList::delete_by_id(todo_list_id)
         .exec(&state.database)
@@ -245,11 +232,19 @@ pub async fn invite_to_todo_list(
     let permission =
         server::todo_lists::get_todo_list_permission(todo_list_id, user.id, &state.database)
             .await?
-            .or_unauthorized("Unauthorized to invite")?;
+            .or_forbidden("Unauthorized to invite")?;
 
     permission
         .can_admin()
-        .or_unauthorized("Unauthorized to invite")?;
+        .or_forbidden("Unauthorized to invite")?;
+
+    let todo_list = TodoList::find_by_id(todo_list_id)
+        .one(&state.database)
+        .await
+        .or_internal_server_error("Failed to retieve To-Do List")?
+        .or_not_found(format!("Unable to find To-Do List with id {todo_list_id}"))?;
+
+    (todo_list.owner_id != to_user.id).or_bad_request("Cannot invite owner!")?;
 
     let existing_invitation = TodoListInvitation::find()
         .filter(entity::todo_list_invitation::Column::ReceivingUserId.eq(to_user.id))

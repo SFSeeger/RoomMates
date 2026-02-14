@@ -11,6 +11,7 @@ entity = { workspace = true }
 dioxus-free-icons = { version = "0.10.0", features = ["lucide"] }
 uuid = { version = "1.19.0", features = ["js", "v4"] }
 serde = { workspace = true }
+serde_json = { workspace = true }
 form_hooks = { workspace = true }
 regex = { workspace = true }
 dioxus-primitives = { git = "https://github.com/DioxusLabs/components", version = "0.0.1", default-features = false }

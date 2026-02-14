@@ -85,7 +85,7 @@ pub fn TodosGroupView(todo_list_id: i32) -> Element {
         .unwrap_or(InvitationPermission::Admin);
 
     rsx! {
-        div { class: "flex gap-2 flex-col md:flex-row",
+        div { class: "flex gap-2 flex-col lg:flex-row",
             Card { class: "grow w-full",
                 CardBody {
                     CardTitle { "{todo_list.read().title}" }

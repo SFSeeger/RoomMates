@@ -20,6 +20,18 @@ async fn find_active_todo_list_invitation(
         .await
         .inspect_err(|e| error!("{e}"))
 }
+async fn find_todo_list_invitation(
+    todo_list_id: i32,
+    user_id: i32,
+    database: &DatabaseConnection,
+) -> Result<Option<entity::todo_list_invitation::Model>, DbErr> {
+    TodoListInvitation::find()
+        .filter(InviteColumn::ReceivingUserId.eq(user_id))
+        .filter(InviteColumn::TodoListId.eq(todo_list_id))
+        .one(database)
+        .await
+        .inspect_err(|e| error!("{e}"))
+}
 
 pub(crate) async fn get_todo_list_permission(
     todo_list_id: i32,
@@ -75,7 +87,7 @@ pub(crate) async fn remove_user_from_todo_list(
         user_id
     };
 
-    let invitation = find_active_todo_list_invitation(todo_list_id, user_id_to_remove, database)
+    let invitation = find_todo_list_invitation(todo_list_id, user_id_to_remove, database)
         .await
         .or_internal_server_error("Failed to retrieve invite")?
         .or_not_found("Cannot remove user from todo list")?;

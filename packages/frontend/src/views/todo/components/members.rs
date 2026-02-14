@@ -9,7 +9,7 @@ use crate::components::ui::dialog::{
 use crate::components::ui::form::input::Input;
 use crate::components::ui::form::select::Select;
 use crate::components::ui::form::submit_button::SubmitButton;
-use crate::components::ui::list::{List, ListDetails, ListRow};
+use crate::components::ui::list::{ComplexListDetails, List, ListDetails, ListRow};
 use crate::components::ui::toaster::{ToastOptions, use_toaster};
 use crate::views::todo::todos_group::use_todo_list;
 use api::routes::todo_list::{
@@ -24,6 +24,7 @@ use dioxus_sdk::time::use_timeout;
 use entity::todo_list_invitation::InvitationPermission;
 use form_hooks::prelude::{use_form, use_form_field, use_on_submit};
 use form_hooks::validators;
+use frontend::message_from_captured_error;
 use regex::Regex;
 use std::time::Duration;
 
@@ -39,29 +40,38 @@ pub fn MemberList(todo_list_id: i32, user_permission: InvitationPermission) -> E
         timeout.action(());
     });
 
-    let onmemberkick = move || {
+    let onmemberchange = move || {
         members.restart();
         show_skeleton.set(false);
         timeout.action(());
     };
 
     rsx! {
-        Card { class: "w-full md:w-1/3",
+        Card { class: "shrink-0 w-full lg:w-1/2 xl:w-1/3",
             CardBody {
-                CardTitle { class: "flex justify-between",
+                CardTitle { class: "flex items-center justify-between",
                     "Members"
                     Dialog {
                         DialogTrigger {
                             Icon { icon: LdUserRoundPlus }
                         }
-                        DialogContent { title: "Invite a User to this To-Do List", InviteMemberForm {} }
+                        DialogContent {
+                            title: "Invite a User to this To-Do List",
+                            dismissible: false,
+                            close_button: false,
+                            InviteMemberForm { onmemberinvited: onmemberchange }
+                        }
                     }
                 }
                 List { header: "",
                     match members.read().as_ref() {
                         Some(Ok(members)) => rsx! {
                             for member in members.iter() {
-                                MemberEntry { key: "{member.id}", member: member.clone(), onmemberkick }
+                                MemberEntry {
+                                    key: "{member.id}",
+                                    member: member.clone(),
+                                    onmemberkick: onmemberchange,
+                                }
                             }
                         },
                         Some(Err(_)) => rsx! {
@@ -84,7 +94,7 @@ pub fn MemberList(todo_list_id: i32, user_permission: InvitationPermission) -> E
 }
 
 #[component]
-fn InviteMemberForm() -> Element {
+fn InviteMemberForm(onmemberinvited: EventHandler<()>) -> Element {
     let dialog = use_dialog();
     let mut toaster = use_toaster();
     let todo_list_context = use_todo_list();
@@ -92,6 +102,8 @@ fn InviteMemberForm() -> Element {
 
     let mut invite_user =
         use_action(move |data| async move { invite_to_todo_list(todo_list_id, data).await });
+
+    let mut form_error = use_signal(|| None);
 
     let mut form_state = use_form();
     let email = use_form_field("email", String::new()).with_validator(validators::pattern(
@@ -113,13 +125,13 @@ fn InviteMemberForm() -> Element {
             Some(Ok(_)) => {
                 toaster.success("Invited User successfully", ToastOptions::new());
                 dialog.close();
+                form_error.set(None);
                 form_state.reset();
+                onmemberinvited.call(());
             }
             Some(Err(error)) => {
-                toaster.error(
-                    "Inviting user failed!",
-                    ToastOptions::new().description(rsx! { "{error}" }),
-                );
+                let message = message_from_captured_error(error);
+                form_error.set(Some(message));
             }
             None => {
                 warn!("Invite user request did not finish!");
@@ -129,6 +141,15 @@ fn InviteMemberForm() -> Element {
 
     rsx! {
         form { onsubmit,
+            div {
+                class: "alert alert-error",
+                class: if form_error().is_some() { "visible" } else { "invisible" },
+                role: "alert",
+                "Error inviting user: "
+                if let Some(error) = form_error() {
+                    "{error}"
+                }
+            }
             Input {
                 label: "Email",
                 icon: rsx! {
@@ -141,10 +162,12 @@ fn InviteMemberForm() -> Element {
                 Button {
                     onclick: move |_| {
                         dialog.close();
+                        form_error.set(None);
                         form_state_clone.reset();
                     },
                     variant: ButtonVariant::Secondary,
                     r#type: "button",
+                    class: "grow",
                     "Cancel"
                 }
                 SubmitButton { form: form_state.clone() }
@@ -173,7 +196,29 @@ fn MemberEntry(
 
     rsx! {
         ListRow {
-            ListDetails { title: "{member.first_name} {member.last_name}" }
+            ComplexListDetails {
+                title: rsx! {
+                    h3 { class: "flex flex-wrap items-center gap-2",
+                        "{member.first_name} {member.last_name}"
+
+
+                        match member.permission {
+                            InvitationPermission::Read => rsx! {
+                                span { class: "badge badge-outline badge-accent badge-md", "Read" }
+                            },
+                            InvitationPermission::Write => rsx! {
+                                span { class: "badge badge-outline badge-accent badge-md", "Write" }
+                            },
+                            InvitationPermission::Admin => rsx! {
+                                span { class: "badge badge-outline badge-accent badge-md", "Admin" }
+                            },
+                        }
+                        if !member.invitation_accepted {
+                            span { class: "badge badge-outline badge-info badge-md", "Invited" }
+                        }
+                    }
+                },
+            }
             if let Some(user) = auth.user.peek().as_ref() && user.id == member.id {
                 Dialog {
                     Tooltip { tooltip: "Leave To-Do List",
@@ -192,7 +237,7 @@ fn MemberEntry(
                                             toaster
                                                 .error(
                                                     "Failed to leave To-Do List",
-                                                    ToastOptions::new().description(rsx! { "{error}" }),
+                                                    ToastOptions::new().description(rsx! { "{message_from_captured_error(error)}" }),
                                                 );
                                         } else {
                                             nav.push(Route::TodoListListView {});
@@ -233,7 +278,7 @@ fn MemberEntry(
                                                     toaster
                                                         .error(
                                                             "Failed to kick user",
-                                                            ToastOptions::new().description(rsx! { "{error}" }),
+                                                            ToastOptions::new().description(rsx! { "{message_from_captured_error(error)}" }),
                                                         );
                                                 }
                                                 None => {
