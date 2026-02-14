@@ -1,3 +1,4 @@
+use sea_orm::FromQueryResult;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -56,3 +57,12 @@ pub struct Model {
 }
 
 impl ActiveModelBehavior for ActiveModel {}
+
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq, FromQueryResult)]
+pub struct UserWithTodoListPermission {
+    pub id: i32,
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub permission: super::todo_list_invitation::InvitationPermission,
+}

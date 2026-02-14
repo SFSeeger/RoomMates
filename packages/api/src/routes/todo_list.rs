@@ -22,12 +22,6 @@ pub async fn list_todo_lists()
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
     let todo_lists = TodoList::find()
-        .select_only()
-        .column(TodoListColumn::Id)
-        .column(TodoListColumn::Title)
-        .column(TodoListColumn::Description)
-        .column(TodoListColumn::IsFavorite)
-        .column(TodoListColumn::OwnerId)
         .column_as(InvitationColumn::Permission, "permission")
         .left_join(TodoListInvitation)
         .filter(
@@ -75,6 +69,73 @@ pub async fn retrieve_todo_list(
         .or_not_found("To-Do List not found")?;
 
     Ok(todo_list)
+}
+
+#[get("/api/todolists/{todo_list_id}/members", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn list_todo_list_members(
+    todo_list_id: i32,
+) -> Result<Vec<entity::user::UserWithTodoListPermission>, ServerFnError> {
+    use sea_orm::DatabaseBackend;
+    use sea_orm::EntityTrait;
+    use sea_orm::JoinType;
+    use sea_orm::QueryTrait;
+    use sea_orm::prelude::Expr;
+    use sea_orm::{ColumnTrait, QueryFilter, QuerySelect, RelationTrait};
+
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+
+    let _ = server::todo_lists::get_todo_list_permission(todo_list_id, user.id, &state.database)
+        .await
+        .or_internal_server_error("Error loading To-Do List")?
+        .or_forbidden("You are not permitted to view members of this To-Do List")?;
+
+    let owner = User::find()
+        .has_related(TodoList, entity::todo_list::Column::Id.eq(todo_list_id))
+        .column_as(
+            Expr::Constant(entity::todo_list_invitation::InvitationPermission::Admin.into()),
+            "permission",
+        )
+        .into_model::<entity::user::UserWithTodoListPermission>()
+        .one(&state.database)
+        .await
+        .inspect_err(|e| error!("Owner Query Failed: {e}"))
+        .or_internal_server_error("Failed to load members")?
+        .or_not_found("Todo list not found")?;
+
+    debug!(
+        "{:#?}",
+        User::find()
+            .filter(entity::todo_list_invitation::Column::TodoListId.eq(todo_list_id))
+            .join(
+                JoinType::InnerJoin,
+                entity::todo_list_invitation::Relation::Receiver.def().rev(),
+            )
+            .column_as(
+                entity::todo_list_invitation::Column::Permission,
+                "permission",
+            )
+            .build(DatabaseBackend::MySql)
+            .to_string()
+    );
+
+    let mut members = User::find()
+        .filter(entity::todo_list_invitation::Column::TodoListId.eq(todo_list_id))
+        .join(
+            JoinType::InnerJoin,
+            entity::todo_list_invitation::Relation::Receiver.def().rev(),
+        )
+        .column_as(
+            entity::todo_list_invitation::Column::Permission,
+            "permission",
+        )
+        .into_model::<entity::user::UserWithTodoListPermission>()
+        .all(&state.database)
+        .await
+        .inspect_err(|e| error!("Member Query Failed: {e}"))
+        .or_internal_server_error("Failed to load members")?;
+
+    members.push(owner);
+    Ok(members)
 }
 
 #[post("/api/todolists", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]

@@ -1,10 +1,11 @@
+use super::components::TodoEntry;
 use crate::Route;
 use crate::components::ui::button::{Button, ButtonShape, ButtonVariant};
 use crate::components::ui::card::{Card, CardBody, CardTitle};
 use crate::components::ui::dialog::{Dialog, DialogAction, DialogContent, DialogTrigger};
 use crate::components::ui::list::{ComplexListDetails, List, ListDetails, ListRow};
 use crate::components::ui::toaster::{ToastOptions, use_toaster};
-use api::routes::todo_list::retrieve_todo_list;
+use api::routes::todo_list::{list_todo_list_members, retrieve_todo_list};
 use api::routes::todos::{delete_todo, list_todo, update_todo};
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
@@ -13,12 +14,13 @@ use dioxus_free_icons::icons::ld_icons::{
 };
 use entity::todo::UpdateToDo;
 use entity::todo_list_invitation::InvitationPermission;
-use std::default::Default;
 
 #[component]
 pub fn TodosGroupView(todo_list_id: i32) -> Element {
     let todo_list = use_loader(move || retrieve_todo_list(todo_list_id))?;
     let mut todos = use_loader(move || list_todo(todo_list_id))?;
+    let mut members = use_resource(move || list_todo_list_members(todo_list_id));
+
     let completed_todos = use_memo(move || {
         todos
             .iter()
@@ -94,17 +96,40 @@ pub fn TodosGroupView(todo_list_id: i32) -> Element {
                     }
                 }
             }
-            Card {
+            Card { class: "w-full md:w-1/3",
                 CardBody {
                     CardTitle { "Members" }
                     List { header: "",
-                        ListRow {
-                            ListDetails { title: "Member 1" }
-                            if todo_list.read().permission.unwrap_or(InvitationPermission::Admin).can_admin() {
-                                Button { variant: ButtonVariant::Error,
-                                    Icon { icon: LdUserRoundMinus }
+                        match &*members.read() {
+                            Some(Ok(members)) => {
+                                if members.is_empty() {
+                                    rsx! {
+                                        ListRow {
+                                            ListDetails { title: "No members yet" }
+                                        }
+                                    }
+                                } else {
+                                    rsx! {
+                                        for member in members.iter() {
+                                            MemberEntry {
+                                                key: "{member.id}",
+                                                member: member.clone(),
+                                                user_permission: todo_list.read().permission.unwrap_or(InvitationPermission::Admin),
+                                            }
+                                        }
+                                    }
                                 }
                             }
+                            Some(Err(_)) => rsx! {
+                                ListRow {
+                                    ListDetails { title: "Failed to load members" }
+                                }
+                            },
+                            None => rsx! {
+                                ListRow {
+                                    ListDetails { title: "Loading members..." }
+                                }
+                            },
                         }
                     }
                 }
@@ -126,130 +151,16 @@ pub fn TodosGroupView(todo_list_id: i32) -> Element {
 }
 
 #[component]
-pub fn TodoEntry(
-    todo: entity::todo::Model,
-    permission: InvitationPermission,
-    ondelete: EventHandler<i32>,
-    onupdate: EventHandler<entity::todo::Model>,
+fn MemberEntry(
+    member: entity::user::UserWithTodoListPermission,
+    user_permission: InvitationPermission,
 ) -> Element {
-    let mut toaster = use_toaster();
-    let title = todo.title.clone();
-    let title_for_update = title.clone();
-
-    let mut delete_todo = use_action(delete_todo);
-    let mut update_completed = use_action(move |completed: bool| async move {
-        update_todo(
-            todo.id,
-            UpdateToDo {
-                completed: Some(completed),
-                ..Default::default()
-            },
-        )
-        .await
-    });
-
     rsx! {
         ListRow {
-            ComplexListDetails {
-                title: rsx! {
-                    h3 { class: if todo.completed { "line-through text-base-content/60" }, "{todo.title}" }
-                },
-                if let Some(details) = todo.details {
-                    p { class: "text-ellipsis", "{details}" }
-                }
-            }
-            div { class: "grid grid-cols-2 items-center gap-2",
-                Button {
-                    onclick: move |_| {
-                        if !permission.can_write() {
-                            return;
-                        }
-                        let title_clone = title_for_update.clone();
-                        spawn(async move {
-                            update_completed.call(!todo.completed).await;
-
-                            match update_completed.value() {
-                                Some(Ok(updated_todo)) => {
-                                    onupdate.call(updated_todo());
-                                }
-                                Some(Err(error)) => {
-                                    toaster
-                                        .error(
-                                            &format!("Failed to update {title_clone}!"),
-                                            ToastOptions::new().description(rsx! {
-                                                span { "{error.to_string()}" }
-                                            }),
-                                        );
-                                }
-                                None => {
-                                    warn!("Update request did not finish!");
-                                }
-                            }
-                        });
-                    },
-                    variant: ButtonVariant::Primary,
-                    shape: ButtonShape::Square,
-                    ghost: true,
-                    class: "btn-sm",
-                    disabled: !permission.can_write(),
-                    if todo.completed {
-                        Icon { icon: LdCircleCheckBig, class: "stroke-success" }
-                    } else {
-                        Icon { icon: LdCircle }
-                    }
-                }
-                if permission.can_write() {
-                    Dialog {
-                        DialogTrigger {
-                            variant: ButtonVariant::Error,
-                            shape: ButtonShape::Square,
-                            ghost: true,
-                            class: "btn-sm",
-                            Icon { icon: LdTrash }
-                        }
-                        DialogContent { title: "Do you want to delete {title.clone()}?",
-                            form { method: "dialog",
-                                DialogAction {
-                                    Button { variant: ButtonVariant::Secondary, "Cancel" }
-                                    Button {
-                                        onclick: move |_| {
-                                            let title_clone = title.clone();
-                                            async move {
-                                                delete_todo.call(todo.id).await;
-                                                match delete_todo.value() {
-                                                    Some(Ok(_)) => {
-                                                        toaster
-                                                            .success(
-                                                                &format!("Deleted {} successfully!", title_clone),
-                                                                ToastOptions::new(),
-                                                            );
-                                                        ondelete.call(todo.id);
-                                                    }
-                                                    Some(Err(error)) => {
-                                                        toaster
-                                                            .error(
-                                                                &format!("Failed to delete {}!", title_clone),
-                                                                ToastOptions::new().description(rsx! {
-                                                                    span { "{error.to_string()}" }
-                                                                }),
-                                                            );
-                                                    }
-                                                    None => {
-                                                        warn!("Request did not finish!");
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        variant: ButtonVariant::Error,
-                                        "Delete"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // Placeholder to keep the grid layout consistent
-                    div {}
+            ListDetails { title: "{member.first_name} {member.last_name}" }
+            if user_permission.can_admin() {
+                Button { variant: ButtonVariant::Error,
+                    Icon { icon: LdUserRoundMinus }
                 }
             }
         }
