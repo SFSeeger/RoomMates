@@ -12,7 +12,7 @@ use entity::todo_list_invitation::InvitationPermission;
 #[component]
 pub fn TodoEntry(
     todo: entity::todo::Model,
-    permission: InvitationPermission,
+    user_permission: InvitationPermission,
     ondelete: EventHandler<i32>,
     onupdate: EventHandler<entity::todo::Model>,
 ) -> Element {
@@ -45,7 +45,7 @@ pub fn TodoEntry(
             div { class: "grid grid-cols-2 items-center gap-2",
                 Button {
                     onclick: move |_| {
-                        if !permission.can_write() {
+                        if !user_permission.can_write() {
                             return;
                         }
                         let title_clone = title_for_update.clone();
@@ -75,14 +75,14 @@ pub fn TodoEntry(
                     shape: ButtonShape::Square,
                     ghost: true,
                     class: "btn-sm",
-                    disabled: !permission.can_write(),
+                    disabled: !user_permission.can_write(),
                     if todo.completed {
                         Icon { icon: LdCircleCheckBig, class: "stroke-success" }
                     } else {
                         Icon { icon: LdCircle }
                     }
                 }
-                if permission.can_write() {
+                if user_permission.can_write() {
                     Dialog {
                         DialogTrigger {
                             variant: ButtonVariant::Error,

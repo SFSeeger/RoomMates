@@ -1,5 +1,8 @@
 PLATFORM ?= web
 
+ifdef HOTPATCH
+    HOT_PATCH_FLAG := --hot-patch
+endif
 
 NPM_DEPS = package.json package-lock.json
 NODE_MODULES_STAMP = node_modules/.stamp
@@ -11,7 +14,7 @@ $(NODE_MODULES_STAMP): $(NPM_DEPS)
 dependencies: $(NODE_MODULES_STAMP)
 
 dev-server: dependencies
-	dx serve --package frontend --platform $(PLATFORM) --addr 0.0.0.0
+	dx serve --package frontend --platform $(PLATFORM) --addr 0.0.0.0  $(HOT_PATCH_FLAG)
 
 tests: dependencies
 	cargo test --workspace --all-features --no-fail-fast
