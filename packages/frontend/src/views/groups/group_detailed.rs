@@ -1,3 +1,4 @@
+use crate::Route;
 use crate::components::ui::button::{Button, ButtonShape, ButtonVariant};
 use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
 use crate::components::ui::dialog::{
@@ -8,7 +9,9 @@ use crate::components::ui::form::submit_button::SubmitButton;
 use crate::components::ui::list::{List, ListDetails, ListRow};
 use crate::components::ui::toaster::{ToastOptions, use_toaster};
 use api::routes::groups::retrieve_group;
-use api::routes::groups::{add_user_to_group, change_group_name, remove_user_from_group};
+use api::routes::groups::{
+    add_user_to_group, change_group_name, delete_group, remove_user_from_group,
+};
 use api::routes::users::{EMAIL_REGEX, UserInfo};
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
@@ -155,6 +158,20 @@ pub fn EditGroup(group_id: i32) -> Element {
                         }
                     }
                 }
+                div {
+                    Dialog {
+                        DialogTrigger {
+                            variant: ButtonVariant::Primary,
+                            shape: ButtonShape::Default,
+                            ghost: false,
+                            class: "fixed bottom-16 lg:bottom-4 right-4 btn btn-primary lg:btn-lg",
+                            "Delete group"
+                        }
+                        DialogContent { title: "Do you want to delete this group?",
+                            DeleteGroup { group_id }
+                        }
+                    }
+                }
             }
         }
     }
@@ -286,6 +303,47 @@ pub fn AddUserForm(group_id: i32) -> Element {
                 }
 
                 Button { r#type: "submit", variant: ButtonVariant::Primary, "Add" }
+            }
+        }
+    }
+}
+
+#[component]
+pub fn DeleteGroup(group_id: i32) -> Element {
+    let mut toaster = use_toaster();
+    let dialog = use_dialog();
+    let mut delete_group = use_action(delete_group);
+    let nav = navigator();
+
+    rsx! {
+        DialogAction {
+            Button {
+                onclick: move |_| {
+                    dialog.close();
+                },
+                r#type: "button",
+                variant: ButtonVariant::Secondary,
+                "Cancel"
+            }
+            Button {
+                onclick: move |_| async move {
+                    delete_group.call(group_id).await;
+                    if let Some(Err(error)) = delete_group.value() {
+                        toaster
+                            .error(
+                                "Deleting group failed",
+                                ToastOptions::new().description(rsx! {
+                                    span { "{error.to_string()}" }
+                                }),
+                            );
+                    } else {
+                        toaster.success("Deleted group", ToastOptions::new());
+                        nav.push(Route::GroupView {});
+                    }
+                },
+                r#type: "submit",
+                variant: ButtonVariant::Primary,
+                "Delete"
             }
         }
     }
