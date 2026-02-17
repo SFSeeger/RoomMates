@@ -10,9 +10,9 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub group_id: i32,
 
-    #[sea_orm(belongs_to, from = "user_id", to = "id")]
+    #[sea_orm(belongs_to, from = "user_id", to = "id", on_delete = "Cascade")]
     pub user: Option<super::user::Entity>,
-    #[sea_orm(belongs_to, from = "group_id", to = "id")]
+    #[sea_orm(belongs_to, from = "group_id", to = "id", on_delete = "Cascade")]
     pub group: Option<super::group::Entity>,
 }
 

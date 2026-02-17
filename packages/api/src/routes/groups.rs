@@ -35,7 +35,8 @@ pub async fn create_group(group_name: String) -> Result<entity::group::Model, Se
 
                 pair.insert(txn)
                     .await
-                    .or_internal_server_error("Error assigning user to group")?;
+                    .inspect_err(|error| error!("{error:?}"))
+                    .or_internal_server_error("Error creating group")?;
 
                 Ok(group)
             })
@@ -235,7 +236,7 @@ pub async fn delete_group(group_id: i32) -> Result<NoContent, ServerFnError> {
         let delete_result = Group::delete_by_id(group_id)
             .exec(&ext.database)
             .await
-            .or_internal_server_error("Error deleting user")?;
+            .or_internal_server_error("Error deleting group")?;
 
         (delete_result.rows_affected == 1).or_not_found("User not found")?;
         Ok(NoContent)

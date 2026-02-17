@@ -1,6 +1,8 @@
 use crate::Route;
 use crate::components::ui::button::{Button, ButtonShape, ButtonVariant};
-use crate::components::ui::dialog::{Dialog, DialogAction, DialogContent, DialogTrigger};
+use crate::components::ui::dialog::{
+    Dialog, DialogAction, DialogContent, DialogTrigger, use_dialog,
+};
 use crate::components::ui::form::input::Input;
 use crate::components::ui::groupcard::GroupCard;
 use crate::components::ui::toaster::{ToastOptions, use_toaster};
@@ -59,6 +61,7 @@ pub fn GroupView() -> Element {
 pub fn NewGroupForm() -> Element {
     let mut toaster = use_toaster();
     let nav = navigator();
+    let dialog = use_dialog();
 
     let mut create_group = use_action(create_group);
     let mut new_group_name_form = use_form();
@@ -82,7 +85,7 @@ pub fn NewGroupForm() -> Element {
             }
             Some(Err(error)) => {
                 toaster.error(
-                    "Failed to change group name",
+                    "Failed to create group",
                     ToastOptions::new().description(rsx! {
                         span { "{error.to_string()}" }
                     }),
@@ -108,7 +111,12 @@ pub fn NewGroupForm() -> Element {
             }
             DialogAction {
                 form { method: "dialog",
-                    Button { r#type: "button", variant: ButtonVariant::Secondary, "Cancel" }
+                    Button {
+                        onclick: move |_| { dialog.close() },
+                        r#type: "button",
+                        variant: ButtonVariant::Secondary,
+                        "Cancel"
+                    }
                 }
                 Button { r#type: "submit", variant: ButtonVariant::Primary, "Add" }
             }
