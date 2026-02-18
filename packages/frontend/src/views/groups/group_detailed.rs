@@ -4,6 +4,7 @@ use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
 use crate::components::ui::dialog::{
     Dialog, DialogAction, DialogContent, DialogTrigger, use_dialog,
 };
+use crate::components::ui::eventlistgroup::EventList;
 use crate::components::ui::form::input::Input;
 use crate::components::ui::form::submit_button::SubmitButton;
 use crate::components::ui::list::{List, ListDetails, ListRow};
@@ -119,7 +120,11 @@ pub fn EditGroup(group_id: i32) -> Element {
                                     }
                                 }
                             }
-                            p { "Events" }
+                            div { class: " flex w-full",
+                                h3 { class: "font-bold", {"Events"} }
+                                div { class: "h-2" }
+                                EventList { group_id }
+                            }
                         }
                     }
                 }

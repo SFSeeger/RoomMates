@@ -21,9 +21,6 @@ pub fn GroupCard(group_id: i32) -> Element {
                                 class: "absolute top-2 right-2 btn btn-primary btn-circle lg:btn-lg",
                                 Icon { icon: LdSquarePen }
                             }
-
-
-
                             div { class: "flex flex-row text-center",
                                 div { class: " flex-1",
                                     h3 { class: "font-bold", {"Members"} }
@@ -36,6 +33,7 @@ pub fn GroupCard(group_id: i32) -> Element {
                                     h3 { class: "font-bold", {"Events"} }
                                     div { class: "h-2" }
 
+
                                     {group.events.iter().take(10).map(|event| rsx! {
                                         div { "{event.title}" }
                                     })}
@@ -43,7 +41,7 @@ pub fn GroupCard(group_id: i32) -> Element {
                             }
                         },
                         Some(Err(error)) => rsx! {
-                            p { class: "text-red-500", "Loading Group failed with {error}" }
+                            p { class: "text-red-500", "Loading group failed with {error}" }
                         },
                         None => rsx! {
                             p { "Loading..." }
