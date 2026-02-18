@@ -155,6 +155,49 @@ pub async fn remove_user_from_group(
     }
 }
 
+#[post("/api/groups/{group_id}/remove-group", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn remove_event_from_group(
+    group_id: i32,
+    event_id: i32,
+) -> Result<NoContent, ServerFnError> {
+    use crate::routes::groups::server_functions::{is_event_in_group, is_user_in_group};
+    use entity::shared_group_event;
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+    let authenticated = is_user_in_group(&ext.database, group_id, user.id).await?;
+    let event_exists = is_event_in_group(&ext.database, group_id, event_id).await?;
+
+    if authenticated {
+        if event_exists {
+            let result = shared_group_event::Entity::delete_many()
+                .filter(shared_group_event::Column::EventId.eq(event_id))
+                .filter(shared_group_event::Column::GroupId.eq(group_id))
+                .exec(&ext.database)
+                .await
+                .or_internal_server_error("Error deleting relation")?;
+
+            (result.rows_affected > 0).or_not_found(format!(
+                "Failed to remove event {event_id} from group {group_id}"
+            ))?;
+
+            Ok(NoContent)
+        } else {
+            Err(ServerFnError::ServerError {
+                message: "Event does not exist".to_string(),
+                code: 404,
+                details: None,
+            })
+        }
+    } else {
+        Err(ServerFnError::ServerError {
+            message: "No permission to remove an event from this group.".to_string(),
+            code: 401,
+            details: None,
+        })
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct GroupDetailData {
     pub name: String,
@@ -265,6 +308,23 @@ mod server_functions {
         Ok(IsInGroup::find()
             .filter(entity::is_in_group::Column::GroupId.eq(group_id))
             .filter(entity::is_in_group::Column::UserId.eq(user_id))
+            .one(db)
+            .await
+            .or_internal_server_error("Error loading from database")?
+            .is_some())
+    }
+
+    pub async fn is_event_in_group(
+        db: &DatabaseConnection,
+        group_id: i32,
+        event_id: i32,
+    ) -> Result<bool, ServerFnError> {
+        use entity::shared_group_event::Entity as SharedGroupEvent;
+        use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+        Ok(SharedGroupEvent::find()
+            .filter(entity::shared_group_event::Column::GroupId.eq(group_id))
+            .filter(entity::shared_group_event::Column::EventId.eq(event_id))
             .one(db)
             .await
             .or_internal_server_error("Error loading from database")?

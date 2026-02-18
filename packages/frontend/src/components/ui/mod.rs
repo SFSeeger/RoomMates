@@ -7,6 +7,7 @@ pub mod calendar;
 pub mod card;
 pub mod dialog;
 pub mod dock;
+pub mod eventlistgroup;
 pub mod fieldset;
 pub mod footer;
 pub mod form;
