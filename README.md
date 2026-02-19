@@ -1,6 +1,10 @@
-# RoomMates
-
-Making organizing easy
+<p align="center">
+  <img src="https://raw.githubusercontent.com/SFSeeger/RoomMates/4ab1125851ddc569f2063b7d383ecc33173fa996/packages/frontend/assets/icon.svg" alt="Logo" width="150" height="150" />
+</p>
+<h1 align="center">@SFSeeger/RoomMates</h1>
+<p align="center">
+  Making organizing easy
+</p>
 
 ## Deployment
 
@@ -60,19 +64,41 @@ docker compose up -d
 
 ### Clients
 
+Bundeling the following targets have been tested. While bundeling untested targets may work, there is a chance they require additional configuration.
+- [X] Web
+- [X] Linux
+- [ ] Windows
+- [ ] MacOS
+- [X] Android
+- [ ] IOS
+
+
 To bundle clients for production, install the [required tools](#tools-and-dependencies) or use the devcontainer.
 Then choose the platform you want to bundle and optionally
-the [package type](https://dioxuslabs.com/learn/0.7/tutorial/bundle#bundling-for-desktop-and-mobile)
-Then run the following command in the root of the project[^1]:
-> [!TIP]
-> You can also bundle the server this way, if you dont want to use docker. In this case set `PLATFORM` to web. You can
-> omit `SERVER_URL` as it is not needed for the web platform.
+the [package type](https://dioxuslabs.com/learn/0.7/tutorial/bundle#bundling-for-desktop-and-mobile).
+Run the following command in the root of the project[^1]:
+> [!IMPORTANT]
+> `SERVER_URL` should be the URL of your deployed server. Defaults to `http://localhost:8080`.
 
-```bash
+> [!TIP]
+> You can also bundle the server this way, if you dont want to use docker. In this case set `PLATFORM` to web. You can omit `SERVER_URL` as it is not needed for the web platform.
+
+```shell
 make bundle PLATFORM=<platform> SERVER_URL="<your-server-url>" [PACKAGES="<package1> [<package2> ...]"]
 ```
+#### Android
+> [!IMPORTANT]
+> This bundeling config assumes you have a valid keystore in `~/.android/keystore.jks`. You can override the keystore location by using the `KEYSTORE_PATH` argument when bundling.
+> Refer to [the android docs](https://developer.android.com/studio/publish/app-signing) on how to create one
 
-`SERVER_URL` should be the URL of your deployed server. Defaults to `http://localhost:8080`.
+> [!NOTE]
+> This creates a `.apk` file for sideloading. The `.aab` bundle created by dioxus does not include the app icon
+
+
+```shell
+make bundle PLATFORM=android SERVER_URL="<your-server-url>" KEYSTORE_PASSWORD="<your-keystore-password>"
+```
+
 
 ### Tools and Dependencies
 
