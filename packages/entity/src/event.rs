@@ -53,6 +53,7 @@ impl ActiveModelBehavior for ActiveModel {}
     EnumIter,
     DeriveActiveEnum,
     Clone,
+    Copy,
     Debug,
     PartialEq,
     Eq,
@@ -77,6 +78,34 @@ pub enum Weekday {
     Saturday,
     #[sea_orm(string_value = "Sunday")]
     Sunday,
+}
+
+impl From<time::Weekday> for Weekday {
+    fn from(value: time::Weekday) -> Self {
+        match value {
+            time::Weekday::Monday => Weekday::Monday,
+            time::Weekday::Tuesday => Weekday::Tuesday,
+            time::Weekday::Wednesday => Weekday::Wednesday,
+            time::Weekday::Thursday => Weekday::Thursday,
+            time::Weekday::Friday => Weekday::Friday,
+            time::Weekday::Saturday => Weekday::Saturday,
+            time::Weekday::Sunday => Weekday::Sunday,
+        }
+    }
+}
+
+impl From<Weekday> for time::Weekday {
+    fn from(value: Weekday) -> Self {
+        match value {
+            Weekday::Monday => time::Weekday::Monday,
+            Weekday::Tuesday => time::Weekday::Tuesday,
+            Weekday::Wednesday => time::Weekday::Wednesday,
+            Weekday::Thursday => time::Weekday::Thursday,
+            Weekday::Friday => time::Weekday::Friday,
+            Weekday::Saturday => time::Weekday::Saturday,
+            Weekday::Sunday => time::Weekday::Sunday,
+        }
+    }
 }
 
 #[derive(Clone, PartialEq, Serialize, Deserialize, Debug, DeriveIntoActiveModel)]

@@ -52,3 +52,15 @@ pub struct UpdateToDo {
     #[serde(default)]
     pub completed: Option<bool>,
 }
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Default, Debug, DerivePartialModel)]
+#[sea_orm(entity = "Entity")]
+pub struct TodoWithPermission {
+    pub id: i32,
+    pub title: String,
+    pub completed: bool,
+    pub details: Option<String>,
+    pub todo_list_id: i32,
+    #[sea_orm(nested)]
+    pub invitation: super::todo_list_invitation::TodoListInvitationPartialModel,
+}

@@ -34,7 +34,45 @@ pub fn TodoEntry(
 
     rsx! {
         ListRow {
-            div {}
+            Button {
+                onclick: move |_| {
+                    if !user_permission.can_write() {
+                        return;
+                    }
+                    let title_clone = title_for_update.clone();
+                    spawn(async move {
+                        update_completed.call(!todo.completed).await;
+
+                        match update_completed.value() {
+                            Some(Ok(_)) => {
+                                onupdate.call(());
+                            }
+                            Some(Err(error)) => {
+                                toaster
+                                    .error(
+                                        &format!("Failed to update {title_clone}!"),
+                                        ToastOptions::new().description(rsx! {
+                                            span { "{error.to_string()}" }
+                                        }),
+                                    );
+                            }
+                            None => {
+                                warn!("Update request did not finish!");
+                            }
+                        }
+                    });
+                },
+                variant: ButtonVariant::Primary,
+                shape: ButtonShape::Square,
+                ghost: true,
+                class: "btn-sm",
+                disabled: !user_permission.can_write(),
+                if todo.completed {
+                    Icon { icon: LdCircleCheckBig, class: "stroke-success" }
+                } else {
+                    Icon { icon: LdCircle }
+                }
+            }
             ComplexListDetails {
                 title: rsx! {
                     h3 { class: if todo.completed { "line-through text-base-content/60" }, "{todo.title}" }
@@ -44,45 +82,6 @@ pub fn TodoEntry(
                 }
             }
             div { class: "grid grid-cols-2 items-center gap-2",
-                Button {
-                    onclick: move |_| {
-                        if !user_permission.can_write() {
-                            return;
-                        }
-                        let title_clone = title_for_update.clone();
-                        spawn(async move {
-                            update_completed.call(!todo.completed).await;
-
-                            match update_completed.value() {
-                                Some(Ok(_)) => {
-                                    onupdate.call(());
-                                }
-                                Some(Err(error)) => {
-                                    toaster
-                                        .error(
-                                            &format!("Failed to update {title_clone}!"),
-                                            ToastOptions::new().description(rsx! {
-                                                span { "{error.to_string()}" }
-                                            }),
-                                        );
-                                }
-                                None => {
-                                    warn!("Update request did not finish!");
-                                }
-                            }
-                        });
-                    },
-                    variant: ButtonVariant::Primary,
-                    shape: ButtonShape::Square,
-                    ghost: true,
-                    class: "btn-sm",
-                    disabled: !user_permission.can_write(),
-                    if todo.completed {
-                        Icon { icon: LdCircleCheckBig, class: "stroke-success" }
-                    } else {
-                        Icon { icon: LdCircle }
-                    }
-                }
                 if user_permission.can_write() {
                     Dialog {
                         DialogTrigger {

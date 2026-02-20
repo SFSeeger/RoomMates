@@ -3,7 +3,7 @@ pub use todo_list_create::TodoListCreateView;
 mod todo_list_list;
 pub use todo_list_list::TodoListListView;
 
-mod components;
+pub mod components;
 mod todos_group;
 
 pub use todos_group::TodosGroupView;

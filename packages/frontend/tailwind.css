@@ -22,7 +22,7 @@
   --color-primary-content: oklch(42% 0.095 57.708);
   --color-secondary: #F06C3C;
   --color-secondary-content: oklch(40% 0.123 38.172);
-  --color-accent: #340A00;
+  --color-accent: #055959;
   --color-accent-content: oklch(100% 0 0);
   --color-neutral: oklch(92% 0.003 48.717);
   --color-neutral-content: oklch(44% 0.011 73.639);
@@ -130,7 +130,7 @@
   --color-primary-content: oklch(42% 0.095 57.708);
   --color-secondary: #FCB399;
   --color-secondary-content: oklch(40% 0.123 38.172);
-  --color-accent: #9B8480;
+  --color-accent: #80AEAE;
   --color-accent-content: oklch(100% 0 0);
   --color-neutral: oklch(92% 0.003 48.717);
   --color-neutral-content: oklch(44% 0.011 73.639);
@@ -167,5 +167,18 @@
     &:hover {
       @apply link-secondary;
     }
+  }
+
+  /*
+    Adds a thick line every 4 rows and a small dotted line every row. Requires a css variable --grid-row-size to be set
+  */
+  .day-calendar-grid {
+    background-image:
+      linear-gradient(to bottom, color-mix(in srgb, var(--color-base-content) 90%, transparent) 2px, transparent 2px),
+      radial-gradient(circle, color-mix(in srgb, var(--color-base-content) 70%, transparent) 1px, transparent 1px);
+    background-size:
+      100% calc(var(--grid-row-size) * 4),
+      5px var(--grid-row-size);
+    background-position-y: 0px, 13px;
   }
 }
