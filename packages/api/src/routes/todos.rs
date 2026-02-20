@@ -37,6 +37,49 @@ pub async fn list_todo(todo_list_id: i32) -> Result<Vec<entity::todo::Model>, Se
     Ok(todos)
 }
 
+#[get("/api/todos/?completed&favorite", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn list_todos(
+    completed: Option<bool>,
+    favorite: Option<bool>,
+) -> Result<Vec<entity::todo::TodoWithPermission>, ServerFnError> {
+    use sea_orm::ColumnTrait;
+    use sea_orm::EntityTrait;
+    use sea_orm::JoinType;
+    use sea_orm::QueryFilter;
+    use sea_orm::QueryOrder;
+    use sea_orm::QuerySelect;
+    use sea_orm::RelationTrait;
+
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+
+    let mut todos = Todo::find()
+        .join(JoinType::InnerJoin, entity::todo::Relation::TodoList.def())
+        .join(
+            JoinType::InnerJoin,
+            entity::todo_list::Relation::TodoListInvitation.def(),
+        )
+        .filter(entity::todo_list_invitation::Column::ReceivingUserId.eq(user.id))
+        .filter(entity::todo_list_invitation::Column::IsAccepted.eq(true))
+        .order_by_asc(entity::todo::Column::Completed)
+        .order_by_asc(entity::todo::Column::Title);
+
+    if let Some(completed) = completed {
+        todos = todos.filter(entity::todo::Column::Completed.eq(completed));
+    }
+    if let Some(favorite) = favorite {
+        todos = todos.filter(entity::todo_list_invitation::Column::IsFavorite.eq(favorite));
+    }
+
+    let todos = todos
+        .into_partial_model()
+        .all(&state.database)
+        .await
+        .inspect_err(|e| error!("{e}"))
+        .or_internal_server_error("Error loading Tasks")?;
+
+    Ok(todos)
+}
+
 #[post("/api/todolists/{todo_list_id}/todos", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn create_todo(
     todo_list_id: i32,

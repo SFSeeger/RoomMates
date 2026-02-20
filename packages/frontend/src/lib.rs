@@ -62,3 +62,10 @@ pub fn message_from_captured_error(error: &CapturedError) -> String {
 
     "An unknown error occurred".to_string()
 }
+
+/// Helper function, used to check if an event occurs on a specific day.
+/// It checks if the event matches the date and returns a boolean.
+pub fn is_event_on_day(event: &entity::event::Model, date: time::Date) -> bool {
+    let weekday: time::Weekday = event.weekday.into();
+    (!event.reoccurring && event.date == date) || (event.reoccurring && weekday == date.weekday())
+}

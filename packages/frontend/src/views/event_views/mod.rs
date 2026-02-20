@@ -1,4 +1,4 @@
-mod events;
+pub(crate) mod events;
 pub use events::ListEventView;
 mod event_editor;
 pub use event_editor::EditEventView;
