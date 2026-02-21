@@ -15,7 +15,7 @@ pub struct Model {
     pub reoccurring: bool,
     pub private: bool,
 
-    #[sea_orm(nullable)]
+    #[sea_orm(nullable, column_type = "Text")]
     pub description: Option<String>,
     #[sea_orm(nullable)]
     pub location: Option<String>,
@@ -57,6 +57,7 @@ impl ActiveModelBehavior for ActiveModel {}
     Debug,
     PartialEq,
     Eq,
+    DeriveDisplay,
     Deserialize,
     Serialize,
     FieldValue,

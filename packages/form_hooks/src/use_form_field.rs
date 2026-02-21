@@ -123,7 +123,6 @@ impl FieldValue for Date {
     fn to_input_value(&self) -> String {
         self.format(format_description!("[year]-[month]-[day]"))
             .unwrap()
-            .to_string()
     }
 
     fn from_input_value(value: &str) -> Result<Self, String> {
@@ -139,9 +138,7 @@ impl FieldValue for Date {
 //fix form input value!!
 impl FieldValue for Time {
     fn to_input_value(&self) -> String {
-        self.format(format_description!("[hour]:[minute]"))
-            .unwrap()
-            .to_string()
+        self.format(format_description!("[hour]:[minute]")).unwrap()
     }
 
     fn from_input_value(value: &str) -> Result<Self, String> {

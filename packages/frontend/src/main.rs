@@ -1,13 +1,16 @@
 #![windows_subsystem = "windows"]
+
 use crate::layouts::StandardAppLayout;
+use crate::views::event_views::DateQueryParam;
 use dioxus::prelude::*;
 use views::{
     Home, LoginPage, NotFound, Profile, SignupView,
-    event_views::{AddEventView, EditEventView, ListEventView},
+    event_views::{AddEventView, EditEventView, EventCalendarView, ListEventView},
     groups::{EditGroup, GroupView},
     invitation_views::{ListInviteView, SendInvite},
     todo::{TodoListCreateView, TodoListListView, TodosGroupView},
 };
+
 mod components;
 mod hooks;
 mod layouts;
@@ -42,7 +45,9 @@ enum Route {
 
         #[nest("/event")]
             #[route("/")]
-            ListEventView {},
+            EventCalendarView {},
+            #[route("/list?:date")]
+            ListEventView {date: DateQueryParam},
             #[route("/:event_id/edit")]
             EditEventView {event_id: i32,},
             #[route("/add")]
@@ -69,7 +74,6 @@ enum Route {
         #[route("/:..segments")]
         NotFound { segments: Vec<String> },
 }
-
 fn main() {
     #[cfg(feature = "server")]
     dioxus::serve(|| async move { api::server::setup_api(App).await });

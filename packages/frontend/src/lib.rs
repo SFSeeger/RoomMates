@@ -2,6 +2,7 @@ use dioxus::CapturedError;
 use dioxus::fullstack::RequestError;
 use dioxus::prelude::*;
 use serde::Deserialize;
+use time::Date;
 
 // This is an extremely dirty way to retrieve the actual error message from the server. For some reason, the Server functions return `ServerFnError::Request(RequestError::Status {message, ..})`
 // where the message is a stringified JSON of the actual error.
@@ -61,6 +62,14 @@ pub fn message_from_captured_error(error: &CapturedError) -> String {
     }
 
     "An unknown error occurred".to_string()
+}
+
+/// The number of days since the first weekday of current date
+/// From dioxus-calendar's source code:
+pub fn days_since(date: time::Date, weekday: time::Weekday) -> i64 {
+    let lhs = date.replace_day(1).unwrap().weekday() as i64;
+    let rhs = weekday as i64;
+    if lhs < rhs { 7 + lhs - rhs } else { lhs - rhs }
 }
 
 /// Helper function, used to check if an event occurs on a specific day.

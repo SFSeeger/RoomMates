@@ -17,9 +17,7 @@ pub fn Dock() -> Element {
             DockItem {
                 label: "Calendar",
                 icon: LdCalendar,
-                to: Route::NotFound {
-                    segments: { vec![] },
-                }, //TODO:put in right to:Route(...) once created
+                to: Route::EventCalendarView {},
             }
         }
     }

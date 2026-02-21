@@ -8,14 +8,52 @@ use entity::prelude::*;
 
 pub mod invitations;
 
-#[get("/api/events", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
-pub async fn list_events() -> Result<Vec<entity::event::Model>, ServerFnError> {
-    use sea_orm::ModelTrait;
+#[get("/api/events?mindate&maxdate", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn list_events(
+    mindate: Option<time::Date>,
+    maxdate: Option<time::Date>,
+) -> Result<Vec<entity::event::Model>, ServerFnError> {
+    use entity::event::Column as EventColumn;
+    use sea_orm::{ColumnTrait, Condition, ModelTrait, QueryFilter, QueryOrder, QueryTrait};
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
     let events = user
         .find_related(Event)
+        .apply_if(mindate, |query, v: time::Date| {
+            let weekday_num = v.weekday().number_from_monday();
+            query.filter(
+                Condition::any()
+                    .add(
+                        Condition::all()
+                            .add(EventColumn::Date.gte(v))
+                            .add(EventColumn::Reoccurring.eq(false)),
+                    )
+                    .add(
+                        Condition::all()
+                            .add(EventColumn::Reoccurring.eq(true))
+                            .add(EventColumn::Weekday.gte(weekday_num)),
+                    ),
+            )
+        })
+        .apply_if(maxdate, |query, v| {
+            let weekday_num = v.weekday().number_from_monday();
+            query.filter(
+                Condition::any()
+                    .add(
+                        Condition::all()
+                            .add(EventColumn::Date.lte(v))
+                            .add(EventColumn::Reoccurring.eq(false)),
+                    )
+                    .add(
+                        Condition::all()
+                            .add(EventColumn::Reoccurring.eq(true))
+                            .add(EventColumn::Weekday.lte(weekday_num)),
+                    ),
+            )
+        })
+        .order_by_asc(EventColumn::StartTime)
+        .order_by_asc(EventColumn::EndTime)
         .all(&ext.database)
         .await
         .or_internal_server_error("Error loading events")?;

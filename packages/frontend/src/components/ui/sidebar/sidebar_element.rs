@@ -28,7 +28,7 @@ pub fn Sidebar() -> Element {
                     SidebarItem {
                         title: "Events",
                         icon: LdCalendar,
-                        to: Route::ListEventView {},
+                        to: Route::EventCalendarView {},
                     }
                     SidebarItem {
                         title: "Groups",

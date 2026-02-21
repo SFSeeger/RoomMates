@@ -36,7 +36,9 @@ pub fn SendInvite(invite_id: i32) -> Element {
         match invite_action.value().as_ref() {
             Some(Ok(_)) => {
                 let nav = navigator();
-                nav.push(Route::ListEventView {});
+                nav.push(Route::ListEventView {
+                    date: event.date.into(),
+                });
             }
             Some(Err(error)) => {
                 form_errors.push(message_from_captured_error(error));

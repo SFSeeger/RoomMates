@@ -6,8 +6,9 @@ use dioxus_free_icons::{
 use dioxus_primitives::calendar::{
     self, CalendarDayProps, CalendarGridProps, CalendarHeaderProps, CalendarMonthTitleProps,
     CalendarNavigationProps, CalendarProps, CalendarSelectMonthProps, CalendarSelectYearProps,
-    RangeCalendarProps,
+    RangeCalendarProps, use_calendar_day_attributes,
 };
+use time::Date;
 
 #[component]
 pub fn Calendar(props: CalendarProps) -> Element {
@@ -132,6 +133,43 @@ pub fn CalendarGrid(props: CalendarGridProps) -> Element {
 #[component]
 pub fn CalendarMonthTitle(props: CalendarMonthTitleProps) -> Element {
     calendar::CalendarMonthTitle(props)
+}
+
+#[derive(Props, Clone, Debug, PartialEq)]
+pub struct CustomCalendarDayProps {
+    date: Date,
+    class: Option<String>,
+    children: Element,
+    /// Additional attributes to extend the calendar day element
+    #[props(extends = GlobalAttributes)]
+    pub attributes: Vec<Attribute>,
+}
+
+#[component]
+pub fn CustomCalendarDay(props: CustomCalendarDayProps) -> Element {
+    let CustomCalendarDayProps {
+        date,
+        class,
+        children,
+        attributes,
+    } = props;
+    let mut attributes = attributes;
+    if let Some(class) = &class {
+        attributes.push(Attribute::new("class", class.clone(), None, true));
+    }
+    let calendar_props = CalendarDayProps::builder()
+        .date(date)
+        .attributes(attributes)
+        .build();
+    let class = class.unwrap_or_default();
+    let day = date.day();
+    let base_attributes = use_calendar_day_attributes(calendar_props);
+    rsx! {
+        button { class, ..base_attributes,
+            {day.to_string()}
+            {children}
+        }
+    }
 }
 
 #[component]

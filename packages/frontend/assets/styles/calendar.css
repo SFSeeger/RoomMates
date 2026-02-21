@@ -45,7 +45,7 @@
     }
 
     .calendar-view {
-        @apply flex flex-col;
+        @apply flex flex-col w-full;
     }
 
     .calendar-grid {
@@ -53,7 +53,11 @@
     }
 
     .calendar-grid-header {
-        @apply flex flex-row justify-around mb-2;
+        @apply flex flex-row justify-between mb-2;
+    }
+
+    .calendar-grid-day-header {
+        @apply w-8 sm:w-16 md:w-24 lg:w-32;
     }
 
     .calendar-grid-body {
@@ -61,7 +65,7 @@
     }
 
     .calendar-grid-cell {
-        @apply w-8 aspect-square border-none rounded-sm bg-none cursor-pointer text-sm text-base-content;
+        @apply w-8 sm:w-16 md:w-24 xl:w-32 aspect-square sm:aspect-2/3 border-none rounded-sm bg-none cursor-pointer text-sm text-base-content;
 
         &[data-month="current"] {
             &:not([data-disabled="true"]):hover {
@@ -87,9 +91,11 @@
             &[data-selection-between="true"] {
                 @apply rounded-none bg-primary/70 text-primary-content/60 data-[month=current]:text-primary-content;
             }
+
             &[data-selection-start="true"] {
                 @apply rounded-br-none rounded-tr-none;
             }
+
             &[data-selection-end="true"] {
                 @apply rounded-bl-none rounded-tl-none;
             }
@@ -110,18 +116,6 @@
         }
     }
 
-    .calendar-grid-week td {
-        @apply py-0;
-
-        &:first-child .calendar-grid-cell {
-            @apply rounded-bl-md rounded-tl-md;
-        }
-
-        &:last-child .calendar-grid-cell {
-            @apply rounded-br-md rounded-tr-md;
-        }
-    }
-
     .calendar-grid-weeknum {
         @apply rounded-md bg-base-200 text-base-content text-xs;
     }
@@ -138,20 +132,20 @@
             @apply ring ring-primary;
         }
     }
+
     .calendar-month-select,
     .calendar-year-select {
-        @apply absolute size-full p-1 m-0 inset-0 opacity-0;
+        @apply absolute size-full p-1 m-0 inset-0 opacity-0 bg-base-200;
     }
 
     .calendar-month-select-value,
     .calendar-year-select-value {
         @apply inline-flex items-center justify-center p-1 border-none bg-transparent text-base cursor-pointer;
-        transition:
-            background-color 0.2s ease,
-            color 0.2s ease;
+        transition: background-color 0.2s ease,
+        color 0.2s ease;
     }
 
     .select-expand-icon {
-         @apply size-4 fill-none stroke-base-content;
+        @apply size-4 fill-none stroke-base-content;
     }
 }

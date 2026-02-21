@@ -58,7 +58,9 @@ pub fn EditEventView(event_id: i32) -> Element {
         match update_action.value() {
             Some(Ok(_)) => {
                 let nav = navigator();
-                nav.push(Route::ListEventView {});
+                nav.push(Route::ListEventView {
+                    date: date.value.cloned().into(),
+                });
             }
             Some(Err(error)) => {
                 form_errors.push(error.to_string());
