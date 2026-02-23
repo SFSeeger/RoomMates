@@ -1,10 +1,10 @@
 use crate::Route;
-use crate::components::ui::card::{Card, CardBody, CardTitle};
+use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
 use crate::components::ui::form::input::Input;
 use crate::components::ui::form::submit_button::SubmitButton;
 use crate::components::ui::list::{ComplexListDetails, List, ListRow};
+use api::routes::events::invitations::send_invite;
 use api::routes::events::{list_event_members, retrieve_event};
-use api::routes::invitations::send_invite;
 use api::routes::users::EMAIL_REGEX;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
@@ -12,11 +12,11 @@ use dioxus_free_icons::icons::ld_icons::LdMail;
 use form_hooks::prelude::{use_form, use_form_field, use_on_submit};
 use form_hooks::validators;
 use regex::Regex;
+use roommates::message_from_captured_error;
 
 #[component]
 pub fn SendInvite(invite_id: i32) -> Element {
-    let load_event = use_loader(move || async move { retrieve_event(invite_id).await })?;
-    let event = load_event();
+    let event = use_loader(move || async move { retrieve_event(invite_id).await })?();
     let members = use_loader(move || async move { list_event_members(invite_id).await })?();
 
     let mut invite_action = use_action(send_invite);
@@ -36,10 +36,10 @@ pub fn SendInvite(invite_id: i32) -> Element {
         match invite_action.value().as_ref() {
             Some(Ok(_)) => {
                 let nav = navigator();
-                nav.push(Route::ListInviteView {});
+                nav.push(Route::ListEventView {});
             }
             Some(Err(error)) => {
-                form_errors.push(error.to_string());
+                form_errors.push(message_from_captured_error(error));
             }
             None => {
                 warn!("Invite user request did not finish!");
@@ -49,44 +49,67 @@ pub fn SendInvite(invite_id: i32) -> Element {
 
     rsx! {
 
-        Card { class: "shrink-0 w-full lg:w-1/2 xl:w-1/3",
+        div { class: " flex flex-col items-center justify-center w-full  h-[90vh]",
+            div { class: "w-full lg:w-1/2",
 
-            CardBody {
-                CardTitle { class: "flex items-center justify-between", "Members" }
+                Card {
 
-                if members.is_empty() {
-                    p { "not shared with anyone yet" }
-                } else {
-                    List { header: "",
-                        for member in members.iter() {
-                            MemberEntry { key: "{member.id}", member: member.clone() }
-                        }
-                    }
-                }
-            }
+                    CardBody {
+                        CardTitle { class: "flex items-center justify-between", "{event.title} Members:" }
 
-            p { "invite somebody to {event.title}" }
+                        List { header: "",
+                            for member in members.iter() {
 
-            form { onsubmit,
-                div {
-                    if form_errors.len() > 0 {
-                        div { class: "alert alert-error mb-4", role: "alert",
-                            ul {
-                                for error in form_errors.read().iter() {
-                                    li { key: "{error}", "{error}" }
+                                if member.id == event.owner_id {
+                                    ListRow {
+                                        ComplexListDetails {
+                                            title: rsx! {
+                                                h3 { class: "flex flex-wrap items-center gap-2",
+                                                    "{member.first_name} {member.last_name}"
+                                                    span { class: "badge badge-outline badge-info badge-md", "Owner" }
+                                                }
+                                            },
+                                        }
+                                    }
+                                } else {
+                                    MemberEntry {
+                                        key: "{member.id}",
+                                        member: member.clone(),
+                                    }
                                 }
                             }
                         }
                     }
+                    div { class: "divider" }
+
+                    p { "Invite somebody to {event.title}" }
+
+                    form { onsubmit,
+                        div {
+                            if form_errors.len() > 0 {
+                                div {
+                                    class: "alert alert-error mb-4",
+                                    role: "alert",
+                                    ul {
+                                        for error in form_errors.read().iter() {
+                                            li { key: "{error}", "{error}" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Input {
+                            label: "Email",
+                            icon: rsx! {
+                                Icon { icon: LdMail }
+                            },
+                            field: email,
+                        }
+                        CardActions {
+                            SubmitButton { form: form_state.clone(), label: "Invite" }
+                        }
+                    }
                 }
-                Input {
-                    label: "Email",
-                    icon: rsx! {
-                        Icon { icon: LdMail }
-                    },
-                    field: email,
-                }
-                SubmitButton { form: form_state.clone() }
             }
         }
     }
@@ -100,7 +123,7 @@ pub fn MemberEntry(member: entity::user::Model) -> Element {
                 title: rsx! {
                     h3 { class: "flex flex-wrap items-center gap-2",
                         "{member.first_name} {member.last_name}"
-                        span { class: "badge badge-outline badge-info badge-md", "Invited" }
+                        span { class: "badge badge-outline badge-info badge-md", "Member" }
                     }
                 },
             }

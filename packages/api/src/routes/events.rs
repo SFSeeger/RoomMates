@@ -6,6 +6,8 @@ use entity::event::PartialEventModel;
 use entity::links::EventUserMembers;
 use entity::prelude::*;
 
+pub mod invitations;
+
 #[get("/api/events", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn list_events() -> Result<Vec<entity::event::Model>, ServerFnError> {
     use sea_orm::ModelTrait;
@@ -209,7 +211,7 @@ pub async fn remove_event_from_group(
     Ok(NoContent)
 }
 
-#[get("/api/events/members/{event_id}", ext: Extension<server::AppState>)]
+#[get("/api/events/{event_id}/members", ext: Extension<server::AppState>)]
 pub async fn list_event_members(event_id: i32) -> Result<Vec<entity::user::Model>, ServerFnError> {
     use sea_orm::EntityTrait;
     use sea_orm::ModelTrait;
@@ -220,11 +222,55 @@ pub async fn list_event_members(event_id: i32) -> Result<Vec<entity::user::Model
         .or_internal_server_error("could not load event")?
         .or_not_found("could not find event")?;
 
-    let shares = event
+    let owner = entity::user::Entity::find_by_id(event.owner_id)
+        .one(&ext.database)
+        .await
+        .or_internal_server_error("could not load event")?
+        .or_not_found("could not find event")?;
+
+    let mut shares = event
         .find_linked(EventUserMembers)
         .all(&ext.database)
         .await
         .or_internal_server_error("failed to retrieve other members")?;
 
+    shares.push(owner);
+
     Ok(shares)
+}
+
+#[delete("/api/events/{event_id}/leave", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn leave_event(event_id: i32) -> Result<NoContent, ServerFnError> {
+    use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter};
+
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+
+    let shared_event = entity::shared_friend_event::Entity::find()
+        .filter(entity::shared_friend_event::Column::EventId.eq(event_id))
+        .filter(entity::shared_friend_event::Column::UserId.eq(user.id))
+        .one(&ext.database)
+        .await
+        .or_internal_server_error("Failed to retrieve from server")?
+        .or_not_found("could not find relationship")?;
+
+    shared_event
+        .delete(&ext.database)
+        .await
+        .or_internal_server_error("could not leave event")?;
+
+    Ok(NoContent)
+}
+
+#[post("/api/events/{event_id}/members/remove", ext: Extension<server::AppState>)]
+pub async fn remove_shared_event_members(event_id: i32) -> Result<NoContent, ServerFnError> {
+    use entity::shared_friend_event;
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+    shared_friend_event::Entity::delete_many()
+        .filter(shared_friend_event::Column::EventId.eq(event_id))
+        .exec(&ext.database)
+        .await
+        .or_internal_server_error("Error deleting event shares")?;
+
+    Ok(NoContent)
 }

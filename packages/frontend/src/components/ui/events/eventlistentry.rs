@@ -5,15 +5,15 @@ use crate::components::ui::{
     button::{Button, ButtonVariant},
     dialog::{Dialog, DialogAction, DialogContent, DialogTrigger, use_dialog},
     form::vectorselect::VectorSelect,
-    list::{ComplexListDetails, ListRow},
+    list::{ComplexListDetails, List, ListRow},
     toaster::{ToastOptions, use_toaster},
 };
-use api::routes::events::{add_event_to_group, list_event_groups};
+use api::routes::events::{add_event_to_group, list_event_groups, list_event_members};
 use api::routes::groups::list_groups;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{
-    LdEye, LdEyeOff, LdMapPin, LdRefreshCcw, LdTrash, LdUsers,
+    LdEye, LdEyeOff, LdLogOut, LdMapPin, LdRefreshCcw, LdTrash, LdUserPlus, LdUsers,
 };
 use form_hooks::use_form::{use_form, use_on_submit};
 use form_hooks::use_form_field::use_form_field;
@@ -115,6 +115,15 @@ pub fn EventListEntry(event: entity::event::Model, ondelete: EventHandler<i32>) 
                             AddEventToGroup { event_id: event.id }
                         }
                     }
+                    Link {
+                        to: Route::SendInvite {
+                            invite_id: event.id,
+                        },
+                        Button { variant: ButtonVariant::Info,
+                            Icon { icon: LdUserPlus }
+                            "Invite User"
+                        }
+                    }
                     Button {
                         onclick: move |_| { ondelete.call(event.id) },
                         variant: ButtonVariant::Error,
@@ -196,6 +205,107 @@ pub fn AddEventToGroup(event_id: i32) -> Element {
                     form: form_state_group.clone(),
                     label: "Add",
                     submitting_label: "Adding...",
+                }
+            }
+        }
+    }
+}
+
+#[component]
+pub fn SharedEventRow(event: entity::event::Model, onleave: EventHandler<i32>) -> Element {
+    let members = use_loader(move || async move { list_event_members(event.id).await })?();
+
+    let title = event.title.clone();
+    let start = event
+        .start_time
+        .format(format_description!("[hour]:[minute]"))
+        .unwrap();
+    let end = event
+        .end_time
+        .format(format_description!("[hour]:[minute]"))
+        .unwrap();
+    let date = event
+        .date
+        .format(format_description!("[day].[month].[year]"))
+        .unwrap();
+
+    rsx! {
+        div { class: "w-full",
+            ListRow {
+                ComplexListDetails {
+                    title: rsx! {
+                        "{title}"
+                        div { class: "whitespace-nowrap",
+                            if event.reoccurring {
+                                h1 { "{event.weekday:?}" }
+                            } else {
+                                h1 { "{date}" }
+                            }
+                            p { "{start} - {end}" }
+                        }
+                        div { class: "flex flex-wrap items-center gap-2",
+                            div {
+                                if event.private {
+                                    Tooltip { tooltip: "Event is private",
+                                        Icon { icon: LdEyeOff }
+                                    }
+                                } else {
+                                    Tooltip { tooltip: "Event is public",
+                                        Icon { icon: LdEye }
+                                    }
+                                }
+                            }
+                            div {
+                                if event.reoccurring {
+                                    Tooltip { tooltip: "Reoccurring event",
+                                        Icon { icon: LdRefreshCcw }
+                                    }
+                                }
+                            }
+
+
+                            div { class: "flex items-center gap-1 whitespace-nowrap",
+                                if let Some(text) = &event.location {
+                                    div {
+                                        Icon { icon: LdMapPin }
+                                    }
+                                    br {}
+                                    div { "{text}" }
+                                }
+                            }
+                        }
+                    },
+                    div { class: "flex w-full items-center gap-4 flex-wrap md:flex-nowrap",
+
+                        div { class: "flex gap-2 flex-1 items-center",
+                            if let Some(text) = &event.description {
+                                span { "{text}" }
+                            }
+                        }
+                    }
+                }
+
+                div { class: "flex",
+                    List { header: "Members:",
+                        div { class: "flex ",
+                            for m in members {
+                                if m.id != event.owner_id {
+                                    p { class: "flex p-4 pb-2 text-s", "{m.first_name} {m.last_name}" }
+                                } else {
+                                    p { class: "flex p-4 pb-2 text-s",
+                                        "Owner: {m.first_name} {m.last_name}"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                div {
+                    Button {
+                        onclick: move |_| { onleave.call(event.id) },
+                        variant: ButtonVariant::Error,
+                        Icon { icon: LdLogOut }
+                    }
                 }
             }
         }

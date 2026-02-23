@@ -82,16 +82,12 @@ pub async fn invite_to_todo_list(
 
 #[post("/api/todolists/{todo_list_id}/invite/accept", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState> )]
 pub async fn accept_todo_list_invite(todo_list_id: i32) -> Result<NoContent, ServerFnError> {
-    use entity::todo_list_invitation::Column as InviteColum;
-    use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter};
+    use sea_orm::{ActiveModelTrait, IntoActiveModel};
+    use server::todo_lists::find_todo_list_invitation;
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
-    let invitation = TodoListInvitation::find()
-        .filter(InviteColum::ReceivingUserId.eq(user.id))
-        .filter(InviteColum::TodoListId.eq(todo_list_id))
-        .one(&state.database)
+    let invitation = find_todo_list_invitation(todo_list_id, user.id, &state.database)
         .await
-        .inspect_err(|e| error!("{e}"))
         .or_internal_server_error("Failed to retrieve Invite")?
         .or_not_found("Cannot accept invite")?;
 
@@ -108,18 +104,15 @@ pub async fn accept_todo_list_invite(todo_list_id: i32) -> Result<NoContent, Ser
 
 #[delete("/api/todolists/{todo_list_id}/invite/decline", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState> )]
 pub async fn decline_todo_list_invite(todo_list_id: i32) -> Result<NoContent, ServerFnError> {
-    use entity::todo_list_invitation::Column as InviteColum;
-    use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, QueryFilter};
+    use sea_orm::ModelTrait;
+    use server::todo_lists::find_todo_list_invitation;
+
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
-    let invitation = TodoListInvitation::find()
-        .filter(InviteColum::ReceivingUserId.eq(user.id))
-        .filter(InviteColum::TodoListId.eq(todo_list_id))
-        .one(&state.database)
+    let invitation = find_todo_list_invitation(todo_list_id, user.id, &state.database)
         .await
-        .inspect_err(|e| error!("{e}"))
         .or_internal_server_error("Failed to retrieve Invite")?
-        .or_not_found("Cannot accept invite")?;
+        .or_not_found("could not find invite")?;
 
     invitation
         .delete(&state.database)
@@ -316,18 +309,21 @@ pub async fn update_my_todo_list_invitation(
     Ok(user)
 }
 
-#[get("/api/todolists/invite", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
-pub async fn list_todo_invites() -> Result<Vec<entity::todo_list_invitation::Model>, ServerFnError>
-{
+#[get("/api/todolists/invite?accepted", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn list_todo_invites(
+    accepted: Option<bool>,
+) -> Result<Vec<entity::todo_list_invitation::Model>, ServerFnError> {
     use entity::todo_list_invitation::Column as InviteColum;
-    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryTrait};
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
     let invitations = TodoListInvitation::find()
         .filter(InviteColum::ReceivingUserId.eq(user.id))
         .filter(InviteColum::SenderUserId.ne(user.id))
-        .filter(InviteColum::IsAccepted.eq(false))
+        .apply_if(accepted, |query, v| {
+            query.filter(InviteColum::IsAccepted.eq(v))
+        })
         .all(&state.database)
         .await
         .or_internal_server_error("Failed to retrieve Invite")?;
