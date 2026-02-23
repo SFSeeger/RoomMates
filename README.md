@@ -15,10 +15,6 @@ docker on your machine and the server.
 
 #### Server with Sqlite Database
 
-> [!TIP]
-> You can also use a `.env` file by using the `--env-file` flag with `docker run` or `docker compose` instead of passing
-> environment variables directly via `-e`.
-
 ```bash
 docker build -t roommates-server .
 docker run -d -p 8080:8080 \
@@ -36,41 +32,48 @@ services:
   db:
     image: mariadb
     environment:
-      MYSQL_ROOT_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: roommates
       MYSQL_USER: roommates
-      MYSQL_PASSWORD: roommates_password
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - db_data:/var/lib/mysql
 
   roommates-server:
     build:
-      context: .
-      dockerfile: Dockerfile
-    environment:
-      DATABASE_URL: "mysql://roommates:roommates_password@db:3306/"
+      context: https://github.com/SFSeeger/RoomMates.git#main
+    restart: unless-stopped
     ports:
       - "8080:8080"
+    environment:
+      DATABASE_URL: "mysql://roommates:${MYSQL_PASSWORD}@db:3306/roommates"
+    depends_on:
+      - db
 
 volumes:
   db_data:
 ```
 
+And a `.env` file like this in the same directory:
+```shell
+MYSQL_PASSWORD = <super secret password>
+MYSQL_ROOT_PASSWORD = <super secret password 2>
+```
 Then run:
 
 ````shell
-docker compose up -d
+docker compose --env-file .env up -d
 ````
 
 ### Clients
 
-Bundeling the following targets have been tested. While bundeling untested targets may work, there is a chance they require additional configuration.
+Bundling the following targets have been tested. While bundling untested targets may work, there is a chance they require additional configuration.
 - [X] Web
 - [X] Linux
 - [ ] Windows
-- [ ] MacOS
+- [ ] macOS
 - [X] Android
-- [ ] IOS
+- [ ] iOS
 
 
 To bundle clients for production, install the [required tools](#tools-and-dependencies) or use the devcontainer.
@@ -81,7 +84,7 @@ Run the following command in the root of the project[^1]:
 > `SERVER_URL` should be the URL of your deployed server. Defaults to `http://localhost:8080`.
 
 > [!TIP]
-> You can also bundle the server this way, if you dont want to use docker. In this case set `PLATFORM` to web. You can omit `SERVER_URL` as it is not needed for the web platform.
+> You can also bundle the server this way, if you don't want to use docker. In this case set `PLATFORM` to web. You can omit `SERVER_URL` as it is not needed for the web platform.
 
 ```shell
 make bundle PLATFORM=<platform> SERVER_URL="<your-server-url>" [PACKAGES="<package1> [<package2> ...]"]
@@ -111,6 +114,7 @@ Additionally you need:
 * `Dioxus CLI`:
   [See installation instructions](https://dioxuslabs.com/learn/0.7/getting_started/#install-the-dioxus-cli)
 * `Node` and `npm`
+* `make`
 
 ## Development
 
@@ -130,9 +134,9 @@ packages/
 │       ├── lib.rs
 │       ├── prelude.rs # Reexports of database entities
 │       └── ...
-├── form_hooks/ # Package providing utilities for handeling forms
+├── form_hooks/ # Package providing utilities for handling forms
 │   ├── Cargo.toml
-│   ├── form_hooks_derive/ # Package prividing derive macros for form traits
+│   ├── form_hooks_derive/ # Package providing derive macros for form traits
 │   └── src/
 └── frontend/
     ├── assets/ # Any assets that are used by the app should be placed here
