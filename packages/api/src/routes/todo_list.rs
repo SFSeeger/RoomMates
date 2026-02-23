@@ -43,17 +43,13 @@ pub async fn retrieve_todo_list(
     todo_list_id: i32,
 ) -> Result<entity::todo_list::TodoListWithPermission, ServerFnError> {
     use entity::todo_list_invitation::Column as InvitationColumn;
-    use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter};
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
-    server::todo_lists::get_todo_list_permission(todo_list_id, user.id, &state.database)
-        .await?
-        .or_forbidden("You are not permitted to view Tasks in this To-Do List")?;
-
     let todo_list = TodoList::find_by_id(todo_list_id)
         .inner_join(TodoListInvitation)
-        .filter(Condition::all().add(InvitationColumn::ReceivingUserId.eq(user.id)))
+        .filter(InvitationColumn::ReceivingUserId.eq(user.id))
         .into_partial_model()
         .one(&state.database)
         .await

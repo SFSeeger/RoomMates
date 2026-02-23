@@ -197,14 +197,8 @@ pub async fn find_user_by_email(
         .await
         .or_internal_server_error("Error loading user from database")?;
 
-    match user_option {
-        Some(user) => Ok(UserInfo::from_user_model(user)),
-        None => Err(ServerFnError::ServerError {
-            message: ("Cannot find user with this email".to_string()),
-            code: (404),
-            details: None,
-        }),
-    }
+    let user = user_option.or_not_found("Cannot find user with this email")?;
+    Ok(UserInfo::from_user_model(user))
 }
 
 #[cfg(test)]

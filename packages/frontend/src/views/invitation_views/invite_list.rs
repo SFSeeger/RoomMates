@@ -1,7 +1,9 @@
+use crate::components::tooltip::Tooltip;
 use crate::components::ui::button::{Button, ButtonVariant};
-use crate::components::ui::list::{ComplexListDetails, List, ListDetails, ListRow};
+use crate::components::ui::list::{ComplexListDetails, List, ListRow};
+use crate::components::ui::toaster::{ToastOptions, use_toaster};
+use api::routes::events::invitations::{accept_invite, decline_invite, list_received_invites};
 use api::routes::events::retrieve_event;
-use api::routes::invitations::{accept_invite, decline_invite, list_received_invites};
 use api::routes::todo_list::invite::{
     accept_todo_list_invite, decline_todo_list_invite, list_todo_invites,
 };
@@ -9,12 +11,14 @@ use api::routes::todo_list::retrieve_todo_list;
 use api::routes::users::retrieve_user;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::{LdBadgeInfo, LdCheck, LdNavigation, LdX};
+use dioxus_free_icons::icons::ld_icons::{LdCheck, LdMapPin, LdRefreshCcw, LdX};
+use roommates::message_from_captured_error;
+use time::macros::format_description;
 
 #[component]
 pub fn ListInviteView() -> Element {
     let mut invites = use_loader(move || async move { list_received_invites().await })?;
-    let mut todo_invites = use_loader(move || async move { list_todo_invites().await })?;
+    let mut todo_invites = use_loader(move || async move { list_todo_invites(Some(false)).await })?;
 
     let ondecide = move |id: i32| {
         let mut lists_write = invites.write();
@@ -45,68 +49,123 @@ pub fn ListInviteView() -> Element {
 
 #[component]
 pub fn EventInviteRow(invite: entity::invitation::Model, ondecide: EventHandler<i32>) -> Element {
-    let load_event = use_loader(move || async move { retrieve_event(invite.event_id).await })?;
-    let event = load_event();
-    let user = use_loader(move || async move { retrieve_user(event.owner_id).await })?();
-
+    let event = use_loader(move || async move { retrieve_event(invite.event_id).await })?();
     let mut accept_action = use_action(accept_invite);
     let mut decline_action = use_action(decline_invite);
+    let user = use_loader(move || async move { retrieve_user(event.owner_id).await })?();
+
+    let mut toaster = use_toaster();
+
+    let start = event
+        .start_time
+        .format(format_description!("[hour]:[minute]"))
+        .unwrap();
+    let end = event
+        .end_time
+        .format(format_description!("[hour]:[minute]"))
+        .unwrap();
+    let date = event
+        .date
+        .format(format_description!("[day].[month].[year]"))
+        .unwrap();
 
     rsx! {
-        ListRow {
-            ListDetails { title: "{user.first_name} {user.last_name} invites you to {event.title}",
-                div { class: "flex-row gap-w justify-content full",
-                    p { "{event.start_time} - {event.end_time}" }
+        div { class: "w-full",
+            ListRow {
+                ComplexListDetails {
+                    title: rsx! {
+                        "You were invited to: {event.title} by {user.first_name} {user.last_name}"
+                        div { class: "whitespace-nowrap",
+                            if event.reoccurring {
+                                h1 { "{event.weekday:?}" }
+                            } else {
+                                h1 { "{date}" }
+                            }
+                            p { "{start} - {end}" }
+                        }
+                        div { class: "flex flex-wrap items-center gap-2",
+                            div {
+                                if event.reoccurring {
+                                    Tooltip { tooltip: "Reoccurring event",
+                                        Icon { icon: LdRefreshCcw }
+                                    }
+                                }
+                            }
 
-                    if event.reoccurring {
-                        h1 { class: "w-20", "Every {event.weekday:?}" }
-                    } else {
-                        h1 { class: "w-20", "{event.date}" }
-                    }
 
-                    div {
-                        Icon { icon: LdBadgeInfo }
-                        p { class: "w-100 ",
-                            match &event.description {
-                                Some(Text) => rsx! { "{Text}" },
-                                None => rsx! { "no description" },
+                            div { class: "flex items-center gap-1 whitespace-nowrap",
+                                if let Some(text) = &event.location {
+                                    div {
+                                        Icon { icon: LdMapPin }
+                                    }
+                                    br {}
+                                    div { "{text}" }
+                                }
+                            }
+                        }
+                    },
+
+                    div { class: "flex w-full items-center gap-4 flex-wrap md:flex-nowrap",
+
+                        div { class: "flex gap-2 flex-1 items-center",
+                            if let Some(text) = &event.description {
+                                span { "{text}" }
                             }
                         }
                     }
-                    div {
-                        Icon { icon: LdNavigation }
-                        p { class: "w-50",
-                            match &event.location {
-                                Some(Text) => rsx! { "{Text}" },
-                                None => rsx! { "no location" },
+                }
+
+                div { class: "flex gap-2 ml-auto",
+                    Button {
+                        onclick: move |_| async move {
+                            accept_action.call(invite.id).await;
+                            match accept_action.value() {
+
+                                Some(Ok(_)) => {
+                                    ondecide.call(invite.id);
+                                }
+                                Some(Err(error)) => {
+                                    toaster
+                                        .error(
+                                            "Failed to update favorite!",
+                                            ToastOptions::new().description(rsx! {
+                                                p { "{message_from_captured_error(&error)}" }
+                                            }),
+                                        );
+                                }
+                                None => {
+                                    warn!("Request to update favorite did not finish");
+                                }
                             }
-                        }
+                        },
+                        variant: ButtonVariant::Success,
+                        Icon { icon: LdCheck }
                     }
 
-                    div {
-                        Button {
-                            onclick: move |_| async move {
-                                accept_action.call(invite.id).await;
-                                //TODO add error hadneling
+                    Button {
+                        onclick: move |_| async move {
+                            decline_action.call(invite.id).await;
+                            match decline_action.value() {
 
-                                ondecide.call(invite.id);
-
-                            },
-                            variant: ButtonVariant::Success,
-                            Icon { icon: LdCheck }
-                        }
-                    }
-                    div {
-                        Button {
-                            onclick: move |_| async move {
-                                decline_action.call(invite.id).await;
-
-                                ondecide.call(invite.id);
-
-                            },
-                            variant: ButtonVariant::Error,
-                            Icon { icon: LdX }
-                        }
+                                Some(Ok(_)) => {
+                                    ondecide.call(invite.id);
+                                }
+                                Some(Err(error)) => {
+                                    toaster
+                                        .error(
+                                            "Failed to update favorite!",
+                                            ToastOptions::new().description(rsx! {
+                                                p { "{message_from_captured_error(&error)}" }
+                                            }),
+                                        );
+                                }
+                                None => {
+                                    warn!("Request to update favorite did not finish");
+                                }
+                            }
+                        },
+                        variant: ButtonVariant::Error,
+                        Icon { icon: LdX }
                     }
                 }
             }
@@ -123,48 +182,79 @@ pub fn TodoInviteRow(
         use_loader(move || async move { retrieve_todo_list(invite.todo_list_id).await })?();
     let title = todo_list.title.clone();
 
+    //unsafe?? überhaupt nötig?
+    let user =
+        use_loader(move || async move { retrieve_user(invite.sender_user_id.unwrap()).await })?();
+
     let mut accept_action = use_action(accept_todo_list_invite);
     let mut decline_action = use_action(decline_todo_list_invite);
+
+    let mut toaster = use_toaster();
 
     rsx! {
         ListRow {
             ComplexListDetails {
                 title: rsx! {
                     h3 { class: "flex items-center gap-2" }
-                    "{title}"
+                    "{user.first_name} {user.last_name} wants to collaborate on {title}"
                 },
                 if let Some(description) = todo_list.description {
                     p { class: "overflow-hidden text-ellipsis", "{description}" }
                 }
+            }
 
-                div { class: "grid grid-cols-2 gap-2",
-                    Button {
-                        onclick: move |_| async move {
-                            accept_action.call(invite.todo_list_id).await;
+            div { class: "flex gap-2 ml-auto",
+                Button {
+                    onclick: move |_| async move {
+                        accept_action.call(invite.todo_list_id).await;
 
-                            onclick_todo.call((invite.todo_list_id, invite.receiving_user_id));
-
-                        },
-                        variant: ButtonVariant::Success,
-                        class: "btn-sm",
-                        Icon { icon: LdCheck }
-                    }
+                        match accept_action.value() {
+                            Some(Ok(_)) => {
+                                onclick_todo.call((invite.todo_list_id, invite.receiving_user_id));
+                            }
+                            Some(Err(error)) => {
+                                toaster
+                                    .error(
+                                        "Failed to update favorite!",
+                                        ToastOptions::new().description(rsx! {
+                                            p { "{message_from_captured_error(&error)}" }
+                                        }),
+                                    );
+                            }
+                            None => {
+                                warn!("Request to update favorite did not finish");
+                            }
+                        }
+                    },
+                    variant: ButtonVariant::Success,
+                    Icon { icon: LdCheck }
                 }
-                div { class: "grid grid-cols-2 gap-2",
-                    Button {
-                        onclick: move |_| async move {
-                            decline_action.call(invite.todo_list_id).await;
 
-                            onclick_todo.call((invite.todo_list_id, invite.receiving_user_id));
-
-                        },
-                        variant: ButtonVariant::Error,
-                        class: "btn-sm",
-                        Icon { icon: LdX }
-                    }
+                Button {
+                    onclick: move |_| async move {
+                        decline_action.call(invite.todo_list_id).await;
+                        match decline_action.value() {
+                            Some(Ok(_)) => {
+                                onclick_todo.call((invite.todo_list_id, invite.receiving_user_id));
+                            }
+                            Some(Err(error)) => {
+                                toaster
+                                    .error(
+                                        "Failed to update favorite!",
+                                        ToastOptions::new().description(rsx! {
+                                            p { "{message_from_captured_error(&error)}" }
+                                        }),
+                                    );
+                            }
+                            None => {
+                                warn!("Request to update favorite did not finish");
+                            }
+                        }
+                    },
+                    variant: ButtonVariant::Error,
+                    Icon { icon: LdX }
                 }
             }
         }
-
     }
 }
