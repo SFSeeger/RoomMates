@@ -4,7 +4,7 @@ use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
 use crate::components::ui::dialog::{
     Dialog, DialogAction, DialogContent, DialogTrigger, use_dialog,
 };
-use crate::components::ui::eventlistgroup::EventList;
+use crate::components::ui::eventlist::EventListGroups;
 use crate::components::ui::form::input::Input;
 use crate::components::ui::form::submit_button::SubmitButton;
 use crate::components::ui::list::{List, ListDetails, ListRow};
@@ -35,7 +35,9 @@ struct GroupNameNew {
 #[component]
 pub fn EditGroup(group_id: i32) -> Element {
     let mut group = use_loader(move || async move { retrieve_group(group_id).await })?;
-
+    let update_group = move |_| {
+        group.restart();
+    };
     let mut toaster = use_toaster();
 
     let mut change_group_name = use_action(change_group_name);
@@ -116,9 +118,7 @@ pub fn EditGroup(group_id: i32) -> Element {
                                 }
                             }
                             div { class: " flex w-full",
-                                h3 { class: "font-bold", {"Events"} }
-                                div { class: "h-2" }
-                                EventList { group_id }
+                                EventListGroups { group_id }
                             }
                         }
                     }
@@ -135,7 +135,10 @@ pub fn EditGroup(group_id: i32) -> Element {
                                     Icon { icon: LdPlus }
                                 }
                                 DialogContent { title: "Enter the email of the person you want to add to {group.read().name}",
-                                    AddUserForm { group_id }
+                                    AddMemberForm {
+                                        group_id,
+                                        onmemberadd: update_group,
+                                    }
                                 }
                             }
                         }
@@ -241,8 +244,7 @@ pub fn GroupListEntry(
 }
 
 #[component]
-pub fn AddUserForm(group_id: i32) -> Element {
-    let mut group = use_loader(move || async move { retrieve_group(group_id).await })?;
+pub fn AddMemberForm(group_id: i32, onmemberadd: EventHandler<i32>) -> Element {
     let mut toaster = use_toaster();
     let dialog = use_dialog();
     let mut form_state_add = use_form();
@@ -265,8 +267,8 @@ pub fn AddUserForm(group_id: i32) -> Element {
                     &format!("Added user {} to group!", add_user_form_data.email),
                     ToastOptions::new(),
                 );
-                group.restart();
                 dialog.close();
+                onmemberadd.call(1);
                 form.reset();
             }
             Some(Err(error)) => {

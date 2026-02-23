@@ -119,3 +119,30 @@ pub async fn update_event(
         .try_into_model()
         .or_internal_server_error("Error parsing event")?)
 }
+
+#[get("/api/events/{event_id}/groups", ext: Extension<server::AppState>)]
+pub async fn event_has_groups(event_id: i32) -> Result<Vec<entity::group::Model>, ServerFnError> {
+    use entity::event::Entity as Event;
+    use sea_orm::{EntityTrait, ModelTrait};
+
+    let event = Event::find_by_id(event_id)
+        .one(&ext.database)
+        .await
+        .or_internal_server_error("Error loading event from database")?
+        .or_not_found("Event not found")?;
+
+    Ok(event
+        .find_related(Group)
+        .all(&ext.database)
+        .await
+        .or_internal_server_error("Error loading events from database")?)
+}
+
+/*#[put("/api/events/{event_id}/groups", _ext: Extension<server::AppState>, _auth: Extension<server::AuthenticationState>)]
+pub async fn add_event_to_group(
+    _event_id: i32,
+    _group_id: i32,
+) -> Result<NoContent, ServerFnError> {
+    Ok(NoContent)
+}
+*/

@@ -160,6 +160,7 @@ pub async fn remove_event_from_group(
     group_id: i32,
     event_id: i32,
 ) -> Result<NoContent, ServerFnError> {
+    use crate::routes::events::delete_event;
     use crate::routes::groups::server_functions::{is_event_in_group, is_user_in_group};
     use entity::shared_group_event;
     use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
@@ -180,6 +181,8 @@ pub async fn remove_event_from_group(
             (result.rows_affected > 0).or_not_found(format!(
                 "Failed to remove event {event_id} from group {group_id}"
             ))?;
+
+            delete_event(event_id).await?;
 
             Ok(NoContent)
         } else {
