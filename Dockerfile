@@ -1,4 +1,3 @@
-ARG PORT=8080
 ARG NODE_VERSION=24
 
 #########################################################
@@ -56,8 +55,8 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 #########################################################
 FROM debian:trixie-slim
 ENV IP=0.0.0.0
-ENV PORT=${PORT}
-EXPOSE ${PORT}
+ENV PORT=8080
+EXPOSE 8080
 
 WORKDIR /app
 
@@ -67,4 +66,4 @@ COPY --from=builder --chown=roommates:roommates /app/dist/web .
 RUN chown -R roommates:roommates /app
 USER roommates
 
-CMD ["./frontend"]
+CMD ["./roommates"]
