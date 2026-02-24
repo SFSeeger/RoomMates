@@ -70,14 +70,14 @@ pub fn EventListEntry(event: entity::event::Model, ondelete: EventHandler<i32>) 
                         div { class: "flex gap-2 flex-1 items-center",
                             Icon { icon: LdBadgeInfo }
                             match &event.description {
-                                Some(Text) => rsx! { "{Text}" },
+                                Some(text) => rsx! { "{text}" },
                                 None => rsx! { "no description" },
                             }
                         }
                         div { class: "flex items-center gap-2 whitespace-nowrap",
                             Icon { icon: LdNavigation }
                             match &event.location {
-                                Some(Text) => rsx! { "{Text}" },
+                                Some(text) => rsx! { "{text}" },
                                 None => rsx! { "no location" },
                             }
                         }
