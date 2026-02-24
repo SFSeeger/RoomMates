@@ -30,6 +30,7 @@ pub async fn setup_api(app: fn() -> Element) -> Result<axum::Router, anyhow::Err
     let router = axum::Router::new()
         .serve_dioxus_application(ServeConfig::default().enable_out_of_order_streaming(), app)
         .layer(Extension(app_state))
+        .layer(axum::middleware::from_fn(tracing_middleware))
         .layer(axum::middleware::from_fn(
             move |request: Request, next: Next| {
                 authentication_middleware(request, next, database.clone())
@@ -73,6 +74,39 @@ async fn authentication_middleware(
     request.extensions_mut().insert(authentication_state);
 
     next.run(request).await
+}
+
+async fn tracing_middleware(request: Request, next: Next) -> Response {
+    let method = request.method().clone();
+    let path = request.uri().path().to_string();
+    let username = request.extensions().get::<AuthenticationState>().map_or(
+        "Anonymous".to_string(),
+        |state| {
+            state
+                .user
+                .as_ref()
+                .map(|user| user.email.clone())
+                .unwrap_or("Anonymous".to_string())
+        },
+    );
+
+    let response = next.run(request).await;
+
+    if !std::env::var("ACCESS_LOG").is_ok_and(|value| value.to_lowercase() == "true") {
+        return response;
+    }
+
+    let base_message = format!("{method} {path} {} - {username}", response.status());
+
+    if response.status().is_server_error() {
+        error!("{}", base_message);
+    } else if response.status().is_client_error() {
+        warn!("{}", base_message);
+    } else {
+        info!("{}", base_message);
+    }
+
+    response
 }
 
 #[derive(Clone, Debug)]

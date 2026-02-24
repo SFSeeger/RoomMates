@@ -47,6 +47,7 @@ services:
       - "8080:8080"
     environment:
       DATABASE_URL: "mysql://roommates:${MYSQL_PASSWORD}@db:3306/roommates"
+      ACCESS_LOG: true # Optional shows a access log in stdout
     depends_on:
       - db
 
