@@ -55,14 +55,13 @@ async fn authentication_middleware(
         session_id: None,
     };
 
-    if let Some(token) = request.headers().get("Authorization") {
-        if let Ok(token) = token.to_str()
-            && let Some(token) = token.strip_prefix("Token ")
-            && let Ok(Some((user, session_id))) = find_user_by_session(token, &database).await
-        {
-            authentication_state.user = Some(user);
-            authentication_state.session_id = Some(session_id);
-        };
+    if let Some(token) = request.headers().get("Authorization")
+        && let Ok(token) = token.to_str()
+        && let Some(token) = token.strip_prefix("Token ")
+        && let Ok(Some((user, session_id))) = find_user_by_session(token, &database).await
+    {
+        authentication_state.user = Some(user);
+        authentication_state.session_id = Some(session_id);
     } else if let Some(cookies) = request.headers().typed_get::<Cookie>()
         && let Some(token) = cookies.get("session")
         && let Ok(Some((user, session_id))) = find_user_by_session(token, &database).await
