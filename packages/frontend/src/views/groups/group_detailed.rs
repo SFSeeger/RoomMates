@@ -4,7 +4,7 @@ use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
 use crate::components::ui::dialog::{
     Dialog, DialogAction, DialogContent, DialogTrigger, use_dialog,
 };
-use crate::components::ui::eventlist::EventListGroups;
+use crate::components::ui::events::eventlist::EventListGroups;
 use crate::components::ui::form::input::Input;
 use crate::components::ui::form::submit_button::SubmitButton;
 use crate::components::ui::list::{List, ListDetails, ListRow};
