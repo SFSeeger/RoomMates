@@ -121,7 +121,7 @@ pub async fn update_event(
 }
 
 #[get("/api/events/{event_id}/groups", ext: Extension<server::AppState>)]
-pub async fn event_has_groups(event_id: i32) -> Result<Vec<entity::group::Model>, ServerFnError> {
+pub async fn list_event_groups(event_id: i32) -> Result<Vec<entity::group::Model>, ServerFnError> {
     use entity::event::Entity as Event;
     use sea_orm::{EntityTrait, ModelTrait};
 
@@ -148,34 +148,62 @@ pub async fn add_event_to_group(event_id: i32, group_id: i32) -> Result<NoConten
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
-    let authenticated = is_user_in_group(&ext.database, group_id, user.id).await?;
-    if authenticated {
-        let new_event = Event::find_by_id(event_id)
-            .one(&ext.database)
-            .await
-            .or_internal_server_error("Error loading user from database")?
-            .or_not_found("User not found")?;
+    is_user_in_group(&ext.database, group_id, user.id)
+        .await?
+        .or_forbidden("No permission to add a new user.")?;
 
-        let checker = is_event_in_group(&ext.database, group_id, new_event.id).await?;
+    let new_event = Event::find_by_id(event_id)
+        .one(&ext.database)
+        .await
+        .or_internal_server_error("Error loading event from database")?
+        .or_not_found("Event not found")?;
 
-        (!checker).or_bad_request("Event already in group")?;
+    let checker = is_event_in_group(&ext.database, group_id, new_event.id).await?;
 
-        let pair = shared_group_event::ActiveModel {
-            group_id: Set(group_id),
-            event_id: Set(new_event.id),
-        };
+    (!checker).or_bad_request("Event already in group")?;
 
-        let _pair = pair
-            .insert(&ext.database)
-            .await
-            .or_internal_server_error("Error inserting pair into database")?;
+    let pair = shared_group_event::ActiveModel {
+        group_id: Set(group_id),
+        event_id: Set(new_event.id),
+    };
 
-        Ok(NoContent)
-    } else {
-        Err(ServerFnError::ServerError {
-            message: "No permission to add a new user.".to_string(),
-            code: 401,
-            details: None,
-        })
-    }
+    let _pair = pair
+        .insert(&ext.database)
+        .await
+        .or_internal_server_error("Error inserting pair into database")?;
+
+    Ok(NoContent)
+}
+
+#[post("/api/events/{event_id}/groups/remove-group", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+pub async fn remove_event_from_group(
+    group_id: i32,
+    event_id: i32,
+) -> Result<NoContent, ServerFnError> {
+    use crate::server::events::{is_event_in_group, is_user_in_group};
+    use entity::shared_group_event;
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+    is_user_in_group(&ext.database, group_id, user.id)
+        .await?
+        .or_forbidden("Permission to remove group denied!")?;
+    is_event_in_group(&ext.database, group_id, event_id)
+        .await?
+        .or_not_found("Event does not exist")?;
+
+    let result = shared_group_event::Entity::delete_many()
+        .filter(shared_group_event::Column::EventId.eq(event_id))
+        .filter(shared_group_event::Column::GroupId.eq(group_id))
+        .exec(&ext.database)
+        .await
+        .or_internal_server_error("Error deleting relation")?;
+
+    (result.rows_affected > 0).or_not_found(format!(
+        "Failed to remove event {event_id} from group {group_id}"
+    ))?;
+
+    //delete_event(event_id).await?;
+
+    Ok(NoContent)
 }
