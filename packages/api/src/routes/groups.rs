@@ -72,7 +72,7 @@ pub async fn list_groups() -> Result<Vec<entity::group::Model>, ServerFnError> {
 /// Adds an user to a group
 #[post("/api/groups/{group_id}/add-user", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn add_user_to_group(group_id: i32, email: String) -> Result<NoContent, ServerFnError> {
-    use crate::routes::groups::server_functions::is_user_in_group;
+    use crate::server::events::is_user_in_group;
     use entity::is_in_group;
     use entity::user::Entity as User;
     use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
@@ -118,7 +118,7 @@ pub async fn remove_user_from_group(
     group_id: i32,
     user_id: i32,
 ) -> Result<NoContent, ServerFnError> {
-    use crate::routes::groups::server_functions::is_user_in_group;
+    use crate::server::events::is_user_in_group;
     use entity::is_in_group;
     use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
@@ -161,7 +161,7 @@ pub async fn remove_event_from_group(
     event_id: i32,
 ) -> Result<NoContent, ServerFnError> {
     use crate::routes::events::delete_event;
-    use crate::routes::groups::server_functions::{is_event_in_group, is_user_in_group};
+    use crate::server::events::{is_event_in_group, is_user_in_group};
     use entity::shared_group_event;
     use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
@@ -272,7 +272,7 @@ pub async fn change_group_name(
 
 #[delete("/api/groups/{group_id}", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn delete_group(group_id: i32) -> Result<NoContent, ServerFnError> {
-    use crate::routes::groups::server_functions::is_user_in_group;
+    use crate::server::events::is_user_in_group;
     use entity::group::Entity as Group;
     use sea_orm::EntityTrait;
 
@@ -292,45 +292,5 @@ pub async fn delete_group(group_id: i32) -> Result<NoContent, ServerFnError> {
             code: 401,
             details: None,
         })
-    }
-}
-
-#[cfg(feature = "server")]
-mod server_functions {
-    use super::*;
-    use sea_orm::DatabaseConnection;
-
-    pub async fn is_user_in_group(
-        db: &DatabaseConnection,
-        group_id: i32,
-        user_id: i32,
-    ) -> Result<bool, ServerFnError> {
-        use entity::is_in_group::Entity as IsInGroup;
-        use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
-
-        Ok(IsInGroup::find()
-            .filter(entity::is_in_group::Column::GroupId.eq(group_id))
-            .filter(entity::is_in_group::Column::UserId.eq(user_id))
-            .one(db)
-            .await
-            .or_internal_server_error("Error loading from database")?
-            .is_some())
-    }
-
-    pub async fn is_event_in_group(
-        db: &DatabaseConnection,
-        group_id: i32,
-        event_id: i32,
-    ) -> Result<bool, ServerFnError> {
-        use entity::shared_group_event::Entity as SharedGroupEvent;
-        use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
-
-        Ok(SharedGroupEvent::find()
-            .filter(entity::shared_group_event::Column::GroupId.eq(group_id))
-            .filter(entity::shared_group_event::Column::EventId.eq(event_id))
-            .one(db)
-            .await
-            .or_internal_server_error("Error loading from database")?
-            .is_some())
     }
 }

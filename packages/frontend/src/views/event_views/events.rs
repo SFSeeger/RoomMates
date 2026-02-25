@@ -1,5 +1,5 @@
 use crate::Route;
-use crate::components::ui::eventlist::EventList;
+use crate::components::ui::events::eventlist::EventList;
 use crate::components::ui::{
     button::{Button, ButtonShape, ButtonVariant},
     card::{Card, CardBody},
