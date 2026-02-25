@@ -86,24 +86,16 @@ pub fn TodoListEntry(
 
     rsx! {
         ListRow {
+            div {}
             ComplexListDetails {
+                link: Route::TodosGroupView {
+                    todo_list_id: todo_list.id,
+                },
                 title: rsx! {
-                    h3 { class: "flex items-center gap-2",
-                        Link {
-                            to: Route::TodosGroupView {
-                                todo_list_id: todo_list.id,
-                            },
-                            "{title}"
-                        }
-                    }
+                    h3 { class: "flex items-center gap-2", "{title}" }
                 },
                 if let Some(description) = todo_list.description {
-                    Link {
-                        to: Route::TodosGroupView {
-                            todo_list_id: todo_list.id,
-                        },
-                        p { class: "overflow-hidden text-ellipsis", "{description}" }
-                    }
+                    p { class: "overflow-hidden text-ellipsis", "{description}" }
                 }
             }
             div { class: "grid grid-cols-2 gap-2",

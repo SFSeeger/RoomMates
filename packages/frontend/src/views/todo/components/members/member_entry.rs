@@ -31,6 +31,7 @@ pub fn MemberEntry(member: UserWithTodoListInvitation, onmemberkick: EventHandle
 
     rsx! {
         ListRow {
+            div {}
             ComplexListDetails {
                 title: rsx! {
                     h3 { class: "flex flex-wrap items-center gap-2",

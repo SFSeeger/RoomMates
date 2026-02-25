@@ -34,6 +34,7 @@ pub fn TodoEntry(
 
     rsx! {
         ListRow {
+            div {}
             ComplexListDetails {
                 title: rsx! {
                     h3 { class: if todo.completed { "line-through text-base-content/60" }, "{todo.title}" }
