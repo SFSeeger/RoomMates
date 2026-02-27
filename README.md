@@ -6,6 +6,32 @@
   Making organizing easy
 </p>
 
+<details open>
+<summary><h2>Table of Contents</h2></summary>
+
+- [Features](#features)
+- [Deployment](#deployment)
+  - [Server](#server)
+    - [Server with Sqlite Database](#server-with-sqlite-database)
+    - [Server with MySQL/MariaDB](#server-with-mysqlmariadb)
+  - [Clients](#clients)
+    - [Android](#android)
+  - [Tools and Dependencies](#tools-and-dependencies)
+- [Development](#development)
+  - [Project Structure](#project-structure)
+  - [Serving Your App](#serving-your-app)
+  - [Development Services](#development-services)
+  - [Dev Container](#dev-container)
+  - [Pre-Commit Hooks](#pre-commit-hooks)
+  - [Testing](#testing)
+- [Disclosure of AI Usage](#disclosure-of-ai-usage)
+
+</details>
+
+## Features
+
+
+
 ## Deployment
 
 ### Server
@@ -195,5 +221,13 @@ To run the tests for the project, use the following command:
 ```bash
 make tests
 ```
+
+## Disclosure of AI Usage
+AI was used for Tab-Completing and Debugging, never for generating whole sections of code without a human creating derivatives of said generated code.
+Model used were:
+- ChatGPT 4o, 4.1 and 5
+- Github Copilot
+- Google Gemini
+
 
 [^1]: Angle brackets (`<>`) indicate required arguments, square brackets (`[]`) indicate optional arguments.
