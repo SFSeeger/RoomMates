@@ -1,6 +1,7 @@
 use crate::Route;
 use crate::components::contexts::use_auth;
 use crate::components::ui::button::{Button, ButtonVariant};
+use crate::components::ui::loader::Loader;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::LdMapPin;
@@ -13,6 +14,7 @@ pub fn CalendarDashview(
     selected_date: ReadSignal<Date>,
     on_date_change: EventHandler<Date>,
     events: ReadSignal<Vec<entity::event::Model>>,
+    #[props(default)] is_loading: ReadSignal<bool>,
 ) -> Element {
     let today = OffsetDateTime::now_utc().date();
     let days = use_memo(move || {
@@ -32,7 +34,7 @@ pub fn CalendarDashview(
     });
     let selected_days_events = use_memo(move || {
         events
-            .peek()
+            .read()
             .iter()
             .filter(|&event| is_event_on_day(event, selected_date()))
             .cloned()
@@ -63,29 +65,41 @@ pub fn CalendarDashview(
             }
             div { class: "divider divider-neutral" }
             div { class: "flex flex-col rounded-lg gap-2",
-                CalenderDaily { events: selected_days_events }
+                CalenderDaily { events: selected_days_events, is_loading }
             }
         }
     }
 }
 
 #[component]
-pub fn CalenderDaily(events: ReadSignal<Vec<entity::event::Model>>) -> Element {
+pub fn CalenderDaily(
+    events: ReadSignal<Vec<entity::event::Model>>,
+    #[props(default)] is_loading: ReadSignal<bool>,
+) -> Element {
     rsx! {
-        div { class: "flex flex-col bg-base-100 rounded-lg  w-full h-[600px] overflow-y-scroll border shadow-sm border-base-100",
-            div {
-                class: "grid grid-cols-[4rem_1fr] grid-rows-[repeat(96,var(--grid-row-size))] w-full relative",
-                style: "--grid-row-size: 1.5rem;",
-                for hour in 0..24 {
-                    div {
-                        class: "text-xs opacity-50 font-mono self-start pt-0 -mt-1 text-right pr-3 col-start-1 row-start-(--row-start)",
-                        style: "--row-start: {hour * 4 + 1};",
-                        "{hour:02}:00"
+        div { class: "flex flex-col relative bg-base-100 rounded-lg  w-full h-[600px] overflow-y-scroll border shadow-sm border-base-100",
+            div { class: "relative",
+                div {
+                    class: "grid grid-cols-[4rem_1fr] grid-rows-[repeat(96,var(--grid-row-size))] w-full relative",
+                    style: "--grid-row-size: 1.5rem;",
+                    for hour in 0..24 {
+                        div {
+                            class: "text-xs opacity-50 font-mono self-start pt-0 -mt-1 text-right pr-3 col-start-1 row-start-(--row-start)",
+                            style: "--row-start: {hour * 4 + 1};",
+                            "{hour:02}:00"
+                        }
+                    }
+                    div { class: "day-calendar-grid grid grid-rows-subgrid row-span-full auto-rows-fr col-start-2",
+                        for event in events.read().iter() {
+                            CalenderEvents { event: event.clone() }
+                        }
                     }
                 }
-                div { class: "day-calendar-grid grid grid-rows-subgrid row-span-full auto-rows-fr col-start-2",
-                    for event in events.read().iter() {
-                        CalenderEvents { event: event.clone() }
+                if is_loading() {
+                    div { class: "absolute inset-0 bg-black/50 flex justify-center z-10",
+                        div { class: "sticky top-0 h-[600px] flex",
+                            Loader { class: "text-base-200 dark:text-base-content" }
+                        }
                     }
                 }
             }
@@ -94,7 +108,7 @@ pub fn CalenderDaily(events: ReadSignal<Vec<entity::event::Model>>) -> Element {
 }
 
 #[component]
-pub fn CalenderEvents(event: entity::event::Model) -> Element {
+fn CalenderEvents(event: entity::event::Model) -> Element {
     let start_row =
         (event.start_time.hour() as i32 * 4) + (event.start_time.minute() as i32 / 15) + 1;
     let duration_mins = (event.end_time - event.start_time).whole_minutes();

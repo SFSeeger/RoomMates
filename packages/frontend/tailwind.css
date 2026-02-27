@@ -154,6 +154,10 @@
 
 @plugin "./catppuccinTheme.frappe.ts";
 
+@custom-variant dark (&:where(body:has(input.theme-controller[value="roommatesdark"]:checked) &,
+    body:has(input.theme-controller[value="frappe"]:checked) &,
+    [data-theme="roommatesdark"] *,
+    [data-theme="frappe"] *));
 
 .input:has(input[required])>.label::after {
   @apply text-error;
@@ -170,14 +174,12 @@
   }
 
   /*
-    Adds a thick line every 4 rows and a small dotted line every row. Requires a css variable --grid-row-size to be set
-  */
+  Adds a thick line every 4 rows and a small dotted line every row. Requires a css variable --grid-row-size to be set
+*/
   .day-calendar-grid {
-    background-image:
-      linear-gradient(to bottom, color-mix(in srgb, var(--color-base-content) 90%, transparent) 2px, transparent 2px),
+    background-image: linear-gradient(to bottom, color-mix(in srgb, var(--color-base-content) 90%, transparent) 2px, transparent 2px),
       radial-gradient(circle, color-mix(in srgb, var(--color-base-content) 70%, transparent) 1px, transparent 1px);
-    background-size:
-      100% calc(var(--grid-row-size) * 4),
+    background-size: 100% calc(var(--grid-row-size) * 4),
       5px var(--grid-row-size);
     background-position-y: 0px, 13px;
   }

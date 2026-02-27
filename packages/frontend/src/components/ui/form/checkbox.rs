@@ -51,7 +51,7 @@ pub fn Checkbox<T: FieldValue>(
                     onblur: field_attributes.onblur,
                     oninput: field_attributes.oninput,
                     r#type: "checkbox",
-                    ..field_attributes.into_input_attributes(),
+                    ..field_attributes.into_checkbox_attributes(),
                     ..attributes,
                 }
                 {label}

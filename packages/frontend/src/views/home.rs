@@ -22,13 +22,29 @@ pub fn Home() -> Element {
 
 #[component]
 fn Dashboard() -> Element {
-    let events = use_loader(list_events)?;
-    let mut todos = use_loader(move || async move { list_todos(Some(false), Some(true)).await })?;
-
     let mut selected_date = use_signal(|| time::OffsetDateTime::now_utc().date());
-
     let auth_state = use_context::<AuthState>();
     let user_ref = auth_state.user.read();
+
+    let mut events = use_loader(move || async move {
+        list_events(Some(selected_date()), Some(selected_date())).await
+    })?;
+    let mut is_loading_events = use_signal(|| events.loading());
+
+    let on_date_change = move |date| {
+        selected_date.set(date);
+        events.restart();
+        is_loading_events.set(true);
+    };
+
+    // Sadly Loader.loading() is not reactive, so we have to keep a seperate loading state
+    use_effect(move || {
+        // events.read() is required to subscribe to state chamges. When events changes, it has finished loading new data
+        events.read();
+        is_loading_events.set(false);
+    });
+
+    let mut todos = use_loader(move || async move { list_todos(Some(false), Some(true)).await })?;
 
     let on_todo_update = move |id| {
         todos.write().retain(|list| list.id != id);
@@ -46,16 +62,17 @@ fn Dashboard() -> Element {
             div { class: "flex gap-4 flex-col lg:flex-row mb-16 lg:mb-0 mt-2",
                 div { class: "w-full md:flex-1",
                     CalendarDashview {
-                        events: events(),
+                        events: events.read().cloned(),
                         selected_date,
-                        on_date_change: move |date| selected_date.set(date),
+                        on_date_change,
+                        is_loading: *is_loading_events.read(),
                     }
                 }
                 div { class: "w-full md:flex-1",
-                    List { header: "Todos", //bigger size?
+                    List { header: "Todos",
                         if todos.read().is_empty() {
                             ListRow {
-                                ListDetails { title: "No favorited todos yet" }
+                                ListDetails { title: "No favorite todos yet" }
                             }
                         } else {
                             for todo in todos.iter() {

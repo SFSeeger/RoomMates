@@ -1,13 +1,12 @@
 use crate::Route;
-use crate::components::events::EventListEntry;
 use crate::components::ui::button::{Button, ButtonShape};
 use crate::components::ui::calendar::{
     Calendar, CalendarGrid, CalendarHeader, CalendarNavigation, CalendarNextMonthButton,
     CalendarPreviousMonthButton, CalendarSelectMonth, CalendarSelectYear, CalendarView,
     CustomCalendarDay,
 };
+use crate::components::ui::calendar_small::CalenderDaily;
 use crate::components::ui::card::{Card, CardBody, CardTitle};
-use crate::components::ui::list::List;
 use api::routes::events::list_events;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
@@ -144,23 +143,21 @@ pub fn EventCalendarView() -> Element {
                 CardBody {
                     CardTitle { class: "flex justify-between items-center",
                         "{date_text}"
-                        Link {
-                            class: "btn btn-primary btn-outline",
-                            to: Route::ListEventView {
-                                date: selected_date().into(),
-                            },
-                            Icon { icon: LdExternalLink }
-                        }
-                    }
-                    List { header: "",
-                        for event in selected_days_events.iter() {
-                            EventListEntry {
-                                key: "event-{event.id}",
-                                event: event.clone(),
-                                navigable: true,
+                        if selected_date().is_none() {
+                            Button { outline: true, disabled: true,
+                                Icon { icon: LdExternalLink }
+                            }
+                        } else {
+                            Link {
+                                class: "btn btn-primary btn-outline",
+                                to: Route::ListEventView {
+                                    date: selected_date().into(),
+                                },
+                                Icon { icon: LdExternalLink }
                             }
                         }
                     }
+                    CalenderDaily { events: selected_days_events }
                 }
             }
         }

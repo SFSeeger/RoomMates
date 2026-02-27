@@ -23,7 +23,8 @@ use time::macros::format_description;
 
 #[component]
 pub fn EventListEntry(event: entity::event::Model, ondelete: EventHandler<i32>) -> Element {
-    let event_has_groups = use_loader(move || async move { list_event_groups(event.id).await })?;
+    let mut event_has_groups =
+        use_loader(move || async move { list_event_groups(event.id).await })?;
     let title = event.title.clone();
     let start = event
         .start_time
@@ -47,72 +48,70 @@ pub fn EventListEntry(event: entity::event::Model, ondelete: EventHandler<i32>) 
                         event_id: event.id,
                     },
                     title: rsx! {
-                        "{title}"
-                        div { class: "whitespace-nowrap",
-                            if event.reoccurring {
-                                h1 { "{event.weekday:?}" }
-                            } else {
-                                h1 { "{date}" }
-                            }
-                            p { "{start} - {end}" }
-                        }
-                        div { class: "flex flex-wrap items-center gap-2",
+                        h3 { class: "flex items-start gap-2",
+                            "{title}"
                             div {
                                 if event.private {
                                     Tooltip { tooltip: "Event is private",
-                                        Icon { icon: LdEyeOff }
+                                        Icon { class: "size-5", icon: LdEyeOff }
                                     }
                                 } else {
                                     Tooltip { tooltip: "Event is public",
-                                        Icon { icon: LdEye }
+                                        Icon { class: "size-5", icon: LdEye }
                                     }
                                 }
                             }
-                            div {
-                                if event.reoccurring {
+                            if event.reoccurring {
+                                div {
                                     Tooltip { tooltip: "Reoccurring event",
-                                        Icon { icon: LdRefreshCcw }
+                                        Icon { class: "size-5", icon: LdRefreshCcw }
                                     }
                                 }
                             }
-                            div {
-                                if event_has_groups.len() > 0 {
+                            if event_has_groups.len() > 0 {
+                                div {
                                     Tooltip { tooltip: "Event is in a group",
-                                        Icon { icon: LdUsers }
+                                        Icon { class: "size-5", icon: LdUsers }
                                     }
-                                }
-                            }
-                            div { class: "flex items-center gap-1 whitespace-nowrap",
-                                if let Some(text) = &event.location {
-                                    div {
-                                        Icon { icon: LdMapPin }
-                                    }
-                                    br {}
-                                    div { "{text}" }
                                 }
                             }
                         }
                     },
-                    div { class: "flex w-full items-center gap-4 flex-wrap md:flex-nowrap",
-
-                        div { class: "flex gap-2 flex-1 items-center",
-                            if let Some(text) = &event.description {
-                                span { "{text}" }
-                            }
+                    div { class: "whitespace-nowrap font-bold",
+                        if event.reoccurring {
+                            h1 { "{event.weekday}" }
+                        } else {
+                            h1 { "{date}" }
                         }
+                        p { "{start} - {end}" }
+                    }
+                    div { class: "flex flex-wrap items-center gap-1",
+                        if let Some(text) = &event.location {
+                            div {
+                                Icon { class: "size-3", icon: LdMapPin }
+                            }
+                            br {}
+                            div { "{text}" }
+                        }
+                    }
+                    if let Some(text) = &event.description {
+                        p { class: "text-justify", "{text}" }
                     }
                 }
                 div { class: "flex gap-2 ml-auto",
                     Dialog {
                         DialogTrigger {
                             variant: ButtonVariant::Primary,
-                            ghost: false,
+                            outline: true,
                             class: "btn",
                             Icon { icon: LdUsers }
                             "Add to group"
                         }
                         DialogContent { title: "Choose a group you want to add this event to",
-                            AddEventToGroup { event_id: event.id }
+                            AddEventToGroup {
+                                event_id: event.id,
+                                ongroupadd: move |_| event_has_groups.restart(),
+                            }
                         }
                     }
                     Link {
@@ -127,6 +126,7 @@ pub fn EventListEntry(event: entity::event::Model, ondelete: EventHandler<i32>) 
                     Button {
                         onclick: move |_| { ondelete.call(event.id) },
                         variant: ButtonVariant::Error,
+                        ghost: true,
                         Icon { icon: LdTrash }
                     }
                 }
@@ -141,7 +141,7 @@ struct FormData {
 }
 
 #[component]
-pub fn AddEventToGroup(event_id: i32) -> Element {
+pub fn AddEventToGroup(event_id: i32, ongroupadd: EventHandler<()>) -> Element {
     let groups = use_loader(move || async move { list_groups().await })?;
 
     let mut options = Vec::with_capacity(groups.len() + 1);
@@ -169,6 +169,7 @@ pub fn AddEventToGroup(event_id: i32) -> Element {
         match add_event.value() {
             Some(Ok(_)) => {
                 toaster.success("Added event to group successfully!", ToastOptions::new());
+                ongroupadd.call(());
                 dialog.close();
                 form.reset();
             }

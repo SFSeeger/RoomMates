@@ -8,10 +8,11 @@ use api::routes::events::{
 };
 use api::routes::groups::retrieve_group;
 use dioxus::prelude::*;
+use time::Date;
 
 #[component]
-pub fn EventList() -> Element {
-    let mut events = use_loader(move || async move { list_events().await })?;
+pub fn EventList(date: Option<Date>) -> Element {
+    let mut events = use_loader(move || async move { list_events(date, date).await })?;
     let mut event_has_groups = use_action(list_event_groups);
     let mut delete_event = use_action(delete_event);
     let mut remove_event_from_group = use_action(remove_event_from_group);

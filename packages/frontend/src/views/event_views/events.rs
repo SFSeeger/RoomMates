@@ -83,7 +83,7 @@ pub fn ListEventView(date: DateQueryParam) -> Element {
         div { class: "w-full",
             Card {
                 CardBody {
-                    EventList { }
+                    EventList { date: date.value() }
                 }
             }
         }

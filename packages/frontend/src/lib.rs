@@ -2,7 +2,6 @@ use dioxus::CapturedError;
 use dioxus::fullstack::RequestError;
 use dioxus::prelude::*;
 use serde::Deserialize;
-use time::Date;
 
 // This is an extremely dirty way to retrieve the actual error message from the server. For some reason, the Server functions return `ServerFnError::Request(RequestError::Status {message, ..})`
 // where the message is a stringified JSON of the actual error.
