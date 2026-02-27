@@ -6,6 +6,36 @@
   Making organizing easy
 </p>
 
+<details open>
+<summary><h2>Table of Contents</h2></summary>
+
+- [Features](#features)
+- [Deployment](#deployment)
+  - [Server](#server)
+    - [Server with Sqlite Database](#server-with-sqlite-database)
+    - [Server with MySQL/MariaDB](#server-with-mysqlmariadb)
+  - [Clients](#clients)
+    - [Android](#android)
+  - [Tools and Dependencies](#tools-and-dependencies)
+- [Development](#development)
+  - [Project Structure](#project-structure)
+  - [Serving Your App](#serving-your-app)
+  - [Development Services](#development-services)
+  - [Dev Container](#dev-container)
+  - [Pre-Commit Hooks](#pre-commit-hooks)
+  - [Testing](#testing)
+- [Disclosure of AI Usage](#disclosure-of-ai-usage)
+
+</details>
+
+## Features
+* Create, view and share Events with groups and individual users
+* Manage and collaborate on To-Do Lists with different permissions
+* Choose from multiple themes to personalize your experience
+* Compatible with both MySQL and SQLite databases
+* Cross-Platform Support ([See Clients](#clients))
+
+
 ## Deployment
 
 ### Server
@@ -16,11 +46,12 @@ docker on your machine and the server.
 #### Server with Sqlite Database
 
 ```bash
-docker build -t roommates-server .
 docker run -d -p 8080:8080 \
-  -e DATABASE_URL="sqlite://db.sqlite?mode=rwc" \
-  -v database:/app/db.sqlite \
-  --name roommates-server roommates-server
+  -e DATABASE_URL="sqlite://db/db.sqlite?mode=rwc" \
+  -e ACCESS_LOG=true \
+  -v database:/app/db/ \
+  --name roommates-server \
+  ghcr.io/sfseeger/roommates:latest
 ```
 
 #### Server with MySQL/MariaDB
@@ -40,8 +71,7 @@ services:
       - db_data:/var/lib/mysql
 
   roommates-server:
-    build:
-      context: https://github.com/SFSeeger/RoomMates.git#main
+    image: ghcr.io/sfseeger/roommates:latest
     restart: unless-stopped
     ports:
       - "8080:8080"
@@ -170,7 +200,7 @@ make dev-server PLATFORM=desktop
 ### Development Services
 
 | Port | Service     | Description                                      |
-|------|-------------|--------------------------------------------------|
+| ---- | ----------- | ------------------------------------------------ |
 | 8080 | Application | The Application served by the development server |
 | 8000 | phpMyAdmin  | Database frontend for development                |
 | 3306 | MariaDB     | Database Server                                  |
@@ -190,10 +220,22 @@ should already be installed in the devcontainer.
 
 ### Testing
 
+Test Disclaimer:
+
+Some tests for basic and advanced database logic were done using unit tests. However later on, most tests were conducted by directly running and using the project, since a lot of the work was concerning the UI. Additionally most of the database operations are pretty similar, so in the interest of saving time, there was not a need to write individual tests for every one of them. The focus was on working directly with the interactive components of the project, seeing what worked and gaining concrete information about occurring errors through example data and debugging with developer tools.
+
 To run the tests for the project, use the following command:
 
 ```bash
 make tests
 ```
+
+## Disclosure of AI Usage
+AI was used for Tab-Completing and Debugging, never for generating whole sections of code without a human creating derivatives of said generated code.
+Model used were:
+- ChatGPT 4o, 4.1 and 5
+- Github Copilot
+- Google Gemini
+
 
 [^1]: Angle brackets (`<>`) indicate required arguments, square brackets (`[]`) indicate optional arguments.

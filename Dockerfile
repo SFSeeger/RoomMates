@@ -58,7 +58,12 @@ ENV IP=0.0.0.0
 ENV PORT=8080
 EXPOSE 8080
 
+LABEL org.opencontainers.image.source=https://github.com/sfseeger/roommates
+LABEL org.opencontainers.image.description="A cross platform application to help organize shared living spaces, built with Rust and Dioxus."
+LABEL org.opencontainers.image.licenses=GPL-3.0-or-later
+
 WORKDIR /app
+RUN mkdir db
 
 RUN useradd -m -u 10001 roommates
 
