@@ -29,7 +29,11 @@
 </details>
 
 ## Features
-
+* Create, view and share Events with groups and individual users
+* Manage and collaborate on To-Do Lists with different permissions
+* Choose from multiple themes to personalize your experience
+* Compatible with both MySQL and SQLite databases
+* Cross-Platform Support ([See Clients](#clients))
 
 
 ## Deployment
