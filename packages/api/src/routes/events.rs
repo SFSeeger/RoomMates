@@ -12,14 +12,55 @@ pub mod invitations;
 pub async fn list_events(
     mindate: Option<time::Date>,
     maxdate: Option<time::Date>,
-) -> Result<Vec<entity::event::Model>, ServerFnError> {
+) -> Result<Vec<entity::event::FullEvent>, ServerFnError> {
     use entity::event::Column as EventColumn;
-    use sea_orm::{ColumnTrait, Condition, ModelTrait, QueryFilter, QueryOrder, QueryTrait};
+    use entity::group::Column as GroupColumn;
+    use entity::invitation::Column as InvitationColumn;
+    use entity::shared_group_event::Column as GroupEventColumn;
+    use sea_orm::{
+        ColumnTrait, Condition, EntityTrait, JoinType, ModelTrait, QueryFilter, QueryOrder,
+        QuerySelect, QueryTrait, RelationTrait,
+    };
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
-    let events = user
-        .find_related(Event)
+    let events = entity::prelude::Event::find()
+        .join_as(
+            JoinType::LeftJoin,
+            entity::invitation::Relation::Event.def().rev(),
+            "invitation",
+        )
+        .join_as(
+            JoinType::LeftJoin,
+            entity::shared_group_event::Relation::Event.def().rev(),
+            "shared_group_event",
+        )
+        .column_as(InvitationColumn::Id.is_not_null(), "is_shared_with_user")
+        .column_as(GroupEventColumn::GroupId.is_not_null(), "is_group_event")
+        .filter(
+            Condition::any()
+                .add(EventColumn::OwnerId.eq(user.id))
+                .add(
+                    Condition::all()
+                        .add(InvitationColumn::RecievingUser.eq(user.id))
+                        .add(
+                            InvitationColumn::Status
+                                .eq(entity::invitation::InvitationStatus::Accepted),
+                        ),
+                )
+                .add(
+                    Condition::all()
+                        .add(
+                            GroupEventColumn::GroupId.in_subquery(
+                                user.find_related(Group)
+                                    .select_only()
+                                    .column(GroupColumn::Id)
+                                    .into_query(),
+                            ),
+                        )
+                        .add(EventColumn::Private.eq(false)),
+                ),
+        )
         .apply_if(mindate, |query, v: time::Date| {
             let weekday_num = v.weekday().number_from_monday();
             query.filter(
@@ -54,8 +95,10 @@ pub async fn list_events(
         })
         .order_by_asc(EventColumn::StartTime)
         .order_by_asc(EventColumn::EndTime)
+        .into_model()
         .all(&ext.database)
         .await
+        .inspect_err(|e| error!("Error loading Events for user: {e}"))
         .or_internal_server_error("Error loading events")?;
 
     Ok(events)

@@ -1,7 +1,7 @@
 use form_hooks::EnumSelectDefault;
 use form_hooks::prelude::{EnumSelect, FieldValue};
-use sea_orm::DeriveIntoActiveModel;
 use sea_orm::entity::prelude::*;
+use sea_orm::{DeriveIntoActiveModel, FromQueryResult};
 use serde::{Deserialize, Serialize};
 use std::string::ToString;
 
@@ -120,4 +120,41 @@ pub struct PartialEventModel {
     pub start_time: TimeTime,
     pub end_time: TimeTime,
     pub weekday: Weekday,
+}
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, FromQueryResult)]
+pub struct FullEvent {
+    pub id: i32,
+    pub title: String,
+    pub reoccurring: bool,
+    pub private: bool,
+    pub description: Option<String>,
+    pub location: Option<String>,
+    pub date: TimeDate,
+    pub start_time: TimeTime,
+    pub end_time: TimeTime,
+    pub weekday: Weekday,
+    pub owner_id: i32,
+    #[sea_orm(alias = "is_group_event")]
+    pub is_group_event: bool,
+    #[sea_orm(alias = "is_shared_with_user")]
+    pub is_shared_with_user: bool,
+}
+
+impl From<FullEvent> for Model {
+    fn from(value: FullEvent) -> Self {
+        Self {
+            id: value.id,
+            title: value.title,
+            reoccurring: value.reoccurring,
+            private: value.private,
+            description: value.description,
+            location: value.location,
+            date: value.date,
+            start_time: value.start_time,
+            end_time: value.end_time,
+            weekday: value.weekday,
+            owner_id: value.owner_id,
+        }
+    }
 }

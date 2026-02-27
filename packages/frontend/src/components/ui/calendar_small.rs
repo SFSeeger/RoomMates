@@ -1,11 +1,10 @@
 use crate::Route;
-use crate::components::contexts::use_auth;
 use crate::components::ui::button::{Button, ButtonVariant};
 use crate::components::ui::loader::Loader;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::LdMapPin;
-use roommates::is_event_on_day;
+use roommates::is_full_event_on_day;
 use time::macros::format_description;
 use time::{Date, Duration, OffsetDateTime};
 
@@ -13,7 +12,7 @@ use time::{Date, Duration, OffsetDateTime};
 pub fn CalendarDashview(
     selected_date: ReadSignal<Date>,
     on_date_change: EventHandler<Date>,
-    events: ReadSignal<Vec<entity::event::Model>>,
+    events: ReadSignal<Vec<entity::event::FullEvent>>,
     #[props(default)] is_loading: ReadSignal<bool>,
 ) -> Element {
     let today = OffsetDateTime::now_utc().date();
@@ -36,7 +35,7 @@ pub fn CalendarDashview(
         events
             .read()
             .iter()
-            .filter(|&event| is_event_on_day(event, selected_date()))
+            .filter(|&event| is_full_event_on_day(event, selected_date()))
             .cloned()
             .collect::<Vec<_>>()
     });
@@ -73,7 +72,7 @@ pub fn CalendarDashview(
 
 #[component]
 pub fn CalenderDaily(
-    events: ReadSignal<Vec<entity::event::Model>>,
+    events: ReadSignal<Vec<entity::event::FullEvent>>,
     #[props(default)] is_loading: ReadSignal<bool>,
 ) -> Element {
     rsx! {
@@ -108,17 +107,18 @@ pub fn CalenderDaily(
 }
 
 #[component]
-fn CalenderEvents(event: entity::event::Model) -> Element {
+fn CalenderEvents(event: entity::event::FullEvent) -> Element {
     let start_row =
         (event.start_time.hour() as i32 * 4) + (event.start_time.minute() as i32 / 15) + 1;
     let duration_mins = (event.end_time - event.start_time).whole_minutes();
     let duration_rows = ((duration_mins as f32 / 15.0).ceil() as i32).max(1);
-    let auth = use_auth();
 
-    let color_classes = if event.private {
-        "bg-info text-info-content"
-    } else if auth.user.as_ref().is_some_and(|v| v.id != event.owner_id) {
+    let color_classes = if event.is_shared_with_user {
+        "bg-success text-success-content"
+    } else if event.is_group_event {
         "bg-accent text-accent-content"
+    } else if event.private {
+        "bg-info text-info-content"
     } else {
         "bg-primary text-primary-content"
     };

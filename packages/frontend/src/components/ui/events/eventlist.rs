@@ -72,7 +72,7 @@ pub fn EventList(date: Option<Date>) -> Element {
         div { class: "w-full",
             List { header: "Your Events",
                 for event in events.iter() {
-                    EventListEntry { event: event.clone(), ondelete }
+                    EventListEntry { event: event.clone().into(), ondelete }
                 }
             }
         }

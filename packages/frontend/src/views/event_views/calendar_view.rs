@@ -11,8 +11,7 @@ use api::routes::events::list_events;
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{LdCalendarDays, LdExternalLink};
-use roommates::days_since;
-use roommates::is_event_on_day;
+use roommates::{days_since, is_full_event_on_day};
 use time::ext::NumericalDuration;
 use time::macros::format_description;
 use time::{Date, UtcDateTime};
@@ -54,9 +53,9 @@ pub fn EventCalendarView() -> Element {
     let selected_days_events = use_memo(move || {
         if let Some(selected_date) = selected_date() {
             events
-                .peek()
+                .read()
                 .iter()
-                .filter(|&event| is_event_on_day(event, selected_date))
+                .filter(|&event| is_full_event_on_day(event, selected_date))
                 .cloned()
                 .collect()
         } else {
@@ -67,7 +66,7 @@ pub fn EventCalendarView() -> Element {
     let render_day = move |date: Date| {
         let events_on_day: Vec<_> = events
             .iter()
-            .filter(|event| is_event_on_day(event, date))
+            .filter(|event| is_full_event_on_day(event, date))
             .collect();
 
         rsx! {
@@ -78,7 +77,7 @@ pub fn EventCalendarView() -> Element {
                     for event in events_on_day.iter().take(3) {
                         span {
                             key: "status-{event.id}",
-                            class: "status status-success status-sm group-data-[selected=true]:bg-primary-content group-data-[month=current]:group-not-data-[disabled=true]:group-hover:bg-primary-content",
+                            class: "status {get_event_colors_status(event)} status-sm group-data-[selected=true]:bg-primary-content group-data-[month=current]:group-not-data-[disabled=true]:group-hover:bg-primary-content",
                         }
                     }
                 }
@@ -86,7 +85,7 @@ pub fn EventCalendarView() -> Element {
                     for event in events_on_day.iter().take(6) {
                         span {
                             key: "badge-{event.id}",
-                            class: "badge badge-xs md:badge-sm lg:badge-md badge-outline badge-success w-full text-nowrap overflow-hidden text-ellipsis",
+                            class: "badge {get_event_colors_badge(event)} badge-xs md:badge-sm lg:badge-md badge-outline w-full text-nowrap overflow-hidden text-ellipsis",
                             class: "group-data-[selected=true]:text-primary-content group-data-[month=current]:group-not-data-[disabled=true]:group-hover:text-primary-content",
                             class: "nth-[n+4]:hidden md:nth-[n+4]:block md:nth-[n+6]:hidden xl:nth-[n+6]:block xl:nth-[n+7]:hidden",
                             "{event.title}"
@@ -161,5 +160,29 @@ pub fn EventCalendarView() -> Element {
                 }
             }
         }
+    }
+}
+
+fn get_event_colors_badge(event: &entity::event::FullEvent) -> &'static str {
+    if event.is_shared_with_user {
+        "badge-success"
+    } else if event.is_group_event {
+        "badge-accent"
+    } else if event.private {
+        "badge-info"
+    } else {
+        "badge-primary"
+    }
+}
+
+fn get_event_colors_status(event: &entity::event::FullEvent) -> &'static str {
+    if event.is_shared_with_user {
+        "status-success"
+    } else if event.is_group_event {
+        "status-accent"
+    } else if event.private {
+        "status-info"
+    } else {
+        "status-primary"
     }
 }
