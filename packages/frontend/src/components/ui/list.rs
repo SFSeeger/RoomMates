@@ -42,6 +42,16 @@ pub fn ListDetails(
 }
 
 #[component]
+pub fn ComplexList(children: Element, header: Element) -> Element {
+    rsx! {
+        ul { class: "list bg-base-100 rounded-box shadow-md",
+            li { class: "p-4 pb-2 text-xs opacity-60 tracking-wide", {header} }
+            {children}
+        }
+    }
+}
+
+#[component]
 pub fn ComplexListDetails(
     title: Element,
     children: Element,
