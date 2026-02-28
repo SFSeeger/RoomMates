@@ -46,11 +46,12 @@ docker on your machine and the server.
 #### Server with Sqlite Database
 
 ```bash
-docker build -t roommates-server .
 docker run -d -p 8080:8080 \
-  -e DATABASE_URL="sqlite://db.sqlite?mode=rwc" \
-  -v database:/app/db.sqlite \
-  --name roommates-server roommates-server
+  -e DATABASE_URL="sqlite://db/db.sqlite?mode=rwc" \
+  -e ACCESS_LOG=true \
+  -v database:/app/db/ \
+  --name roommates-server \
+  ghcr.io/sfseeger/roommates:latest
 ```
 
 #### Server with MySQL/MariaDB
@@ -70,8 +71,7 @@ services:
       - db_data:/var/lib/mysql
 
   roommates-server:
-    build:
-      context: https://github.com/SFSeeger/RoomMates.git#main
+    image: ghcr.io/sfseeger/roommates:latest
     restart: unless-stopped
     ports:
       - "8080:8080"
@@ -200,7 +200,7 @@ make dev-server PLATFORM=desktop
 ### Development Services
 
 | Port | Service     | Description                                      |
-|------|-------------|--------------------------------------------------|
+| ---- | ----------- | ------------------------------------------------ |
 | 8080 | Application | The Application served by the development server |
 | 8000 | phpMyAdmin  | Database frontend for development                |
 | 3306 | MariaDB     | Database Server                                  |
