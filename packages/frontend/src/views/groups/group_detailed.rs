@@ -7,7 +7,7 @@ use crate::components::ui::dialog::{
 use crate::components::ui::events::eventlist::EventListGroups;
 use crate::components::ui::form::input::Input;
 use crate::components::ui::form::submit_button::SubmitButton;
-use crate::components::ui::list::{List, ListDetails, ListRow};
+use crate::components::ui::list::{ComplexList, ListDetails, ListRow};
 use crate::components::ui::toaster::{ToastOptions, use_toaster};
 use api::routes::groups::retrieve_group;
 use api::routes::groups::{
@@ -83,6 +83,8 @@ pub fn EditGroup(group_id: i32) -> Element {
             .retain(|member| member.id != member_id);
     };
 
+    let nav = navigator();
+
     rsx! {
         div {
             h1 { class: "relative text-2xl font-bold text-center", "Edit your groups" }
@@ -91,7 +93,7 @@ pub fn EditGroup(group_id: i32) -> Element {
                     Card { class: "w-full",
                         CardBody {
                             CardTitle { class: "flex items-center justify-center",
-                                div { class: "flex justify-center w-full",
+                                div { class: "flex flex-1 justify-center w-full",
                                     div { class: "w-3/4",
                                         form { onsubmit: onsubmitgroupname,
                                             Input {
@@ -116,6 +118,20 @@ pub fn EditGroup(group_id: i32) -> Element {
                                         }
                                     }
                                 }
+                                div { class: "flex items-center",
+                                    Button {
+                                        onclick: move |_| {
+                                            async move {
+                                                nav.push(Route::AddEventView {});
+                                            }
+                                        },
+                                        variant: ButtonVariant::Primary,
+                                        shape: ButtonShape::Round,
+                                        ghost: false,
+                                        class: "btn-sm",
+                                        Icon { icon: LdPlus }
+                                    }
+                                }
                             }
                             div { class: " flex w-full",
                                 EventListGroups { group_id }
@@ -123,25 +139,25 @@ pub fn EditGroup(group_id: i32) -> Element {
                         }
                     }
                 }
-                div { class: "relative flex flex-col md:w-1/6 overflow-y-auto",
-                    List { header: "Members",
-                        div { class: "absolute top-3 right-4 z-10",
-                            Dialog {
-                                DialogTrigger {
-                                    variant: ButtonVariant::Primary,
-                                    shape: ButtonShape::Round,
-                                    ghost: false,
-                                    class: "btn-sm",
-                                    Icon { icon: LdPlus }
-                                }
-                                DialogContent { title: "Enter the email of the person you want to add to {group.read().name}",
-                                    AddMemberForm {
-                                        group_id,
-                                        onmemberadd: update_group,
+                div { class: "relative flex flex-col md:w-1/6 overflow-y-auto w-full",
+                    ComplexList {
+                        header: rsx! {
+                            div { class: "flex justify-between items-center w-full",
+                                span { "Members" }
+                                Dialog {
+                                    DialogTrigger {
+                                        variant: ButtonVariant::Primary,
+                                        shape: ButtonShape::Round,
+                                        ghost: false,
+                                        class: "btn-sm",
+                                        Icon { icon: LdPlus }
+                                    }
+                                    DialogContent { title: "Enter the email of the person you want to add to {group.read().name}",
+                                        AddMemberForm { group_id, onmemberadd: update_group }
                                     }
                                 }
                             }
-                        }
+                        },
                         if group.read().members.is_empty() {
                             ListRow {
                                 ListDetails { title: "No members yet" }
@@ -297,6 +313,7 @@ pub fn AddMemberForm(group_id: i32, onmemberadd: EventHandler<i32>) -> Element {
             DialogAction {
                 Button {
                     onclick: move |_| {
+                        form_state_add.reset();
                         dialog.close();
                     },
                     r#type: "button",
