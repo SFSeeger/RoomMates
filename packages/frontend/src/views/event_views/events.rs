@@ -72,7 +72,10 @@ impl Display for DateQueryParam {
 pub fn ListEventView(date: DateQueryParam) -> Element {
     rsx! {
         div {
-            Link { to: Route::AddEventView {},
+            Link {
+                to: Route::AddEventView {
+                    group_id: None.into(),
+                },
                 Button { variant: ButtonVariant::Primary, shape: ButtonShape::Wide,
                     Icon { icon: LdPlus }
                     "create new event"

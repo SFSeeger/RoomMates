@@ -133,6 +133,7 @@ fn CalenderEvents(event: entity::event::FullEvent) -> Element {
                 class: "block flex-1 p-2 flex-col justify-start min-w-0",
                 to: Route::EditEventView {
                     event_id: event.id,
+                    group_id: None.into(),
                 },
                 div { class: "font-bold text-lg truncate", "{event.title}" }
                 if let Some(location) = event.location && duration_rows >= 2 {

@@ -83,8 +83,6 @@ pub fn EditGroup(group_id: i32) -> Element {
             .retain(|member| member.id != member_id);
     };
 
-    let nav = navigator();
-
     rsx! {
         div {
             h1 { class: "relative text-2xl font-bold text-center", "Edit your groups" }
@@ -119,16 +117,11 @@ pub fn EditGroup(group_id: i32) -> Element {
                                     }
                                 }
                                 div { class: "flex items-center",
-                                    Button {
-                                        onclick: move |_| {
-                                            async move {
-                                                nav.push(Route::AddEventView {});
-                                            }
+                                    Link {
+                                        to: Route::AddEventView {
+                                            group_id: group_id.into(),
                                         },
-                                        variant: ButtonVariant::Primary,
-                                        shape: ButtonShape::Round,
-                                        ghost: false,
-                                        class: "btn-sm",
+                                        class: "btn btn-primary btn-circle btn-sm",
                                         Icon { icon: LdPlus }
                                     }
                                 }

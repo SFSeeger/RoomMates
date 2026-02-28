@@ -14,9 +14,11 @@ use entity::event::PartialEventModel;
 use form_hooks::use_form::{use_form, use_on_submit};
 use form_hooks::use_form_field::{FormField, use_form_field};
 use form_hooks::validators;
+use roommates::OptionalIntQueryParam;
+use time::OffsetDateTime;
 
 #[component]
-pub fn EditEventView(event_id: i32) -> Element {
+pub fn EditEventView(event_id: i32, group_id: OptionalIntQueryParam) -> Element {
     let event = use_loader(move || async move { retrieve_event(event_id).await })?;
     let mut form_state = use_form();
     let mut update_action: Action<(i32, PartialEventModel), entity::event::Model> =
@@ -49,18 +51,33 @@ pub fn EditEventView(event_id: i32) -> Element {
     form_state.revalidate();
     let reoccurring_value = reocurring.value;
 
+    let nav = use_navigator();
+
     let onsubmit = use_on_submit(&form_state, move |submit_state| async move {
         form_errors.clear();
         let form_data: PartialEventModel = submit_state.parsed_values().unwrap();
+        let reoccurring = form_data.reoccurring;
+        let weekday = form_data.weekday;
 
         update_action.call(event.read().id, form_data).await;
 
         match update_action.value() {
             Some(Ok(_)) => {
-                let nav = navigator();
-                nav.push(Route::ListEventView {
-                    date: date.value.cloned().into(),
-                });
+                if let Some(group_id) = group_id.value() {
+                    nav.push(Route::EditGroup { group_id });
+                } else if reoccurring {
+                    let target_date = OffsetDateTime::now_local()
+                        .expect("Could not get local time")
+                        .date()
+                        .next_occurrence(weekday.into());
+                    nav.push(Route::ListEventView {
+                        date: target_date.into(),
+                    });
+                } else {
+                    nav.push(Route::ListEventView {
+                        date: date.value.cloned().into(),
+                    });
+                }
             }
             Some(Err(error)) => {
                 form_errors.push(error.to_string());

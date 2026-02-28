@@ -3,6 +3,7 @@
 use crate::layouts::StandardAppLayout;
 use crate::views::event_views::DateQueryParam;
 use dioxus::prelude::*;
+use roommates::OptionalIntQueryParam;
 use views::{
     Home, LoginPage, NotFound, Profile, SignupView,
     event_views::{AddEventView, EditEventView, EventCalendarView, ListEventView},
@@ -48,10 +49,10 @@ enum Route {
             EventCalendarView {},
             #[route("/list?:date")]
             ListEventView {date: DateQueryParam},
-            #[route("/:event_id/edit")]
-            EditEventView {event_id: i32,},
-            #[route("/add")]
-            AddEventView {},
+            #[route("/:event_id/edit?:group_id")]
+            EditEventView {event_id: i32, group_id: OptionalIntQueryParam},
+            #[route("/add?:group_id")]
+            AddEventView {group_id: OptionalIntQueryParam},
        #[end_nest]
 
        #[nest("/invitations")]

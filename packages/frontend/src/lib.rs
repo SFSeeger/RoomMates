@@ -1,6 +1,9 @@
+use std::fmt::{Display, Formatter};
+
 use dioxus::CapturedError;
 use dioxus::fullstack::RequestError;
 use dioxus::prelude::*;
+use dioxus::router::FromQueryArgument;
 use serde::Deserialize;
 
 // This is an extremely dirty way to retrieve the actual error message from the server. For some reason, the Server functions return `ServerFnError::Request(RequestError::Status {message, ..})`
@@ -83,4 +86,54 @@ pub fn is_event_on_day(event: &entity::event::Model, date: time::Date) -> bool {
 pub fn is_full_event_on_day(event: &entity::event::FullEvent, date: time::Date) -> bool {
     let weekday: time::Weekday = event.weekday.into();
     (!event.reoccurring && event.date == date) || (event.reoccurring && weekday == date.weekday())
+}
+
+#[derive(Default, Clone, PartialEq, Debug, Copy)]
+pub struct OptionalIntQueryParam(Option<i32>);
+
+impl OptionalIntQueryParam {
+    pub fn value(&self) -> Option<i32> {
+        self.0
+    }
+}
+
+impl FromQueryArgument for OptionalIntQueryParam {
+    type Err = ();
+
+    fn from_query_argument(argument: &str) -> std::result::Result<Self, Self::Err> {
+        Ok(argument.into())
+    }
+}
+
+impl From<&str> for OptionalIntQueryParam {
+    fn from(value: &str) -> Self {
+        if value.is_empty() {
+            OptionalIntQueryParam(None)
+        } else {
+            match value.parse::<i32>() {
+                Ok(num) => OptionalIntQueryParam(Some(num)),
+                Err(_) => OptionalIntQueryParam(None),
+            }
+        }
+    }
+}
+
+impl From<Option<i32>> for OptionalIntQueryParam {
+    fn from(value: Option<i32>) -> Self {
+        OptionalIntQueryParam(value)
+    }
+}
+impl From<i32> for OptionalIntQueryParam {
+    fn from(value: i32) -> Self {
+        OptionalIntQueryParam(Some(value))
+    }
+}
+
+impl Display for OptionalIntQueryParam {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self.value() {
+            Some(num) => write!(f, "{}", num),
+            None => write!(f, ""),
+        }
+    }
 }

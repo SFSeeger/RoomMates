@@ -22,7 +22,11 @@ use roommates::message_from_captured_error;
 use time::macros::format_description;
 
 #[component]
-pub fn EventListEntry(event: entity::event::Model, ondelete: EventHandler<i32>) -> Element {
+pub fn EventListEntry(
+    event: entity::event::Model,
+    ondelete: EventHandler<i32>,
+    group_id: Option<i32>,
+) -> Element {
     let mut event_has_groups =
         use_loader(move || async move { list_event_groups(event.id).await })?;
     let title = event.title.clone();
@@ -46,6 +50,7 @@ pub fn EventListEntry(event: entity::event::Model, ondelete: EventHandler<i32>) 
                 ComplexListDetails {
                     link: Route::EditEventView {
                         event_id: event.id,
+                        group_id: group_id.into(),
                     },
                     title: rsx! {
                         h3 { class: "flex items-start gap-2",

@@ -133,31 +133,72 @@ pub async fn delete_event(event_id: i32) -> Result<NoContent, ServerFnError> {
 }
 
 #[post("/api/events", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
-pub async fn create_event(info: PartialEventModel) -> Result<entity::event::Model, ServerFnError> {
-    use sea_orm::{ActiveModelTrait, TryIntoModel};
-    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+pub async fn create_event(
+    info: PartialEventModel,
+    group: Option<i32>,
+) -> Result<entity::event::Model, ServerFnError> {
+    use sea_orm::{ActiveModelTrait, TransactionError, TransactionTrait, TryIntoModel};
+    let user_id = auth.user.as_ref().or_unauthorized("Not authenticated")?.id;
 
-    let event = entity::event::ActiveModel {
-        title: sea_orm::Set(info.title),
-        reoccurring: sea_orm::Set(info.reoccurring),
-        private: sea_orm::Set(info.private),
-        description: sea_orm::Set(info.description),
-        location: sea_orm::Set(info.location),
-        date: sea_orm::Set(info.date),
-        start_time: sea_orm::Set(info.start_time),
-        end_time: sea_orm::Set(info.end_time),
-        weekday: sea_orm::Set(info.weekday),
-        owner_id: sea_orm::Set(user.id),
-        ..Default::default()
+    let is_user_in_group = if let Some(group_id) = group {
+        crate::server::events::is_user_in_group(&ext.database, group_id, user_id)
+            .await
+            .or_forbidden("No permission to add event to this group")?
+    } else {
+        false
     };
 
-    let event = event
-        .save(&ext.database)
+    ext.database
+        .transaction::<_, entity::event::Model, ServerFnError>(|txn| {
+            Box::pin(async move {
+                let event = entity::event::ActiveModel {
+                    title: sea_orm::Set(info.title),
+                    reoccurring: sea_orm::Set(info.reoccurring),
+                    private: sea_orm::Set(info.private),
+                    description: sea_orm::Set(info.description),
+                    location: sea_orm::Set(info.location),
+                    date: sea_orm::Set(info.date),
+                    start_time: sea_orm::Set(info.start_time),
+                    end_time: sea_orm::Set(info.end_time),
+                    weekday: sea_orm::Set(info.weekday),
+                    owner_id: sea_orm::Set(user_id),
+                    ..Default::default()
+                };
+
+                let event = event
+                    .save(txn)
+                    .await
+                    .or_internal_server_error("Error saving new event to database")?
+                    .try_into_model()
+                    .or_internal_server_error("Error converting event to model")?;
+
+                if let Some(group_id) = group
+                    && is_user_in_group
+                {
+                    let pair = entity::shared_group_event::ActiveModel {
+                        group_id: sea_orm::Set(group_id),
+                        event_id: sea_orm::Set(event.id),
+                    };
+
+                    pair.insert(txn)
+                        .await
+                        .or_internal_server_error("Error inserting pair into database")?;
+                }
+                Ok(event)
+            })
+        })
         .await
-        .or_internal_server_error("Error saving new event to database")?;
-    Ok(event
-        .try_into_model()
-        .or_internal_server_error("Error converting event to model")?)
+        .map_err(|error| {
+            error!("{error}");
+            match error {
+                TransactionError::Connection(_) => ServerFnError::ServerError {
+                    message: String::from("Error creating event"),
+                    code: 500,
+                    details: None,
+                },
+                TransactionError::Transaction(error) => error,
+            }
+        })
 }
 
 #[put("/api/events/{event_id}", ext: Extension<server::AppState>,auth: Extension<server::AuthenticationState>)]

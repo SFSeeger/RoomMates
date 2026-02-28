@@ -105,7 +105,11 @@ pub fn EventListGroups(group_id: i32) -> Element {
         div { class: "w-full",
             List { header: "Your Events",
                 for event in group.read().events.iter() {
-                    EventListEntry { event: event.clone(), ondelete }
+                    EventListEntry {
+                        event: event.clone(),
+                        ondelete,
+                        group_id: Some(group_id),
+                    }
                 }
             }
         }
