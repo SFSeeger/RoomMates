@@ -41,18 +41,6 @@ pub async fn retrieve_user(user_id: i32) -> dioxus::Result<UserInfo, ServerFnErr
     Ok(UserInfo::from_user_model(user))
 }
 
-//TODO: Secure this route
-#[post("/api/users", ext: Extension<server::AppState>)]
-pub async fn create_user(
-    email: String,
-    password: String,
-    first_name: String,
-    last_name: String,
-) -> Result<UserInfo, ServerFnError> {
-    use server::auth;
-    let user = auth::create_user(email, password, first_name, last_name, &ext.database).await?;
-    Ok(UserInfo::from_user_model(user))
-}
 pub const EMAIL_REGEX: &str = r"^[\w+.-]*\w@[\w.-]+\.\w+$";
 
 #[post("/api/users/signup", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]

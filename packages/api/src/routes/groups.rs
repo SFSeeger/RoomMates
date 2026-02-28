@@ -197,14 +197,20 @@ pub async fn retrieve_group(group_id: i32) -> Result<GroupDetailData, ServerFnEr
     Ok(group_data)
 }
 
-#[put("/api/groups/{group_id}", ext: Extension<server::AppState>)]
+#[put("/api/groups/{group_id}", ext: Extension<server::AppState>,  auth: Extension<server::AuthenticationState>)]
 pub async fn change_group_name(
     group_id: i32,
     group_name_new: String,
 ) -> Result<entity::group::Model, ServerFnError> {
+    use crate::server::events::is_user_in_group;
     use entity::group;
     use entity::group::Entity as Group;
     use sea_orm::{ActiveModelTrait, EntityTrait, Set};
+
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+    is_user_in_group(&ext.database, group_id, user.id)
+        .await?
+        .or_forbidden("user is not part of this group")?;
 
     let group = Group::find_by_id(group_id)
         .one(&ext.database)
@@ -227,12 +233,14 @@ pub async fn change_group_name(
 #[delete("/api/groups/{group_id}", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn delete_group(group_id: i32) -> Result<NoContent, ServerFnError> {
     use crate::server::events::is_user_in_group;
+    use crate::server::events::remove_group_events;
     use entity::group::Entity as Group;
     use sea_orm::EntityTrait;
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
     let authenticated = is_user_in_group(&ext.database, group_id, user.id).await?;
     if authenticated {
+        remove_group_events(group_id, &ext.database).await?;
         let delete_result = Group::delete_by_id(group_id)
             .exec(&ext.database)
             .await
