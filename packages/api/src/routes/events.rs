@@ -117,10 +117,27 @@ pub async fn retrieve_event(event_id: i32) -> Result<entity::event::Model, Serve
     Ok(event)
 }
 
-#[delete("/api/events/{event_id}", ext: Extension<server::AppState>)]
+#[delete("/api/events/{event_id}", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn delete_event(event_id: i32) -> Result<NoContent, ServerFnError> {
+    use crate::server::events::{
+        remove_event_invites, remove_shared_event_groups, remove_shared_event_members,
+    };
     use entity::event::Entity as Event;
     use sea_orm::EntityTrait;
+
+    let user_id = auth.user.as_ref().or_unauthorized("Not authenticated")?.id;
+
+    let event = Event::find_by_id(event_id)
+        .one(&ext.database)
+        .await
+        .or_internal_server_error("Error loading event from database")?
+        .or_not_found("event not found")?;
+
+    (event.owner_id == user_id).or_unauthorized("Unauthorized to delete this event")?;
+
+    remove_event_invites(event_id, &ext.database).await?;
+    remove_shared_event_groups(event_id, &ext.database).await?;
+    remove_shared_event_members(event_id, &ext.database).await?;
 
     let delete_result = Event::delete_by_id(event_id)
         .exec(&ext.database)
@@ -218,7 +235,7 @@ pub async fn update_event(
 
     let owner = event.owner_id;
 
-    (owner == user.id).or_unauthorized("Unauthorized to delete todo list")?;
+    (owner == user.id).or_unauthorized("Unauthorized to edit event")?;
 
     let mut active_event: entity::event::ActiveModel = event.into();
 
@@ -372,27 +389,13 @@ pub async fn leave_event(event_id: i32) -> Result<NoContent, ServerFnError> {
         .filter(entity::shared_friend_event::Column::UserId.eq(user.id))
         .one(&ext.database)
         .await
-        .or_internal_server_error("Failed to retrieve from server")?
-        .or_not_found("could not find relationship")?;
+        .or_internal_server_error("Failed to retrieve info from server")?
+        .or_not_found("user is not in this event")?;
 
     shared_event
         .delete(&ext.database)
         .await
         .or_internal_server_error("could not leave event")?;
-
-    Ok(NoContent)
-}
-
-#[post("/api/events/{event_id}/members/remove", ext: Extension<server::AppState>)]
-pub async fn remove_shared_event_members(event_id: i32) -> Result<NoContent, ServerFnError> {
-    use entity::shared_friend_event;
-    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
-
-    shared_friend_event::Entity::delete_many()
-        .filter(shared_friend_event::Column::EventId.eq(event_id))
-        .exec(&ext.database)
-        .await
-        .or_internal_server_error("Error deleting event shares")?;
 
     Ok(NoContent)
 }
