@@ -194,7 +194,7 @@ pub async fn delete_todo_list(todo_list_id: i32) -> Result<NoContent, ServerFnEr
 }
 
 /// Kicks a user from a `TodoList`. Can only be performed by the owner or an admin of the `TodoList`.
-/// If the owner was kicked, the ownership will be transferred to the user which kicked the owner.
+/// An admin can only be removed when there is at least one other admin remaining in the `TodoList`.
 #[post("/api/todolists/{todo_list_id}/remove-user", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn remove_user_from_todo_list(
     todo_list_id: i32,

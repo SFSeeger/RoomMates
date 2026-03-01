@@ -48,11 +48,12 @@ pub async fn list_todos(
     use sea_orm::QueryFilter;
     use sea_orm::QueryOrder;
     use sea_orm::QuerySelect;
+    use sea_orm::QueryTrait;
     use sea_orm::RelationTrait;
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
-    let mut todos = Todo::find()
+    let todos = Todo::find()
         .join(JoinType::InnerJoin, entity::todo::Relation::TodoList.def())
         .join(
             JoinType::InnerJoin,
@@ -60,17 +61,14 @@ pub async fn list_todos(
         )
         .filter(entity::todo_list_invitation::Column::ReceivingUserId.eq(user.id))
         .filter(entity::todo_list_invitation::Column::IsAccepted.eq(true))
+        .apply_if(completed, |query, v| {
+            query.filter(entity::todo::Column::Completed.eq(v))
+        })
+        .apply_if(favorite, |query, v| {
+            query.filter(entity::todo_list_invitation::Column::IsFavorite.eq(v))
+        })
         .order_by_asc(entity::todo::Column::Completed)
-        .order_by_asc(entity::todo::Column::Title);
-
-    if let Some(completed) = completed {
-        todos = todos.filter(entity::todo::Column::Completed.eq(completed));
-    }
-    if let Some(favorite) = favorite {
-        todos = todos.filter(entity::todo_list_invitation::Column::IsFavorite.eq(favorite));
-    }
-
-    let todos = todos
+        .order_by_asc(entity::todo::Column::Title)
         .into_partial_model()
         .all(&state.database)
         .await
