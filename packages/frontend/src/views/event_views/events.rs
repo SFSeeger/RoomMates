@@ -13,7 +13,7 @@ use std::fmt::{Display, Formatter};
 use time::Date;
 use time::macros::format_description;
 
-#[derive(Default, Clone, PartialEq, Debug)]
+#[derive(Default, Clone, Copy, PartialEq, Debug)]
 pub struct DateQueryParam(Option<Date>);
 
 impl DateQueryParam {
@@ -75,6 +75,7 @@ pub fn ListEventView(date: DateQueryParam) -> Element {
             Link {
                 to: Route::AddEventView {
                     group_id: None.into(),
+                    date,
                 },
                 Button { variant: ButtonVariant::Primary, shape: ButtonShape::Wide,
                     Icon { icon: LdPlus }

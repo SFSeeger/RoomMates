@@ -95,6 +95,7 @@ pub async fn list_events(
         })
         .order_by_asc(EventColumn::StartTime)
         .order_by_asc(EventColumn::EndTime)
+        .distinct()
         .into_model()
         .all(&ext.database)
         .await

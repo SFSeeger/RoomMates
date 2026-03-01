@@ -120,6 +120,7 @@ pub fn EditGroup(group_id: i32) -> Element {
                                     Link {
                                         to: Route::AddEventView {
                                             group_id: group_id.into(),
+                                            date: None.into(),
                                         },
                                         class: "btn btn-primary btn-circle btn-sm",
                                         Icon { icon: LdPlus }

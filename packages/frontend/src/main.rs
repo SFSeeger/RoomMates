@@ -51,8 +51,8 @@ enum Route {
             ListEventView {date: DateQueryParam},
             #[route("/:event_id/edit?:group_id")]
             EditEventView {event_id: i32, group_id: OptionalIntQueryParam},
-            #[route("/add?:group_id")]
-            AddEventView {group_id: OptionalIntQueryParam},
+            #[route("/add?:group_id&:date")]
+            AddEventView {group_id: OptionalIntQueryParam, date: DateQueryParam},
        #[end_nest]
 
        #[nest("/invitations")]

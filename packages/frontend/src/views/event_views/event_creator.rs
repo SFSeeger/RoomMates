@@ -8,6 +8,7 @@ use crate::components::ui::{
     form::submit_button::SubmitButton,
     form::textarea::Textarea,
 };
+use crate::views::event_views::DateQueryParam;
 use api::routes::events::create_event;
 use dioxus::prelude::*;
 use entity::event::PartialEventModel;
@@ -18,13 +19,18 @@ use roommates::OptionalIntQueryParam;
 use time::{Duration, OffsetDateTime, Time};
 
 #[component]
-pub fn AddEventView(group_id: OptionalIntQueryParam) -> Element {
+pub fn AddEventView(group_id: OptionalIntQueryParam, date: DateQueryParam) -> Element {
     let mut form_state = use_form();
     let mut create_action = use_action(create_event);
 
     let mut form_errors = use_signal(Vec::<String>::new);
 
     let date_time = OffsetDateTime::now_local()?;
+    let date_time = if let Some(date) = date.value() {
+        date_time.replace_date(date)
+    } else {
+        date_time
+    };
 
     let title: FormField<String> = use_form_field("title", String::new())
         .with_validator(validators::required("event needs a title"));

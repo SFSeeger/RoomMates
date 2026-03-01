@@ -299,6 +299,7 @@ pub async fn update_my_todo_list_invitation(
             sea_orm::JoinType::InnerJoin,
             entity::todo_list_invitation::Relation::Receiver.def().rev(),
         )
+        .filter(InviteColum::TodoListId.eq(todo_list_id))
         .into_partial_model()
         .one(&state.database)
         .await
