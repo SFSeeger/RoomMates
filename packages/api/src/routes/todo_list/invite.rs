@@ -122,6 +122,9 @@ pub async fn decline_todo_list_invite(todo_list_id: i32) -> Result<NoContent, Se
     Ok(NoContent)
 }
 
+/// Allows the authenticated user to leave a `TodoList` that they are a member of.
+/// If the user is the only member of the `TodoList`, then the `TodoList` will be deleted.
+/// If the user is an admin, they can only leave if there is at least one other admin remaining in the `TodoList` to avoid leaving the `TodoList` without any admins.
 #[post("/api/todolists/{todo_list_id}/invite/leave", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState> )]
 pub async fn leave_todo_list(todo_list_id: i32) -> Result<NoContent, ServerFnError> {
     use entity::todo_list_invitation::Column as InviteColum;

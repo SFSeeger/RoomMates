@@ -8,6 +8,7 @@ use dioxus_free_icons::Icon;
 use dioxus_free_icons::icons::ld_icons::{LdCircle, LdCircleCheckBig, LdTrash};
 use entity::todo::UpdateToDo;
 use entity::todo_list_invitation::InvitationPermission;
+use roommates::message_from_captured_error;
 
 #[component]
 pub fn TodoEntry(
@@ -114,7 +115,7 @@ pub fn TodoEntry(
                                                             .error(
                                                                 &format!("Failed to delete {}!", title_clone),
                                                                 ToastOptions::new().description(rsx! {
-                                                                    span { "{error.to_string()}" }
+                                                                    span { "{message_from_captured_error(&error)}" }
                                                                 }),
                                                             );
                                                     }

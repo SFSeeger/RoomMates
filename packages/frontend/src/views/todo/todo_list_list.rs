@@ -168,7 +168,7 @@ pub fn TodoListEntry(
                                                             .error(
                                                                 &format!("Failed to delete {title_clone}!"),
                                                                 ToastOptions::new().description(rsx! {
-                                                                    span { "{error.to_string()}" }
+                                                                    span { "{message_from_captured_error(&error)}" }
                                                                 }),
                                                             );
                                                     }
