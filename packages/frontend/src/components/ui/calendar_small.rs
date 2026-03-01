@@ -56,7 +56,6 @@ pub fn CalendarDashview(
                             class: "flex-col gap-0 w-full",
                             variant: if is_selected { ButtonVariant::Primary } else if date == today { ButtonVariant::Accent } else { ButtonVariant::Primary },
                             strong { class: "font-bold", "{date.day()}" }
-                            br {}
                             "{day_label}"
                         }
                     }
