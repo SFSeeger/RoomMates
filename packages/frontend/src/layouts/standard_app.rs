@@ -23,7 +23,7 @@ pub fn StandardAppLayout(children: Element) -> Element {
                     }
                     Navbar {}
                     ToastProvider {
-                        main { class: "grow mx-10 mt-5",
+                        main { class: "grow mx-10 mt-5 mb-20 lg:mb-5",
                             ErrorBoundary {
                                 handle_error: |error: ErrorContext| {
                                     let http_error = FullstackContext::commit_error_status(error.error().unwrap());
