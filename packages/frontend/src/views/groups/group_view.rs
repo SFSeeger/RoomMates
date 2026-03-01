@@ -1,19 +1,22 @@
 use crate::Route;
-use crate::components::ui::button::{Button, ButtonShape, ButtonVariant};
-use crate::components::ui::dialog::{
-    Dialog, DialogAction, DialogContent, DialogTrigger, use_dialog,
+use crate::components::ui::{
+    button::{Button, ButtonShape, ButtonVariant},
+    dialog::{Dialog, DialogAction, DialogContent, DialogTrigger, use_dialog},
+    form::input::Input,
+    groupcard::GroupCard,
+    toaster::{ToastOptions, use_toaster},
 };
-use crate::components::ui::form::input::Input;
-use crate::components::ui::groupcard::GroupCard;
-use crate::components::ui::toaster::{ToastOptions, use_toaster};
-use api::routes::groups::create_group;
-use api::routes::groups::list_groups;
+use api::routes::groups::{create_group, list_groups};
 use dioxus::prelude::*;
-use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::{LdPlus, LdUsers};
-use form_hooks::use_form::{use_form, use_on_submit};
-use form_hooks::use_form_field::use_form_field;
-use form_hooks::validators;
+use dioxus_free_icons::{
+    Icon,
+    icons::ld_icons::{LdPlus, LdUsers},
+};
+use form_hooks::{
+    use_form::{use_form, use_on_submit},
+    use_form_field::use_form_field,
+    validators,
+};
 use roommates::message_from_captured_error;
 
 #[derive(serde::Deserialize)]

@@ -2,8 +2,7 @@ use crate::Route;
 use crate::components::ui::card::{Card, CardBody, CardTitle};
 use api::routes::groups::retrieve_group;
 use dioxus::prelude::*;
-use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::LdSquarePen;
+use dioxus_free_icons::{Icon, icons::ld_icons::LdSquarePen};
 
 #[component]
 pub fn GroupCard(group_id: i32) -> Element {

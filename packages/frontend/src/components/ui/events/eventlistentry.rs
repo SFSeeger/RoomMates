@@ -1,9 +1,9 @@
 use crate::Route;
 use crate::components::tooltip::Tooltip;
-use crate::components::ui::form::submit_button::SubmitButton;
 use crate::components::ui::{
     button::{Button, ButtonVariant},
     dialog::{Dialog, DialogAction, DialogContent, DialogTrigger, use_dialog},
+    form::submit_button::SubmitButton,
     form::vectorselect::VectorSelect,
     list::{ComplexListDetails, List, ListRow},
     toaster::{ToastOptions, use_toaster},
@@ -11,13 +11,17 @@ use crate::components::ui::{
 use api::routes::events::{add_event_to_group, list_event_groups, list_event_members};
 use api::routes::groups::list_groups;
 use dioxus::prelude::*;
-use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::{
-    LdEye, LdEyeOff, LdLogOut, LdMapPin, LdRefreshCcw, LdTrash, LdUserPlus, LdUsers,
+use dioxus_free_icons::{
+    Icon,
+    icons::ld_icons::{
+        LdEye, LdEyeOff, LdLogOut, LdMapPin, LdRefreshCcw, LdTrash, LdUserPlus, LdUsers,
+    },
 };
-use form_hooks::use_form::{use_form, use_on_submit};
-use form_hooks::use_form_field::use_form_field;
-use form_hooks::validators;
+use form_hooks::{
+    use_form::{use_form, use_on_submit},
+    use_form_field::use_form_field,
+    validators,
+};
 use roommates::message_from_captured_error;
 use time::macros::format_description;
 

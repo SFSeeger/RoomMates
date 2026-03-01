@@ -154,6 +154,12 @@ pub async fn remove_user_from_group(
     }
 }
 
+#[post("/api/groups/{group_id}/leave-group", auth: Extension<server::AuthenticationState>)]
+pub async fn leave_group(group_id: i32) -> Result<NoContent, ServerFnError> {
+    let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
+    remove_user_from_group(group_id, user.id).await
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct GroupDetailData {
     pub name: String,
