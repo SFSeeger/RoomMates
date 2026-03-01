@@ -1,15 +1,16 @@
+#[cfg(feature = "server")]
 use crate::server;
 use dioxus::{fullstack::NoContent, prelude::*};
-use entity::{links::FriendEvents, prelude::*};
 
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
-use entity::invitation::InvitationStatus;
 
-//TODO maybe optimize with joined queries, to not load event and user seperatley
 #[get("/api/events/invitations", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn list_received_invites() -> Result<Vec<entity::invitation::Model>, ServerFnError> {
+    use entity::invitation::Entity as Invitation;
+    use entity::invitation::InvitationStatus;
     use sea_orm::{ColumnTrait, ModelTrait, QueryFilter};
+
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
     let invites = user
@@ -28,6 +29,7 @@ pub async fn send_invite(
     event_id: i32,
 ) -> Result<entity::invitation::Model, ServerFnError> {
     use crate::server::events::can_invite_user_to_event;
+    use entity::invitation::InvitationStatus;
     use sea_orm::{ActiveModelTrait, EntityTrait, Set, TryIntoModel};
     use server::auth::find_user_by_email;
 
@@ -72,6 +74,8 @@ pub async fn send_invite(
 
 #[post("/api/events/invitations/{invitation_id}/accept", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn accept_invite(invitation_id: i32) -> Result<NoContent, ServerFnError> {
+    use entity::invitation::Entity as Invitation;
+    use entity::invitation::InvitationStatus;
     use sea_orm::{ActiveModelTrait, EntityTrait, IntoActiveModel, Set};
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
@@ -109,6 +113,8 @@ pub async fn accept_invite(invitation_id: i32) -> Result<NoContent, ServerFnErro
 
 #[post("/api/events/invitations/{invitation_id}/delete", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn decline_invite(invitation_id: i32) -> Result<NoContent, ServerFnError> {
+    use entity::invitation::Entity as Invitation;
+    use entity::invitation::InvitationStatus;
     use sea_orm::{ActiveModelTrait, EntityTrait, IntoActiveModel, Set};
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
@@ -136,6 +142,7 @@ pub async fn decline_invite(invitation_id: i32) -> Result<NoContent, ServerFnErr
 
 #[get("/api/events/invitations/events", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn list_shared_friend_events() -> Result<Vec<entity::event::Model>, ServerFnError> {
+    use entity::links::FriendEvents;
     use sea_orm::ModelTrait;
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 

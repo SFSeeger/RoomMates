@@ -1,13 +1,12 @@
 use crate::dioxus_fullstack::NoContent;
+#[cfg(feature = "server")]
 use crate::server;
 use dioxus::fullstack::{SetCookie, SetHeader};
 use dioxus::prelude::*;
-use regex::Regex;
 
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
 use serde::{Deserialize, Serialize};
-use time::format_description::well_known::Rfc2822;
 
 #[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
 pub struct UserInfo {
@@ -78,6 +77,7 @@ pub async fn sign_up(
 #[post("/api/users/login", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn login(email: String, password: String) -> Result<SetHeader<SetCookie>, ServerFnError> {
     use crate::server::auth::{create_session, verify_user};
+    use time::format_description::well_known::Rfc2822;
 
     if auth.is_authenticated() {
         return Err(ServerFnError::ServerError {
@@ -149,6 +149,7 @@ pub async fn change_user_info(
     email: String,
 ) -> dioxus::Result<UserInfo, ServerFnError> {
     use entity::user::Entity as User;
+    use regex::Regex;
     use sea_orm::{EntityTrait, IntoActiveModel};
 
     let email = email.trim().to_lowercase();

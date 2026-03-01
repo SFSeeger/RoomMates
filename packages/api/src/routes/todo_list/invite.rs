@@ -1,9 +1,9 @@
+#[cfg(feature = "server")]
 use crate::server;
 use dioxus::fullstack::NoContent;
 use dioxus::prelude::*;
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
-use entity::prelude::*;
 use entity::todo_list_invitation::{UpdateMyTodoListInvitation, UpdateTodoListInvitation};
 use entity::user::UserWithTodoListInvitation;
 use serde::{Deserialize, Serialize};
@@ -21,6 +21,9 @@ pub async fn invite_to_todo_list(
     data: InviteToTodoListData,
 ) -> Result<NoContent, ServerFnError> {
     use crate::routes::users::EMAIL_REGEX;
+    use entity::todo_list::Entity as TodoList;
+    use entity::todo_list_invitation::Entity as TodoListInvitation;
+    use entity::user::Entity as User;
     use regex::Regex;
     use sea_orm::ColumnTrait;
     use sea_orm::EntityTrait;
@@ -124,7 +127,9 @@ pub async fn decline_todo_list_invite(todo_list_id: i32) -> Result<NoContent, Se
 
 #[post("/api/todolists/{todo_list_id}/invite/leave", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState> )]
 pub async fn leave_todo_list(todo_list_id: i32) -> Result<NoContent, ServerFnError> {
+    use entity::todo_list::Entity as TodoList;
     use entity::todo_list_invitation::Column as InviteColum;
+    use entity::todo_list_invitation::Entity as TodoListInvitation;
     use sea_orm::{ColumnTrait, EntityTrait, ModelTrait, PaginatorTrait, QueryFilter};
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
@@ -199,6 +204,8 @@ pub async fn update_todo_list_invitation(
     data: UpdateTodoListInvitation,
 ) -> Result<UserWithTodoListInvitation, ServerFnError> {
     use entity::todo_list_invitation::Column as InviteColum;
+    use entity::todo_list_invitation::Entity as TodoListInvitation;
+    use entity::user::Entity as User;
     use sea_orm::{
         ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, PaginatorTrait, QueryFilter,
         QuerySelect, RelationTrait,
@@ -265,6 +272,8 @@ pub async fn update_my_todo_list_invitation(
     data: UpdateMyTodoListInvitation,
 ) -> Result<UserWithTodoListInvitation, ServerFnError> {
     use entity::todo_list_invitation::Column as InviteColum;
+    use entity::todo_list_invitation::Entity as TodoListInvitation;
+    use entity::user::Entity as User;
     use sea_orm::{
         ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter, QuerySelect,
         RelationTrait,
@@ -314,6 +323,7 @@ pub async fn list_todo_invites(
     accepted: Option<bool>,
 ) -> Result<Vec<entity::todo_list_invitation::Model>, ServerFnError> {
     use entity::todo_list_invitation::Column as InviteColum;
+    use entity::todo_list_invitation::Entity as TodoListInvitation;
     use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryTrait};
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
