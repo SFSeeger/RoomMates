@@ -1,8 +1,12 @@
-use crate::components::ui::events::eventlistentry::{EventListEntry, SharedEventRow};
-use crate::components::ui::list::List;
-use crate::components::ui::toaster::{ToastOptions, use_toaster};
-use api::routes::events::invitations::list_shared_friend_events;
-use api::routes::events::{delete_event, leave_event, list_events, remove_event_from_group};
+use crate::components::ui::{
+    events::eventlistentry::{EventListEntry, SharedEventRow},
+    list::List,
+    toaster::{ToastOptions, use_toaster},
+};
+use api::routes::events::{
+    invitations::list_shared_friend_events,
+    {delete_event, leave_event, list_events, remove_event_from_group},
+};
 use api::routes::groups::retrieve_group;
 use dioxus::prelude::*;
 use roommates::message_from_captured_error;

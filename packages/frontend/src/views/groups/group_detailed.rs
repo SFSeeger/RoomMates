@@ -1,25 +1,31 @@
 use crate::Route;
-use crate::components::ui::button::{Button, ButtonShape, ButtonVariant};
-use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
-use crate::components::ui::dialog::{
-    Dialog, DialogAction, DialogContent, DialogTrigger, use_dialog,
+use crate::components::ui::{
+    button::{Button, ButtonShape, ButtonVariant},
+    card::{Card, CardActions, CardBody, CardTitle},
+    dialog::{Dialog, DialogAction, DialogContent, DialogTrigger, use_dialog},
+    events::eventlist::EventListGroups,
+    form::input::Input,
+    form::submit_button::SubmitButton,
+    list::{ComplexList, ListDetails, ListRow},
+    toaster::{ToastOptions, use_toaster},
 };
-use crate::components::ui::events::eventlist::EventListGroups;
-use crate::components::ui::form::input::Input;
-use crate::components::ui::form::submit_button::SubmitButton;
-use crate::components::ui::list::{ComplexList, ListDetails, ListRow};
-use crate::components::ui::toaster::{ToastOptions, use_toaster};
-use api::routes::groups::retrieve_group;
-use api::routes::groups::{
-    add_user_to_group, change_group_name, delete_group, remove_user_from_group,
+use api::routes::{
+    groups::{
+        add_user_to_group, change_group_name, delete_group, leave_group, remove_user_from_group,
+        retrieve_group,
+    },
+    users::{EMAIL_REGEX, UserInfo},
 };
-use api::routes::users::{EMAIL_REGEX, UserInfo};
 use dioxus::prelude::*;
-use dioxus_free_icons::Icon;
-use dioxus_free_icons::icons::ld_icons::{LdMail, LdMinus, LdPlus, LdUsers};
-use form_hooks::use_form::{use_form, use_on_submit};
-use form_hooks::use_form_field::use_form_field;
-use form_hooks::validators;
+use dioxus_free_icons::{
+    Icon,
+    icons::ld_icons::{LdLogOut, LdMail, LdMinus, LdPlus, LdTrash, LdUsers},
+};
+use form_hooks::{
+    use_form::{use_form, use_on_submit},
+    use_form_field::use_form_field,
+    validators,
+};
 use regex::Regex;
 use roommates::message_from_captured_error;
 
@@ -134,7 +140,7 @@ pub fn EditGroup(group_id: i32) -> Element {
                         }
                     }
                 }
-                div { class: "relative flex flex-col md:w-1/6 overflow-y-auto w-full",
+                div { class: "relative flex flex-col md:w-1/6 overflow-y-auto w-full pb-32",
                     ComplexList {
                         header: rsx! {
                             div { class: "flex justify-between items-center w-full",
@@ -172,17 +178,29 @@ pub fn EditGroup(group_id: i32) -> Element {
                         }
                     }
                 }
-                div {
+                div { class: "fixed bottom-16 lg:bottom-4 right-4 flex gap-3",
                     Dialog {
                         DialogTrigger {
-                            variant: ButtonVariant::Primary,
+                            variant: ButtonVariant::Error,
                             shape: ButtonShape::Default,
                             ghost: false,
-                            class: "fixed bottom-16 lg:bottom-4 right-4 btn btn-primary lg:btn-lg",
-                            "Delete group"
+                            class: "btn lg:btn-lg",
+                            Icon { icon: LdTrash }
                         }
                         DialogContent { title: "Do you want to delete this group?",
                             DeleteGroup { group_id }
+                        }
+                    }
+                    Dialog {
+                        DialogTrigger {
+                            variant: ButtonVariant::Error,
+                            shape: ButtonShape::Default,
+                            ghost: false,
+                            class: "btn lg:btn-lg",
+                            Icon { icon: LdLogOut }
+                        }
+                        DialogContent { title: "Do you want to leave this group?",
+                            LeaveGroup { group_id }
                         }
                     }
                 }
@@ -358,6 +376,47 @@ pub fn DeleteGroup(group_id: i32) -> Element {
                 r#type: "submit",
                 variant: ButtonVariant::Primary,
                 "Delete"
+            }
+        }
+    }
+}
+
+#[component]
+pub fn LeaveGroup(group_id: i32) -> Element {
+    let mut toaster = use_toaster();
+    let dialog = use_dialog();
+    let mut leave_group = use_action(leave_group);
+    let nav = navigator();
+
+    rsx! {
+        DialogAction {
+            Button {
+                onclick: move |_| {
+                    dialog.close();
+                },
+                r#type: "button",
+                variant: ButtonVariant::Secondary,
+                "Cancel"
+            }
+            Button {
+                onclick: move |_| async move {
+                    leave_group.call(group_id).await;
+                    if let Some(Err(error)) = leave_group.value() {
+                        toaster
+                            .error(
+                                "Leaving group failed!",
+                                ToastOptions::new().description(rsx! {
+                                    span { {message_from_captured_error(&error)} }
+                                }),
+                            );
+                    } else {
+                        toaster.success("Left group successfully!", ToastOptions::new());
+                        nav.push(Route::GroupView {});
+                    }
+                },
+                r#type: "submit",
+                variant: ButtonVariant::Primary,
+                "Leave"
             }
         }
     }
