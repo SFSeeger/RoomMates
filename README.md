@@ -30,8 +30,12 @@
 
 ## Features
 * Create, view and share Events with groups and individual users
+![alt text](screenshots/eventcreate.png)![alt text](screenshots/group-dark.png) ![alt text](screenshots/calendar.png)
 * Manage and collaborate on To-Do Lists with different permissions
+![alt text](screenshots/todolist.png)
 * Choose from multiple themes to personalize your experience
+![alt text](screenshots/dashboard-dark.png)
+![alt text](<screenshots/dashboard pastel.png>)
 * Compatible with both MySQL and SQLite databases
 * Cross-Platform Support ([See Clients](#clients))
 
