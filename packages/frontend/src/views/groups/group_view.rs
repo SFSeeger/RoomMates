@@ -14,6 +14,7 @@ use dioxus_free_icons::icons::ld_icons::{LdPlus, LdUsers};
 use form_hooks::use_form::{use_form, use_on_submit};
 use form_hooks::use_form_field::use_form_field;
 use form_hooks::validators;
+use roommates::message_from_captured_error;
 
 #[derive(serde::Deserialize)]
 struct NewGroupName {
@@ -85,14 +86,14 @@ pub fn NewGroupForm() -> Element {
             }
             Some(Err(error)) => {
                 toaster.error(
-                    "Failed to create group",
+                    "Failed to create group!",
                     ToastOptions::new().description(rsx! {
-                        span { "{error.to_string()}" }
+                        span { {message_from_captured_error(&error)} }
                     }),
                 );
             }
             None => {
-                warn! {"No value present!"}
+                warn! {"Creating group did not finish yet!"}
             }
         }
     });

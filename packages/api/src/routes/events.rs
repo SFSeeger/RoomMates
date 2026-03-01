@@ -1,11 +1,9 @@
+#[cfg(feature = "server")]
 use crate::server;
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
 use dioxus::{fullstack::NoContent, prelude::*};
 use entity::event::PartialEventModel;
-use entity::links::EventUserMembers;
-use entity::prelude::*;
-
 pub mod invitations;
 
 #[get("/api/events?mindate&maxdate", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
@@ -15,6 +13,7 @@ pub async fn list_events(
 ) -> Result<Vec<entity::event::FullEvent>, ServerFnError> {
     use entity::event::Column as EventColumn;
     use entity::group::Column as GroupColumn;
+    use entity::group::Entity as Group;
     use entity::invitation::Column as InvitationColumn;
     use entity::shared_group_event::Column as GroupEventColumn;
     use sea_orm::{
@@ -114,7 +113,7 @@ pub async fn retrieve_event(event_id: i32) -> Result<entity::event::Model, Serve
         .one(&ext.database)
         .await
         .or_internal_server_error("Error loading user from database")?
-        .or_not_found("event not found")?;
+        .or_not_found("Event not found")?;
     Ok(event)
 }
 
@@ -132,7 +131,7 @@ pub async fn delete_event(event_id: i32) -> Result<NoContent, ServerFnError> {
         .one(&ext.database)
         .await
         .or_internal_server_error("Error loading event from database")?
-        .or_not_found("event not found")?;
+        .or_not_found("Event not found")?;
 
     (event.owner_id == user_id).or_unauthorized("Unauthorized to delete this event")?;
 
@@ -232,7 +231,7 @@ pub async fn update_event(
         .one(&ext.database)
         .await
         .or_internal_server_error("Failed to load event")?
-        .or_not_found("event somehow not found")?;
+        .or_not_found("Event not found")?;
 
     let owner = event.owner_id;
 
@@ -266,6 +265,7 @@ pub async fn update_event(
 #[get("/api/events/{event_id}/groups", ext: Extension<server::AppState>)]
 pub async fn list_event_groups(event_id: i32) -> Result<Vec<entity::group::Model>, ServerFnError> {
     use entity::event::Entity as Event;
+    use entity::group::Entity as Group;
     use sea_orm::{EntityTrait, ModelTrait};
 
     let event = Event::find_by_id(event_id)
@@ -346,33 +346,32 @@ pub async fn remove_event_from_group(
         "Failed to remove event {event_id} from group {group_id}"
     ))?;
 
-    //delete_event(event_id).await?;
-
     Ok(NoContent)
 }
 
 #[get("/api/events/{event_id}/members", ext: Extension<server::AppState>)]
 pub async fn list_event_members(event_id: i32) -> Result<Vec<entity::user::Model>, ServerFnError> {
+    use entity::links::EventUserMembers;
     use sea_orm::EntityTrait;
     use sea_orm::ModelTrait;
 
     let event = entity::event::Entity::find_by_id(event_id)
         .one(&ext.database)
         .await
-        .or_internal_server_error("could not load event")?
-        .or_not_found("could not find event")?;
+        .or_internal_server_error("Error loading event from database")?
+        .or_not_found("Event not found")?;
 
     let owner = entity::user::Entity::find_by_id(event.owner_id)
         .one(&ext.database)
         .await
-        .or_internal_server_error("could not load event")?
-        .or_not_found("could not find event")?;
+        .or_internal_server_error("Error loading owner from database")?
+        .or_not_found("Owner not found")?;
 
     let mut shares = event
         .find_linked(EventUserMembers)
         .all(&ext.database)
         .await
-        .or_internal_server_error("failed to retrieve other members")?;
+        .or_internal_server_error("Error retrieving members")?;
 
     shares.push(owner);
 
@@ -390,13 +389,13 @@ pub async fn leave_event(event_id: i32) -> Result<NoContent, ServerFnError> {
         .filter(entity::shared_friend_event::Column::UserId.eq(user.id))
         .one(&ext.database)
         .await
-        .or_internal_server_error("Failed to retrieve info from server")?
-        .or_not_found("user is not in this event")?;
+        .or_internal_server_error("Error loading event from database")?
+        .or_not_found("User is not in this event")?;
 
     shared_event
         .delete(&ext.database)
         .await
-        .or_internal_server_error("could not leave event")?;
+        .or_internal_server_error("Error leaving event")?;
 
     Ok(NoContent)
 }

@@ -1,14 +1,15 @@
+#[cfg(feature = "server")]
 use crate::server;
 use dioxus::fullstack::NoContent;
 use dioxus::prelude::*;
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
-use entity::prelude::TodoList;
-use entity::prelude::*;
 use entity::todo::{CreateToDo, UpdateToDo};
 
 #[get("/api/todolists/{todo_list_id}/todos", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn list_todo(todo_list_id: i32) -> Result<Vec<entity::todo::Model>, ServerFnError> {
+    use entity::todo::Entity as Todo;
+    use entity::todo_list::Entity as TodoList;
     use sea_orm::ColumnTrait;
     use sea_orm::EntityTrait;
     use sea_orm::QueryFilter;
@@ -42,6 +43,7 @@ pub async fn list_todos(
     completed: Option<bool>,
     favorite: Option<bool>,
 ) -> Result<Vec<entity::todo::TodoWithPermission>, ServerFnError> {
+    use entity::todo::Entity as Todo;
     use sea_orm::ColumnTrait;
     use sea_orm::EntityTrait;
     use sea_orm::JoinType;
@@ -83,6 +85,7 @@ pub async fn create_todo(
     todo_list_id: i32,
     data: CreateToDo,
 ) -> Result<entity::todo::Model, ServerFnError> {
+    use entity::todo_list::Entity as TodoList;
     use sea_orm::{ActiveModelTrait, EntityTrait, IntoActiveModel, Set};
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
@@ -118,6 +121,7 @@ pub async fn update_todo(
     todo_id: i32,
     data: UpdateToDo,
 ) -> Result<entity::todo::Model, ServerFnError> {
+    use entity::todo::Entity as Todo;
     use sea_orm::{ActiveModelTrait, EntityTrait, IntoActiveModel, TryIntoModel};
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
     let todo = Todo::find_by_id(todo_id)
@@ -155,6 +159,7 @@ pub async fn update_todo(
 
 #[delete("/api/todos/{todo_id}", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn delete_todo(todo_id: i32) -> Result<NoContent, ServerFnError> {
+    use entity::todo::Entity as Todo;
     use sea_orm::{EntityTrait, ModelTrait};
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;

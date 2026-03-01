@@ -17,6 +17,7 @@ use sea_orm::{
 };
 use time::{Duration, OffsetDateTime};
 
+/// Hashes a password using Argon2
 pub fn hash_password(user_password: String) -> Result<String, ServerFnError> {
     let salt = SaltString::generate(&mut OsRng);
     match Argon2::default().hash_password(user_password.as_bytes(), &salt) {
@@ -29,6 +30,7 @@ pub fn hash_password(user_password: String) -> Result<String, ServerFnError> {
     }
 }
 
+/// Verifies a password against a hash
 pub fn verify_password(user_password: &str, password_hashed: &str) -> bool {
     let parsed_hash = PasswordHash::new(password_hashed);
     if let Ok(hash) = parsed_hash {
@@ -39,6 +41,14 @@ pub fn verify_password(user_password: &str, password_hashed: &str) -> bool {
     false
 }
 
+/// Verifies the user credentials
+///
+/// # Arguments
+/// * `user_password`: Plain text password to verify
+/// * `user_email`: Email of the user to verify
+/// * `db`: Connection to the database
+///
+/// returns: Result<entity::user::Model, ServerFnError> - Returns the user model if the credentials are correct or an error
 pub async fn verify_user(
     user_password: &str,
     user_email: &str,

@@ -5,6 +5,7 @@ use api::routes::events::invitations::list_shared_friend_events;
 use api::routes::events::{delete_event, leave_event, list_events, remove_event_from_group};
 use api::routes::groups::retrieve_group;
 use dioxus::prelude::*;
+use roommates::message_from_captured_error;
 use time::Date;
 
 #[component]
@@ -19,11 +20,16 @@ pub fn EventList(date: Option<Date>) -> Element {
                 toaster.success("Deleted event successfully!", ToastOptions::new());
                 events.write().retain(|event| event.id != event_id);
             }
-            Some(Err(_)) => {
-                toaster.error("Failed to delete event!", ToastOptions::new());
+            Some(Err(error)) => {
+                toaster.error(
+                    "Failed to delete event!",
+                    ToastOptions::new().description(rsx! {
+                        span { {message_from_captured_error(&error)} }
+                    }),
+                );
             }
             None => {
-                warn!("Request did not finish!");
+                warn!("Deleting event did not finish yet!");
             }
         }
     };
@@ -49,14 +55,19 @@ pub fn EventListGroups(group_id: i32) -> Element {
         remove_event_from_group.call(event_id, group_id).await;
         match remove_event_from_group.value() {
             Some(Ok(_)) => {
-                toaster.success("Deleted event successfully!", ToastOptions::new());
+                toaster.success("Removed event successfully!", ToastOptions::new());
                 group.write().events.retain(|event| event.id != event_id);
             }
-            Some(Err(_)) => {
-                toaster.error("Failed to delete event!", ToastOptions::new());
+            Some(Err(error)) => {
+                toaster.error(
+                    "Failed to remove event from group!",
+                    ToastOptions::new().description(rsx! {
+                        span { {message_from_captured_error(&error)} }
+                    }),
+                );
             }
             None => {
-                warn!("Request did not finish!");
+                warn!("Removing event from group did not finish yet!");
             }
         }
     };
@@ -90,11 +101,16 @@ pub fn SharedEventList() -> Element {
                 toaster.success("Left Event!", ToastOptions::new());
                 shared_events.write().retain(|event| event.id != event_id);
             }
-            Some(Err(_)) => {
-                toaster.error("Failed to leave event!", ToastOptions::new());
+            Some(Err(error)) => {
+                toaster.error(
+                    "Failed to leave event!",
+                    ToastOptions::new().description(rsx! {
+                        span { {message_from_captured_error(&error)} }
+                    }),
+                );
             }
             None => {
-                warn!("Request did not finish!");
+                warn!("Leaving the event did not finish yet!");
             }
         }
     };

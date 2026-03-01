@@ -21,6 +21,7 @@ use form_hooks::use_form::{use_form, use_on_submit};
 use form_hooks::use_form_field::use_form_field;
 use form_hooks::validators;
 use regex::Regex;
+use roommates::message_from_captured_error;
 
 #[derive(serde::Deserialize)]
 struct AddUserFormData {
@@ -66,12 +67,12 @@ pub fn EditGroup(group_id: i32) -> Element {
                 toaster.error(
                     "Failed to change group name!",
                     ToastOptions::new().description(rsx! {
-                        span { "{error.to_string()}" }
+                        span { {message_from_captured_error(&error)} }
                     }),
                 );
             }
             None => {
-                warn! {"No value present!"}
+                warn! {"Changing group name did not finish yet!"}
             }
         }
     });
@@ -224,7 +225,7 @@ pub fn GroupListEntry(
                                             Some(Ok(_)) => {
                                                 toaster
                                                     .success(
-                                                        &format!("Removed {} successfully!", name),
+                                                        &format!("Removed {} successfully from group!", name),
                                                         ToastOptions::new(),
                                                     );
                                                 onmemberremove.call(member_id);
@@ -232,13 +233,13 @@ pub fn GroupListEntry(
                                             Some(Err(error)) => {
                                                 toaster
                                                     .error(
-                                                        &format!("Failed to remove {}!", name),
+                                                        &format!("Failed to remove {} from group!", name),
                                                         ToastOptions::new().description(rsx! {
-                                                            span { "{error.to_string()}" }
+                                                            span { {message_from_captured_error(&error)} }
                                                         }),
                                                     );
                                             }
-                                            None => warn!("Remove member did not finish!"),
+                                            None => warn!("Remove member did not finish yet!"),
                                         }
                                     }
                                 },
@@ -285,12 +286,12 @@ pub fn AddMemberForm(group_id: i32, onmemberadd: EventHandler<i32>) -> Element {
                 toaster.error(
                     "Failed to add user!",
                     ToastOptions::new().description(rsx! {
-                        span { "{error.to_string()}" }
+                        span { {message_from_captured_error(&error)} }
                     }),
                 );
             }
             None => {
-                warn! {"Add user did not finish"}
+                warn! {"Adding user to group did not finish yet!"}
             }
         }
     });
@@ -344,13 +345,13 @@ pub fn DeleteGroup(group_id: i32) -> Element {
                     if let Some(Err(error)) = delete_group.value() {
                         toaster
                             .error(
-                                "Deleting group failed",
+                                "Deleting group failed!",
                                 ToastOptions::new().description(rsx! {
-                                    span { "{error.to_string()}" }
+                                    span { {message_from_captured_error(&error)} }
                                 }),
                             );
                     } else {
-                        toaster.success("Deleted group", ToastOptions::new());
+                        toaster.success("Deleted group successfully!", ToastOptions::new());
                         nav.push(Route::GroupView {});
                     }
                 },

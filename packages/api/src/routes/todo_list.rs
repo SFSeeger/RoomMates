@@ -1,9 +1,9 @@
+#[cfg(feature = "server")]
 use crate::server;
 use dioxus::fullstack::NoContent;
 use dioxus::prelude::*;
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
-use entity::prelude::*;
 use entity::todo_list::{CreateTodoList, UpdateTodoList};
 
 pub mod invite;
@@ -12,7 +12,9 @@ pub mod invite;
 pub async fn list_todo_lists()
 -> Result<Vec<entity::todo_list::TodoListWithPermission>, ServerFnError> {
     use entity::todo_list::Column as TodoListColumn;
+    use entity::todo_list::Entity as TodoList;
     use entity::todo_list_invitation::Column as InvitationColumn;
+    use entity::todo_list_invitation::Entity as TodoListInvitation;
     use sea_orm::ColumnTrait;
     use sea_orm::Condition;
     use sea_orm::EntityTrait;
@@ -42,7 +44,9 @@ pub async fn list_todo_lists()
 pub async fn retrieve_todo_list(
     todo_list_id: i32,
 ) -> Result<entity::todo_list::TodoListWithPermission, ServerFnError> {
+    use entity::todo_list::Entity as TodoList;
     use entity::todo_list_invitation::Column as InvitationColumn;
+    use entity::todo_list_invitation::Entity as TodoListInvitation;
     use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
@@ -64,6 +68,7 @@ pub async fn retrieve_todo_list(
 pub async fn list_todo_list_members(
     todo_list_id: i32,
 ) -> Result<Vec<entity::user::UserWithTodoListInvitation>, ServerFnError> {
+    use entity::user::Entity as User;
     use sea_orm::EntityTrait;
     use sea_orm::JoinType;
     use sea_orm::{ColumnTrait, QueryFilter, QuerySelect, RelationTrait};
@@ -175,6 +180,7 @@ pub async fn update_todo_list(
 
 #[delete("/api/todolists/{todo_list_id}", state: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn delete_todo_list(todo_list_id: i32) -> Result<NoContent, ServerFnError> {
+    use entity::todo_list::Entity as TodoList;
     use sea_orm::EntityTrait;
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 

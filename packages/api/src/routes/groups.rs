@@ -1,8 +1,8 @@
 use crate::dioxus_fullstack::NoContent;
 use crate::routes::users::UserInfo;
+#[cfg(feature = "server")]
 use crate::server;
 use dioxus::prelude::*;
-use entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "server")]
@@ -24,7 +24,7 @@ pub async fn create_group(group_name: String) -> Result<entity::group::Model, Se
                 let group = group
                     .insert(txn)
                     .await
-                    .or_internal_server_error("Error creating group")?;
+                    .or_internal_server_error("Error inserting group into database")?;
 
                 let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
@@ -36,7 +36,7 @@ pub async fn create_group(group_name: String) -> Result<entity::group::Model, Se
                 pair.insert(txn)
                     .await
                     .inspect_err(|error| error!("{error:?}"))
-                    .or_internal_server_error("Error creating group")?;
+                    .or_internal_server_error("Error adding creator to group")?;
 
                 Ok(group)
             })
@@ -57,6 +57,7 @@ pub async fn create_group(group_name: String) -> Result<entity::group::Model, Se
 
 #[get("/api/groups", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
 pub async fn list_groups() -> Result<Vec<entity::group::Model>, ServerFnError> {
+    use entity::group::Entity as Group;
     use sea_orm::ModelTrait;
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
@@ -90,7 +91,7 @@ pub async fn add_user_to_group(group_id: i32, email: String) -> Result<NoContent
 
         let checker = is_user_in_group(&ext.database, group_id, new_user.id).await?;
 
-        (!checker).or_bad_request("User already in group")?;
+        (!checker).or_bad_request("User is already in group")?;
 
         let pair = is_in_group::ActiveModel {
             user_id: Set(new_user.id),
@@ -137,9 +138,7 @@ pub async fn remove_user_from_group(
                 .await
                 .or_internal_server_error("Error deleting relation")?;
 
-            (result.rows_affected > 0).or_not_found(format!(
-                "Failed to remove user {user_id} from group {group_id}"
-            ))?;
+            (result.rows_affected > 0).or_not_found("Failed to remove user from group")?;
 
             Ok(NoContent)
         } else {
@@ -165,6 +164,9 @@ pub struct GroupDetailData {
 ///returns default struct of GroupDetailData when trying to call a group which does not exist
 #[get("/api/groups/{group_id}", ext: Extension<server::AppState>)]
 pub async fn retrieve_group(group_id: i32) -> Result<GroupDetailData, ServerFnError> {
+    use entity::event::Entity as Event;
+    use entity::group::Entity as Group;
+    use entity::user::Entity as User;
     use sea_orm::EntityTrait;
     use sea_orm::ModelTrait;
 
@@ -210,7 +212,7 @@ pub async fn change_group_name(
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
     is_user_in_group(&ext.database, group_id, user.id)
         .await?
-        .or_forbidden("user is not part of this group")?;
+        .or_forbidden("User is not part of this group")?;
 
     let group = Group::find_by_id(group_id)
         .one(&ext.database)
