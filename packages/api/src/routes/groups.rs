@@ -24,7 +24,7 @@ pub async fn create_group(group_name: String) -> Result<entity::group::Model, Se
                 let group = group
                     .insert(txn)
                     .await
-                    .or_internal_server_error("Error inserting group into database")?;
+                    .or_internal_server_error("Error creating group")?;
 
                 let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
