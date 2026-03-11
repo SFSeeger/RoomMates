@@ -46,7 +46,8 @@ mod test_db_mod {
             email: Set("proton".to_owned()),
             first_name: Set("kara".to_owned()),
             last_name: Set("rau".to_owned()),
-            password: Set("pass".to_owned()),
+            password: Set(Some("pass".to_owned())),
+            is_oidc_user: Set(false),
         };
 
         user::Entity::insert(user1).exec(db).await?;
@@ -56,7 +57,8 @@ mod test_db_mod {
             email: Set("gmail".to_owned()),
             first_name: Set("simon".to_owned()),
             last_name: Set("hhh".to_owned()),
-            password: Set("word".to_owned()),
+            password: Set(Some("word".to_owned())),
+            is_oidc_user: Set(false),
         };
 
         user::Entity::insert(user2).exec(db).await?;

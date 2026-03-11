@@ -191,7 +191,7 @@ pub async fn change_password(password: String) -> dioxus::Result<NoContent, Serv
     let hashed_pass = hash_password(password)?;
 
     let mut user_active: entity::user::ActiveModel = user.clone().into_active_model();
-    user_active.password = sea_orm::Set(hashed_pass);
+    user_active.password = sea_orm::Set(Some(hashed_pass));
 
     User::update(user_active)
         .exec(&ext.database)

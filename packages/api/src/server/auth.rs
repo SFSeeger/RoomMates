@@ -74,12 +74,13 @@ pub async fn verify_user(
 
     let user = user::Entity::find()
         .filter(user::Column::Email.eq(user_email))
+        .filter(user::Column::IsOidcUser.eq(false))
         .one(db)
         .await
         .or_unauthorized("Missing or incorrect Credentials")?
         .or_not_found("User not found")?;
 
-    let validated_password = verify_password(user_password, &user.password);
+    let validated_password = verify_password(user_password, user.password.as_ref().unwrap());
 
     if !validated_password {
         return Err(ServerFnError::ServerError {
@@ -108,7 +109,7 @@ pub async fn create_user(
 
     let user = entity::user::ActiveModel {
         email: sea_orm::Set(email),
-        password: sea_orm::Set(hashed_password),
+        password: sea_orm::Set(Some(hashed_password)),
         first_name: sea_orm::Set(first_name),
         last_name: sea_orm::Set(last_name),
         ..Default::default()
@@ -321,7 +322,7 @@ pub async fn find_user_by_session(
 }
 
 pub async fn find_user_by_email(
-    email: String,
+    email: &str,
     db: &DatabaseConnection,
 ) -> dioxus::Result<UserInfo, ServerFnError> {
     use crate::routes::users::UserInfo;
@@ -329,7 +330,7 @@ pub async fn find_user_by_email(
     use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
     let user_option = User::find()
-        .filter(entity::user::Column::Email.eq(&email))
+        .filter(entity::user::Column::Email.eq(email))
         .one(db)
         .await
         .or_internal_server_error("Error loading user from database")?;

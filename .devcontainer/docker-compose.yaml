@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   traefik:
     image: traefik:latest
@@ -9,9 +7,11 @@ services:
       - "--entrypoints.web.address=:80"
     ports:
       - "80:80"
-      - "8080:8080"
+    labels:
+      - traefik.http.routers.traefik.rule=Host(`traefik.roommates.local`)
+      - traefik.http.services.traefik.loadbalancer.server.port=8080
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock22
     networks:
       - default
 

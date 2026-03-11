@@ -12,7 +12,9 @@ pub struct Model {
     pub first_name: String,
     pub last_name: String,
     #[serde(skip)]
-    pub password: String,
+    pub password: Option<String>,
+
+    pub is_oidc_user: bool,
 
     //events that belong to this user
     #[sea_orm(has_many)]

@@ -1,5 +1,7 @@
 use super::*;
-use crate::server::auth::{OidcClient, create_oidc_client, find_user_by_session};
+use crate::server::auth::{
+    OidcClient, build_http_client, create_oidc_client, find_user_by_session,
+};
 use anyhow::anyhow;
 use dioxus::core::Element;
 use dioxus::fullstack::Cookie;
@@ -11,6 +13,7 @@ use dioxus::prelude::*;
 use dioxus::server::axum;
 use dioxus::server::axum::Extension;
 use entity::prelude::Session;
+use openidconnect::AccessToken;
 use sea_orm::{DatabaseConnection, EntityTrait};
 use std::env;
 use time::Duration;
@@ -87,6 +90,28 @@ async fn authentication_middleware(
     {
         authentication_state.user = Some(user);
         authentication_state.session_id = Some(session_id);
+    } else if let Some(cookies) = request.headers().typed_get::<Cookie>()
+        && let Some(token) = cookies.get("authorization")
+        && let Some(token) = token.strip_prefix("Token ")
+    {
+        let app_state = request.extensions().get::<AppState>().unwrap();
+        let oidc_client = app_state.oidc_client.as_ref().expect("OIDC is disabled!");
+
+        let user_info_request = oidc_client
+            .user_info(AccessToken::new(token.to_string()), None)
+            .unwrap();
+
+        let http_client = build_http_client().unwrap();
+        let claims = user_info_request.request_async(&http_client).await.unwrap();
+
+        let email: &str = claims.email().map(|email| email.as_str()).unwrap();
+        let user = entity::user::Entity::find_by_email(email)
+            .one(&database)
+            .await
+            .unwrap()
+            .unwrap_or_else(|| panic!("User with email {email} not found in database"));
+
+        authentication_state.user = Some(user);
     }
 
     request.extensions_mut().insert(authentication_state);

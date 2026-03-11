@@ -5,7 +5,6 @@ use dioxus::prelude::*;
 
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
-use sea_orm::PaginatorTrait;
 
 const OIDC_SESSION_KEY: &str = "oidc_metadata";
 #[allow(clippy::unused_async)]
@@ -29,14 +28,22 @@ pub async fn oauth_login() -> Result<Redirect, ServerFnError> {
     Ok(Redirect::to(&redirect_url))
 }
 
-#[get("/api/oidc/redirect?state&code", ext: Extension<server::AppState>, _auth: Extension<server::AuthenticationState>, cookies: Extension<tower_cookies::Cookies>, session: Extension<tower_sessions::Session> )]
+#[get("/api/oidc/redirect?state&code",
+    ext: Extension<server::AppState>,
+    _auth: Extension<server::AuthenticationState>,
+    cookies: Extension<tower_cookies::Cookies>,
+    session: Extension<tower_sessions::Session>
+)]
 pub async fn oauth_redirect(
     state: Option<String>,
     code: Option<String>,
 ) -> Result<Redirect, ServerFnError> {
-    use openidconnect::{AccessTokenHash, OAuth2TokenResponse, TokenResponse};
-    use tower_cookies::Cookie;
+    use std::time::Duration;
+
     use entity::prelude::*;
+    use openidconnect::{AccessTokenHash, OAuth2TokenResponse, TokenResponse};
+    use sea_orm::prelude::*;
+    use tower_cookies::{Cookie, cookie::SameSite};
 
     let oidc_client = ext
         .oidc_client
@@ -94,29 +101,69 @@ pub async fn oauth_redirect(
             .map_or("<not provided>", |email| email.as_str())
     );
 
-    let email: &str = claims.email().map(|email| email.as_str()).or_bad_request("Email is required")?;
-    let first_name: &str = claims.given_name().map(|name| name.as_str()).or_bad_request("Missing given name")?;
-    let last_name: &str= claims.family_name().map(|name| name.as_str()).or_bad_request("Missing family name")?;
+    let email: &str = claims
+        .email()
+        .map(|email| email.as_str())
+        .or_bad_request("Email is required")?;
+    let first_name: &str = claims
+        .given_name()
+        .or_bad_request("Missing given name")?
+        .get(None)
+        .map(|n| n.as_str())
+        .or_bad_request("Missing given name")?;
 
-    if User::find_by_email(email).count(&ext.database).await.or_internal_server_error("Failed to retrieve user")? == 0 {
+    let last_name: &str = claims
+        .family_name()
+        .or_bad_request("Missing family name")?
+        .get(None)
+        .map(|n| n.as_str())
+        .or_bad_request("Missing family name")?;
+
+    if User::find_by_email(email)
+        .count(&ext.database)
+        .await
+        .or_internal_server_error("Failed to retrieve user")?
+        == 0
+    {
         let new_user = entity::user::ActiveModel {
             email: sea_orm::Set(email.to_string()),
             first_name: sea_orm::Set(first_name.to_string()),
             last_name: sea_orm::Set(last_name.to_string()),
-            password: Default::default(),
+            is_oidc_user: sea_orm::Set(true),
             ..Default::default()
-        }
+        };
+        new_user
+            .insert(&ext.database)
+            .await
+            .inspect_err(|e| error!("{e}"))
+            .or_internal_server_error("Failed to create user")?;
     }
+
+    let expires_at = token_response
+        .expires_in()
+        .unwrap_or(Duration::from_secs(3600));
 
     cookies.add(
         Cookie::build((
             "authorization",
             format!("Token {}", token_response.access_token().secret()),
         ))
+        .secure(!cfg!(debug_assertions))
         .http_only(true)
         .path("/")
+        .same_site(SameSite::Strict)
+        .expires(time::OffsetDateTime::now_local().unwrap() + expires_at)
         .build(),
     );
+    if let Some(refresh_token) = token_response.refresh_token() {
+        cookies.add(
+            Cookie::build(("refresh_token", format!("Token {}", refresh_token.secret())))
+                .secure(!cfg!(debug_assertions))
+                .http_only(true)
+                .path("/")
+                .build(),
+        );
+    }
 
     Ok(Redirect::to("/"))
 }

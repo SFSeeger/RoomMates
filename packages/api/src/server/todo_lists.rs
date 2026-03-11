@@ -96,7 +96,8 @@ mod tests {
             email: sea_orm::Set(format!("test{id}@test.de")),
             first_name: sea_orm::Set(format!("firstname{id}")),
             last_name: sea_orm::Set(format!("firstname{id}")),
-            password: sea_orm::Set("test".to_string()),
+            password: sea_orm::Set(Some("test".to_string())),
+            ..Default::default()
         }
         .insert(database)
         .await
