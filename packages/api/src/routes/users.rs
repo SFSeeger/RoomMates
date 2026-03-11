@@ -42,7 +42,8 @@ pub async fn retrieve_user(user_id: i32) -> dioxus::Result<UserInfo, ServerFnErr
 
 pub const EMAIL_REGEX: &str = r"^[\w+.-]*\w@[\w.-]+\.\w+$";
 
-#[post("/api/users/signup", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+#[post("/api/users/signup", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>
+)]
 pub async fn sign_up(
     email: String,
     password: String,
@@ -74,7 +75,8 @@ pub async fn sign_up(
     }
 }
 
-#[post("/api/users/login", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+#[post("/api/users/login", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>
+)]
 pub async fn login(email: String, password: String) -> Result<SetHeader<SetCookie>, ServerFnError> {
     use crate::server::auth::{create_session, verify_user};
     use time::format_description::well_known::Rfc2822;
@@ -107,13 +109,15 @@ pub async fn login(email: String, password: String) -> Result<SetHeader<SetCooki
     .or_internal_server_error("Error setting session cookie")?)
 }
 
-#[post("/api/logout", ext: Extension<server::AppState>, mut auth: Extension<server::AuthenticationState>)]
+#[post("/api/logout", ext: Extension<server::AppState>, mut auth: Extension<server::AuthenticationState>
+)]
 pub async fn logout() -> Result<NoContent, ServerFnError> {
     auth.logout(&ext.database).await?;
     Ok(NoContent)
 }
 
-#[delete("/api/users/{user_id}", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+#[delete("/api/users/{user_id}", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>
+)]
 pub async fn delete_user(user_id: i32) -> Result<NoContent, ServerFnError> {
     use entity::user::Entity as User;
     use sea_orm::EntityTrait;
@@ -174,7 +178,8 @@ pub async fn change_user_info(
     Ok(UserInfo::from_user_model(res))
 }
 
-#[put("/api/users/password",  ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+#[put("/api/users/password",  ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>
+)]
 pub async fn change_password(password: String) -> dioxus::Result<NoContent, ServerFnError> {
     use crate::server::auth::hash_password;
     use entity::user::Entity as User;

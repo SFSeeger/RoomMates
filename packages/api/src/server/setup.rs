@@ -1,5 +1,5 @@
 use super::*;
-use crate::server::auth::find_user_by_session;
+use crate::server::auth::{OidcClient, create_oidc_client, find_user_by_session};
 use anyhow::anyhow;
 use dioxus::core::Element;
 use dioxus::fullstack::Cookie;
@@ -12,6 +12,10 @@ use dioxus::server::axum;
 use dioxus::server::axum::Extension;
 use entity::prelude::Session;
 use sea_orm::{DatabaseConnection, EntityTrait};
+use std::env;
+use time::Duration;
+use tower_cookies::CookieManagerLayer;
+use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
 
 pub async fn setup_api(app: fn() -> Element) -> Result<axum::Router, anyhow::Error> {
     let database: DatabaseConnection = database::establish_connection().await?;
@@ -23,13 +27,27 @@ pub async fn setup_api(app: fn() -> Element) -> Result<axum::Router, anyhow::Err
         .await?;
 
     let database_clone = database.clone();
+    let oidc_client = if env::var("OAUTH_ENABLED")?.trim().to_lowercase() == "true" {
+        Some(create_oidc_client().await?)
+    } else {
+        None
+    };
 
     let app_state = AppState {
         database: database_clone,
+        oidc_client,
     };
+
+    let session_store = MemoryStore::default();
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_secure(!cfg!(debug_assertions))
+        .with_expiry(Expiry::OnInactivity(Duration::seconds(60)));
+
     let router = axum::Router::new()
         .serve_dioxus_application(ServeConfig::default().enable_out_of_order_streaming(), app)
         .layer(Extension(app_state))
+        .layer(CookieManagerLayer::new())
+        .layer(session_layer)
         .layer(axum::middleware::from_fn(tracing_middleware))
         .layer(axum::middleware::from_fn(
             move |request: Request, next: Next| {
@@ -43,6 +61,7 @@ pub async fn setup_api(app: fn() -> Element) -> Result<axum::Router, anyhow::Err
 #[derive(Clone)]
 pub struct AppState {
     pub database: DatabaseConnection,
+    pub oidc_client: Option<OidcClient>,
 }
 
 async fn authentication_middleware(
@@ -91,7 +110,7 @@ async fn tracing_middleware(request: Request, next: Next) -> Response {
 
     let response = next.run(request).await;
 
-    if !std::env::var("ACCESS_LOG").is_ok_and(|value| value.to_lowercase() == "true") {
+    if !env::var("ACCESS_LOG").is_ok_and(|value| value.to_lowercase() == "true") {
         return response;
     }
 
@@ -115,14 +134,21 @@ pub struct AuthenticationState {
 }
 
 impl AuthenticationState {
+    #[must_use]
     pub fn is_authenticated(&self) -> bool {
         self.user.is_some()
     }
 
+    #[must_use]
     pub fn is_anonymous(&self) -> bool {
         self.user.is_none()
     }
 
+    /// Logs the authenticated user out
+    ///
+    /// # Errors
+    ///
+    /// Returns [`anyhow::Error`] ([`DBError`]) when deleting the session fails
     pub async fn logout(&mut self, database: &DatabaseConnection) -> Result<(), anyhow::Error> {
         let Some(session_id) = self.session_id else {
             return Err(anyhow!("Session ID is None"));
