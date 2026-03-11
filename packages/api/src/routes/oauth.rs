@@ -5,6 +5,7 @@ use dioxus::prelude::*;
 
 #[cfg(feature = "server")]
 use dioxus::server::axum::Extension;
+use sea_orm::PaginatorTrait;
 
 const OIDC_SESSION_KEY: &str = "oidc_metadata";
 #[allow(clippy::unused_async)]
@@ -35,6 +36,7 @@ pub async fn oauth_redirect(
 ) -> Result<Redirect, ServerFnError> {
     use openidconnect::{AccessTokenHash, OAuth2TokenResponse, TokenResponse};
     use tower_cookies::Cookie;
+    use entity::prelude::*;
 
     let oidc_client = ext
         .oidc_client
@@ -80,7 +82,7 @@ pub async fn oauth_redirect(
                 .or_internal_server_error("Error extracting signing key")?,
         )
         .or_internal_server_error("Error constructing expected access token")?;
-        (actual_access_token_hash != *expected_access_token_hash)
+        (actual_access_token_hash == *expected_access_token_hash)
             .or_unauthorized("Invalid access token")?;
     }
 
@@ -91,6 +93,21 @@ pub async fn oauth_redirect(
             .email()
             .map_or("<not provided>", |email| email.as_str())
     );
+
+    let email: &str = claims.email().map(|email| email.as_str()).or_bad_request("Email is required")?;
+    let first_name: &str = claims.given_name().map(|name| name.as_str()).or_bad_request("Missing given name")?;
+    let last_name: &str= claims.family_name().map(|name| name.as_str()).or_bad_request("Missing family name")?;
+
+    if User::find_by_email(email).count(&ext.database).await.or_internal_server_error("Failed to retrieve user")? == 0 {
+        let new_user = entity::user::ActiveModel {
+            email: sea_orm::Set(email.to_string()),
+            first_name: sea_orm::Set(first_name.to_string()),
+            last_name: sea_orm::Set(last_name.to_string()),
+            password: Default::default(),
+            ..Default::default()
+        }
+    }
+
     cookies.add(
         Cookie::build((
             "authorization",
