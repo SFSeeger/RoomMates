@@ -43,7 +43,7 @@ pub async fn send_invite(
 
     (event.owner_id == user.id).or_unauthorized("Unauthorized to invite anyone to this event")?;
 
-    let user = find_user_by_email(reciever_mail, &ext.database).await?;
+    let user = find_user_by_email(&reciever_mail, &ext.database).await?;
 
     let invite_status = can_invite_user_to_event(&ext.database, event_id, user.id).await?;
 

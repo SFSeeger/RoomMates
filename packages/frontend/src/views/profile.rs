@@ -56,7 +56,9 @@ pub fn Profile() -> Element {
 
             CardTitle { "Profile Information" }
             ListInfoDisplay { real_user, onupdate }
-            PasswordDisplay {}
+            if !user().is_oidc_user {
+                PasswordDisplay {}
+            }
         }
     }
 }
@@ -103,7 +105,6 @@ pub fn ListInfoDisplay(real_user: UserInfo, onupdate: EventHandler<UserInfo>) ->
     rsx! {
         form { onsubmit,
             Card {
-                " Username: {real_user.first_name} {real_user.last_name}"
                 Fieldset {
                     div {
                         fieldset { class: "fieldset",
@@ -123,7 +124,12 @@ pub fn ListInfoDisplay(real_user: UserInfo, onupdate: EventHandler<UserInfo>) ->
 
                 Fieldset {
                     p { "Email: {real_user.email}" }
-                    Input { label: "Set Email", field: email, r#type: "email" }
+                    Input {
+                        label: "Set Email",
+                        field: email,
+                        r#type: "email",
+                        disabled: real_user.is_oidc_user,
+                    }
                 }
                 CardActions {
                     SubmitButton { form: form_state.clone(), label: "Confirm New Info" }

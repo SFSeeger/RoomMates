@@ -18,6 +18,9 @@ entity = { path = "packages/entity" }
 form_hooks_derive = { path = "packages/form_hooks/form_hooks_derive" }
 form_hooks = { path = "packages/form_hooks" }
 
+#[workspace.lints.clippy]
+#pedantic = "warn"
+
 [profile.release]
 opt-level = "z"
 debug = false

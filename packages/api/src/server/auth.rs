@@ -1,3 +1,7 @@
+pub mod middleware;
+pub mod oidc;
+pub use middleware::AuthenticationState;
+
 use crate::routes::users::EMAIL_REGEX;
 use crate::routes::users::UserInfo;
 
@@ -9,6 +13,7 @@ use argon2::{
 use base64::Engine;
 use dioxus::prelude::*;
 use entity::prelude::*;
+
 use regex::Regex;
 use sea_orm::sea_query::prelude::Local;
 use sea_orm::{
@@ -59,12 +64,13 @@ pub async fn verify_user(
 
     let user = user::Entity::find()
         .filter(user::Column::Email.eq(user_email))
+        .filter(user::Column::IsOidcUser.eq(false))
         .one(db)
         .await
         .or_unauthorized("Missing or incorrect Credentials")?
         .or_not_found("User not found")?;
 
-    let validated_password = verify_password(user_password, &user.password);
+    let validated_password = verify_password(user_password, user.password.as_ref().unwrap());
 
     if !validated_password {
         return Err(ServerFnError::ServerError {
@@ -92,10 +98,11 @@ pub async fn create_user(
     let hashed_password = hash_password(password)?;
 
     let user = entity::user::ActiveModel {
-        email: sea_orm::Set(email),
-        password: sea_orm::Set(hashed_password),
-        first_name: sea_orm::Set(first_name),
-        last_name: sea_orm::Set(last_name),
+        email: Set(email),
+        password: Set(Some(hashed_password)),
+        first_name: Set(first_name),
+        last_name: Set(last_name),
+        is_oidc_user: Set(false),
         ..Default::default()
     };
     let user = user
@@ -194,7 +201,7 @@ pub async fn find_user_by_session(
 }
 
 pub async fn find_user_by_email(
-    email: String,
+    email: &str,
     db: &DatabaseConnection,
 ) -> dioxus::Result<UserInfo, ServerFnError> {
     use crate::routes::users::UserInfo;
@@ -202,7 +209,7 @@ pub async fn find_user_by_email(
     use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 
     let user_option = User::find()
-        .filter(entity::user::Column::Email.eq(&email))
+        .filter(entity::user::Column::Email.eq(email))
         .one(db)
         .await
         .or_internal_server_error("Error loading user from database")?;

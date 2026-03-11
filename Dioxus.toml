@@ -31,11 +31,11 @@ script = []
 identifier = "io.github.sfseeger.roommates"
 publisher = "RoomMates"
 icon = [
-    "packages/frontend/assets/dist/app_icons/32x32.png",
-    "packages/frontend/assets/dist/app_icons/128x128.png",
-    "packages/frontend/assets/dist/app_icons/128x128@2x.png",
-    "packages/frontend/assets/dist/app_icons/icon.icns",
-    "packages/frontend/assets/dist/app_icons/icon.ico",
+    "assets/dist/app_icons/32x32.png",
+    "assets/dist/app_icons/128x128.png",
+    "assets/dist/app_icons/128x128@2x.png",
+    "assets/dist/app_icons/icon.icns",
+    "assets/dist/app_icons/icon.ico",
 ]
 
 [android.app]

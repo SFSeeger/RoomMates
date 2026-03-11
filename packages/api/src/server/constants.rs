@@ -1,0 +1,15 @@
+pub const OIDC_ENABLED_ENV_VAR: &str = "OIDC_ENABLED";
+pub const OIDC_PROVIDER_NAME_ENV_VAR: &str = "OIDC_PROVIDER_NAME";
+pub const OIDC_ISSUER_URL_ENV_VAR: &str = "OIDC_ISSUER_URL";
+pub const OIDC_CLIENT_ID_ENV_VAR: &str = "OIDC_CLIENT_ID";
+pub const OIDC_CLIENT_SECRET_ENV_VAR: &str = "OIDC_CLIENT_SECRET";
+pub const OIDC_SCOPES_ENV_VAR: &str = "OIDC_SCOPES";
+pub const OIDC_JWKS_REFRESH_INTERVAL_ENV_VAR: &str = "OIDC_JWKS_REFRESH_INTERVAL";
+pub const OIDC_AUDIENCE_ENV_VAR: &str = "OIDC_AUDIENCE";
+pub const SERVER_URL_ENV_VAR: &str = "SERVER_URL";
+pub const SIGNUP_ENABLED_ENV_VAR: &str = "SIGNUP_ENABLED";
+
+pub const OIDC_AUTHORIZATION_COOKIE_NAME: &str = "authorization";
+pub const OIDC_REFRESH_COOKIE_NAME: &str = "refresh_token";
+
+pub const SESSION_COOKIE_NAME: &str = "session";

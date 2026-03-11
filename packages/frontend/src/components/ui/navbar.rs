@@ -1,5 +1,5 @@
 use crate::Route;
-use crate::components::contexts::use_auth;
+use crate::components::contexts::{use_app_config, use_auth};
 use crate::components::ui::sidebar::SidebarState;
 use crate::components::ui::theme_controller::ThemeController;
 use api::routes::users::logout;
@@ -11,6 +11,7 @@ use dioxus_free_icons::icons::ld_icons::LdMenu;
 pub fn Navbar() -> Element {
     let mut sidebar_state = use_context::<SidebarState>();
     let mut auth_state = use_auth();
+    let app_config = use_app_config();
     let nav = navigator();
 
     rsx! {
@@ -62,10 +63,12 @@ pub fn Navbar() -> Element {
                         }
                     }
                 } else {
-                    Link {
-                        to: Route::SignupView {},
-                        class: "btn btn-secondary btn-sm mx-1",
-                        "Sign Up"
+                    if app_config.signup_enabled {
+                        Link {
+                            to: Route::SignupView {},
+                            class: "btn btn-secondary btn-sm mx-1",
+                            "Sign Up"
+                        }
                     }
                     Link {
                         to: Route::LoginPage {},

@@ -1,17 +1,17 @@
-use super::*;
-use crate::server::auth::find_user_by_session;
-use anyhow::anyhow;
+use super::{constants, database};
+use crate::server::auth::middleware::authentication_middleware;
+use crate::server::auth::oidc::{OidcConfig, create_oidc_config, jwks_refresh_loop};
+use crate::server::middleware::tracing_middleware;
+use crate::server::utils::{convert_env_to_bool, get_env_or, parse_env_string};
 use dioxus::core::Element;
-use dioxus::fullstack::Cookie;
-use dioxus::fullstack::axum::middleware::Next;
-use dioxus::fullstack::extract::Request;
-use dioxus::fullstack::headers::HeaderMapExt;
-use dioxus::fullstack::response::Response;
 use dioxus::prelude::*;
 use dioxus::server::axum;
 use dioxus::server::axum::Extension;
-use entity::prelude::Session;
-use sea_orm::{DatabaseConnection, EntityTrait};
+use sea_orm::DatabaseConnection;
+use time::Duration;
+use time::ext::NumericalDuration;
+use tower_cookies::CookieManagerLayer;
+use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
 
 pub async fn setup_api(app: fn() -> Element) -> Result<axum::Router, anyhow::Error> {
     let database: DatabaseConnection = database::establish_connection().await?;
@@ -22,20 +22,40 @@ pub async fn setup_api(app: fn() -> Element) -> Result<axum::Router, anyhow::Err
         .sync(&database)
         .await?;
 
-    let database_clone = database.clone();
+    let oidc_config = if get_env_or(constants::OIDC_ENABLED_ENV_VAR, false, convert_env_to_bool) {
+        let config = create_oidc_config().await?;
+        let duration: i64 = get_env_or(
+            constants::OIDC_JWKS_REFRESH_INTERVAL_ENV_VAR,
+            None,
+            parse_env_string,
+        )
+        .map_or(600, |v| v.parse().unwrap_or(600));
+        tokio::spawn(jwks_refresh_loop(
+            config.jwks_state.clone(),
+            Duration::seconds(duration),
+        ));
+        Some(config)
+    } else {
+        None
+    };
 
     let app_state = AppState {
-        database: database_clone,
+        database,
+        oidc_config,
     };
+
+    let session_store = MemoryStore::default();
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_secure(!cfg!(debug_assertions))
+        .with_expiry(Expiry::OnInactivity(60.seconds()));
+
     let router = axum::Router::new()
         .serve_dioxus_application(ServeConfig::default().enable_out_of_order_streaming(), app)
-        .layer(Extension(app_state))
         .layer(axum::middleware::from_fn(tracing_middleware))
-        .layer(axum::middleware::from_fn(
-            move |request: Request, next: Next| {
-                authentication_middleware(request, next, database.clone())
-            },
-        ));
+        .layer(axum::middleware::from_fn(authentication_middleware))
+        .layer(CookieManagerLayer::new())
+        .layer(session_layer)
+        .layer(Extension(app_state));
 
     Ok(router)
 }
@@ -43,96 +63,5 @@ pub async fn setup_api(app: fn() -> Element) -> Result<axum::Router, anyhow::Err
 #[derive(Clone)]
 pub struct AppState {
     pub database: DatabaseConnection,
-}
-
-async fn authentication_middleware(
-    mut request: Request,
-    next: Next,
-    database: DatabaseConnection,
-) -> Response {
-    let mut authentication_state = AuthenticationState {
-        user: None,
-        session_id: None,
-    };
-
-    if let Some(token) = request.headers().get("Authorization")
-        && let Ok(token) = token.to_str()
-        && let Some(token) = token.strip_prefix("Token ")
-        && let Ok(Some((user, session_id))) = find_user_by_session(token, &database).await
-    {
-        authentication_state.user = Some(user);
-        authentication_state.session_id = Some(session_id);
-    } else if let Some(cookies) = request.headers().typed_get::<Cookie>()
-        && let Some(token) = cookies.get("session")
-        && let Ok(Some((user, session_id))) = find_user_by_session(token, &database).await
-    {
-        authentication_state.user = Some(user);
-        authentication_state.session_id = Some(session_id);
-    }
-
-    request.extensions_mut().insert(authentication_state);
-
-    next.run(request).await
-}
-
-async fn tracing_middleware(request: Request, next: Next) -> Response {
-    let method = request.method().clone();
-    let path = request.uri().path().to_string();
-    let username = request.extensions().get::<AuthenticationState>().map_or(
-        "Anonymous".to_string(),
-        |state| {
-            state
-                .user
-                .as_ref()
-                .map(|user| user.email.clone())
-                .unwrap_or("Anonymous".to_string())
-        },
-    );
-
-    let response = next.run(request).await;
-
-    if !std::env::var("ACCESS_LOG").is_ok_and(|value| value.to_lowercase() == "true") {
-        return response;
-    }
-
-    let base_message = format!("{method} {path} {} - {username}", response.status());
-
-    if response.status().is_server_error() {
-        error!("{}", base_message);
-    } else if response.status().is_client_error() {
-        warn!("{}", base_message);
-    } else {
-        info!("{}", base_message);
-    }
-
-    response
-}
-
-#[derive(Clone, Debug)]
-pub struct AuthenticationState {
-    pub user: Option<entity::user::Model>,
-    session_id: Option<i32>,
-}
-
-impl AuthenticationState {
-    pub fn is_authenticated(&self) -> bool {
-        self.user.is_some()
-    }
-
-    pub fn is_anonymous(&self) -> bool {
-        self.user.is_none()
-    }
-
-    pub async fn logout(&mut self, database: &DatabaseConnection) -> Result<(), anyhow::Error> {
-        let Some(session_id) = self.session_id else {
-            return Err(anyhow!("Session ID is None"));
-        };
-        let delete_result = Session::delete_by_id(session_id).exec(database).await?;
-        if delete_result.rows_affected == 0 {
-            return Err(anyhow!("Session not found"));
-        }
-        self.session_id = None;
-        self.user = None;
-        Ok(())
-    }
+    pub oidc_config: Option<OidcConfig>,
 }

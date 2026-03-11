@@ -1,7 +1,6 @@
 use crate::dioxus_fullstack::NoContent;
 #[cfg(feature = "server")]
 use crate::server;
-use dioxus::fullstack::{SetCookie, SetHeader};
 use dioxus::prelude::*;
 
 #[cfg(feature = "server")]
@@ -14,6 +13,7 @@ pub struct UserInfo {
     pub email: String,
     pub first_name: String,
     pub last_name: String,
+    pub is_oidc_user: bool,
 }
 
 impl UserInfo {
@@ -23,6 +23,7 @@ impl UserInfo {
             email: user.email,
             first_name: user.first_name,
             last_name: user.last_name,
+            is_oidc_user: user.is_oidc_user,
         }
     }
 }
@@ -42,7 +43,8 @@ pub async fn retrieve_user(user_id: i32) -> dioxus::Result<UserInfo, ServerFnErr
 
 pub const EMAIL_REGEX: &str = r"^[\w+.-]*\w@[\w.-]+\.\w+$";
 
-#[post("/api/users/signup", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+#[post("/api/users/signup", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>
+)]
 pub async fn sign_up(
     email: String,
     password: String,
@@ -74,10 +76,12 @@ pub async fn sign_up(
     }
 }
 
-#[post("/api/users/login", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
-pub async fn login(email: String, password: String) -> Result<SetHeader<SetCookie>, ServerFnError> {
+#[post("/api/users/login", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>, cookies: Extension<tower_cookies::Cookies> )]
+pub async fn login(email: String, password: String) -> Result<UserInfo, ServerFnError> {
     use crate::server::auth::{create_session, verify_user};
-    use time::format_description::well_known::Rfc2822;
+    use crate::server::constants;
+    use tower_cookies::Cookie;
+    use tower_cookies::cookie::SameSite;
 
     if auth.is_authenticated() {
         return Err(ServerFnError::ServerError {
@@ -97,23 +101,27 @@ pub async fn login(email: String, password: String) -> Result<SetHeader<SetCooki
         .await
         .or_internal_server_error("Error creating session")?;
 
-    Ok(SetHeader::new(format!(
-        "session={}; HttpOnly; Expires={}; Path=/",
-        session_key,
-        expires_at
-            .format(&Rfc2822)
-            .or_internal_server_error("Failed to convert time")?
-    ))
-    .or_internal_server_error("Error setting session cookie")?)
+    cookies.add(
+        Cookie::build((constants::SESSION_COOKIE_NAME, session_key))
+            .http_only(true)
+            .same_site(SameSite::Strict)
+            .secure(!cfg!(debug_assertions))
+            .path("/")
+            .expires(expires_at)
+            .build(),
+    );
+    Ok(UserInfo::from_user_model(verified_user))
 }
 
-#[post("/api/logout", ext: Extension<server::AppState>, mut auth: Extension<server::AuthenticationState>)]
+#[post("/api/logout", ext: Extension<server::AppState>, mut auth: Extension<server::AuthenticationState>
+)]
 pub async fn logout() -> Result<NoContent, ServerFnError> {
     auth.logout(&ext.database).await?;
     Ok(NoContent)
 }
 
-#[delete("/api/users/{user_id}", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+#[delete("/api/users/{user_id}", ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>
+)]
 pub async fn delete_user(user_id: i32) -> Result<NoContent, ServerFnError> {
     use entity::user::Entity as User;
     use sea_orm::EntityTrait;
@@ -136,6 +144,7 @@ pub async fn delete_user(user_id: i32) -> Result<NoContent, ServerFnError> {
     Ok(NoContent)
 }
 
+#[allow(clippy::unused_async)]
 #[get("/api/me", auth: Extension<server::AuthenticationState>)]
 pub async fn get_me() -> Result<UserInfo, ServerFnError> {
     let auth_user = auth.user.clone().or_unauthorized("Not authenticated")?;
@@ -164,7 +173,9 @@ pub async fn change_user_info(
 
     user_active.first_name = sea_orm::Set(first_name);
     user_active.last_name = sea_orm::Set(last_name);
-    user_active.email = sea_orm::Set(email);
+    if !user.is_oidc_user {
+        user_active.email = sea_orm::Set(email);
+    }
 
     let res = User::update(user_active)
         .exec(&ext.database)
@@ -174,7 +185,7 @@ pub async fn change_user_info(
     Ok(UserInfo::from_user_model(res))
 }
 
-#[put("/api/users/password",  ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState>)]
+#[put("/api/users/password",  ext: Extension<server::AppState>, auth: Extension<server::AuthenticationState> )]
 pub async fn change_password(password: String) -> dioxus::Result<NoContent, ServerFnError> {
     use crate::server::auth::hash_password;
     use entity::user::Entity as User;
@@ -183,10 +194,12 @@ pub async fn change_password(password: String) -> dioxus::Result<NoContent, Serv
 
     let user = auth.user.as_ref().or_unauthorized("Not authenticated")?;
 
+    (!user.is_oidc_user).or_bad_request("OIDC Users cannot update their password")?;
+
     let hashed_pass = hash_password(password)?;
 
     let mut user_active: entity::user::ActiveModel = user.clone().into_active_model();
-    user_active.password = sea_orm::Set(hashed_pass);
+    user_active.password = sea_orm::Set(Some(hashed_pass));
 
     User::update(user_active)
         .exec(&ext.database)

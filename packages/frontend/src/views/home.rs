@@ -37,9 +37,9 @@ fn Dashboard() -> Element {
         is_loading_events.set(true);
     };
 
-    // Sadly Loader.loading() is not reactive, so we have to keep a seperate loading state
+    // Sadly Loader.loading() is not reactive, so we have to keep a separate loading state
     use_effect(move || {
-        // events.read() is required to subscribe to state chamges. When events changes, it has finished loading new data
+        // events.read() is required to subscribe to state changes. When events changes, it has finished loading new data
         events.read();
         is_loading_events.set(false);
     });

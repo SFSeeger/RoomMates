@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::components::contexts::AuthState;
+use crate::components::contexts::{AuthState, use_app_config};
 use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
 use crate::components::ui::form::input::Input;
 use crate::components::ui::form::submit_button::SubmitButton;
@@ -24,7 +24,9 @@ struct SignupFormData {
 
 #[component]
 pub fn SignupView() -> Element {
-    let nav = navigator();
+    let app_config = use_app_config();
+    let nav = use_navigator();
+
     let mut form_errors = use_signal(Vec::<String>::new);
     let mut sign_up_action = use_action(move |form_data: SignupFormData| async move {
         sign_up(
@@ -40,8 +42,9 @@ pub fn SignupView() -> Element {
 
     // If already logged in, redirect to home
     if auth_state.user.read().is_some() {
-        let nav = navigator();
         nav.push(Route::Home {});
+    } else if !app_config.signup_enabled {
+        nav.replace(Route::LoginPage {});
     }
 
     let mut form_state = use_form();

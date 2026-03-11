@@ -7,12 +7,12 @@ edition = "2024"
 dioxus = { workspace = true, features = ["fullstack"] }
 sea-orm = { workspace = true, features = [
     "sqlx-mysql",
-    "sqlx-sqlite", # I want people to be able to choose between mysql or sqlite.
+    "sqlx-sqlite",              # I want people to be able to choose between mysql or sqlite.
     "runtime-tokio-native-tls",
     "macros",
     "schema-sync",
     "entity-registry",
-    "with-time"
+    "with-time",
 ], optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -25,7 +25,22 @@ tokio = { version = "1", features = ["full"], optional = true }
 base64 = { version = "0.22.1", optional = true }
 time = { workspace = true }
 regex = { workspace = true }
+tower-cookies = { version = "0.11.0", optional = true }
+openidconnect = { version = "4.0.1", optional = true }
+tower-sessions = { version = "0.15.0", optional = true }
+jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"], optional = true }
 
 
 [features]
-server = ["dioxus/server", "dep:sea-orm", "dep:tokio", "dep:argon2", "dep:blake3", "dep:base64"]
+server = [
+    "dioxus/server",
+    "dep:sea-orm",
+    "dep:tokio",
+    "dep:argon2",
+    "dep:blake3",
+    "dep:base64",
+    "dep:openidconnect",
+    "dep:tower-cookies",
+    "dep:tower-sessions",
+    "dep:jsonwebtoken",
+]

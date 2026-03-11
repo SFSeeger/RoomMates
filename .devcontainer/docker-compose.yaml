@@ -1,4 +1,22 @@
 services:
+  traefik:
+    image: traefik:latest
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    labels:
+      - traefik.http.routers.traefik.rule=Host(`traefik.roommates.local`)
+      - traefik.http.services.traefik.loadbalancer.server.port=8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - default
+
+
   db:
     image: mariadb
     environment:
@@ -8,6 +26,10 @@ services:
       MYSQL_PASSWORD: roommates_password
     volumes:
       - db_data:/var/lib/mysql
+      - ./db-init:/docker-entrypoint-initdb.d
+    networks:
+      - default
+
 
   phpmyadmin:
     image: phpmyadmin
@@ -18,15 +40,43 @@ services:
       PMA_HOST: db
       PMA_USER: root
       PMA_PASSWORD: password
+    labels:
+      - traefik.http.routers.phpmyadmin.rule=Host(`db.roommates.local`)
+      - traefik.http.services.phpmyadmin.loadbalancer.server.port=80
     depends_on:
       - db
+    networks:
+      - default
+
+
+  keycloak:
+    image: quay.io/keycloak/keycloak
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: password
+      KC_DB: mariadb
+      KC_DB_URL_HOST: db
+      KC_DB_URL_PORT: 3306
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak_password
+    command: start-dev --http-enabled=true --http-port=80 --import-realm
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
+    labels:
+      - traefik.http.routers.keycloak.rule=Host(`auth.roommates.local`)
+      - traefik.http.services.keycloak.loadbalancer.server.port=80
+    depends_on:
+      - db
+    networks:
+      default:
+        aliases:
+          - auth.roommates.local
 
   devcontainer:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
     volumes:
       - ..:/workspace
       - ~/.gitconfig:/vscode/.gitconfig
@@ -34,7 +84,15 @@ services:
     environment:
       - TZ=Europe/Berlin
     command: sleep infinity
+    labels:
+      - traefik.http.routers.devcontainer.rule=Host(`roommates.local`)
+      - traefik.http.services.devcontainer.loadbalancer.server.port=8080
+    networks:
+      - default
 
+
+networks:
+  default:
 
 volumes:
   db_data:
