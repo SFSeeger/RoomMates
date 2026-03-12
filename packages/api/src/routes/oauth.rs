@@ -10,15 +10,17 @@ const OIDC_SESSION_KEY: &str = "oidc_metadata";
 #[allow(clippy::unused_async)]
 #[get("/api/oidc/login", state: Extension<server::AppState>,  session: Extension<tower_sessions::Session> )]
 pub async fn oauth_login() -> Result<Redirect, ServerFnError> {
-    let oauth_client = state
-        .oidc_client
+    use crate::server::auth::oidc;
+
+    let oidc_config = state
+        .oidc_config
         .as_ref()
         .or_internal_server_error("OAuth Client Missing or disabled!")?;
-    let metadata = server::auth::create_oidc_challenge(oauth_client)
+    let metadata = oidc::create_oidc_challenge(&oidc_config.client)
         .or_internal_server_error("Error creating pkce challenge")?;
 
     let redirect_url = metadata.url.as_str().to_string();
-    let oidc_session: server::auth::OidcSession = metadata.into();
+    let oidc_session: oidc::OidcSession = metadata.into();
 
     session
         .insert(OIDC_SESSION_KEY, oidc_session)
@@ -40,19 +42,21 @@ pub async fn oauth_redirect(
 ) -> Result<Redirect, ServerFnError> {
     use std::time::Duration;
 
+    use crate::server::auth::oidc;
     use entity::prelude::*;
     use openidconnect::{AccessTokenHash, OAuth2TokenResponse, TokenResponse};
     use sea_orm::prelude::*;
     use tower_cookies::{Cookie, cookie::SameSite};
 
     let oidc_client = ext
-        .oidc_client
+        .oidc_config
         .as_ref()
-        .or_internal_server_error("OAuth Client Missing or disabled!")?;
+        .map(|c| &c.client)
+        .or_internal_server_error("Oidc not initialized / enabled")?;
 
     debug!("Trying oauth login with state {state:?} and code {code:?}");
 
-    let oidc_session: server::auth::OidcSession = session
+    let oidc_session: oidc::OidcSession = session
         .get(OIDC_SESSION_KEY)
         .await
         .or_internal_server_error("Failed to retrieve session")?
@@ -61,7 +65,7 @@ pub async fn oauth_redirect(
     (*oidc_session.csrf_token.secret() == state.or_bad_request("Missing State parameter")?)
         .or_bad_request("CSRF Mismatch")?;
 
-    let token_response = server::auth::verify_oidc_challenge(
+    let token_response = oidc::verify_oidc_challenge(
         oidc_client,
         code.or_bad_request("Missing Authorization code")?,
         oidc_session.pkce_code_verifier,
@@ -111,7 +115,6 @@ pub async fn oauth_redirect(
         .get(None)
         .map(|n| n.as_str())
         .or_bad_request("Missing given name")?;
-
     let last_name: &str = claims
         .family_name()
         .or_bad_request("Missing family name")?
@@ -129,6 +132,7 @@ pub async fn oauth_redirect(
             email: sea_orm::Set(email.to_string()),
             first_name: sea_orm::Set(first_name.to_string()),
             last_name: sea_orm::Set(last_name.to_string()),
+            password: sea_orm::Set(None),
             is_oidc_user: sea_orm::Set(true),
             ..Default::default()
         };

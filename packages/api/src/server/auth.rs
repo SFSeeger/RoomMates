@@ -1,6 +1,7 @@
+pub mod oidc;
+
 use crate::routes::users::EMAIL_REGEX;
 use crate::routes::users::UserInfo;
-use std::env;
 
 use argon2::password_hash::rand_core::RngCore;
 use argon2::{
@@ -11,25 +12,12 @@ use base64::Engine;
 use dioxus::prelude::*;
 use entity::prelude::*;
 
-use openidconnect::core::{
-    CoreAuthDisplay, CoreAuthPrompt, CoreAuthenticationFlow, CoreClient, CoreErrorResponseType,
-    CoreGenderClaim, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm, CoreProviderMetadata,
-    CoreRevocableToken, CoreRevocationErrorResponse, CoreTokenIntrospectionResponse,
-    CoreTokenResponse,
-};
-use openidconnect::url::Url;
-use openidconnect::{
-    AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken, EmptyAdditionalClaims,
-    EndpointMaybeSet, EndpointNotSet, EndpointSet, IssuerUrl, Nonce, PkceCodeChallenge,
-    PkceCodeVerifier, RedirectUrl, Scope, StandardErrorResponse, reqwest,
-};
 use regex::Regex;
 use sea_orm::sea_query::prelude::Local;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, ModelTrait, QueryFilter, Set,
     TryIntoModel,
 };
-use serde::{Deserialize, Serialize};
 use time::{Duration, OffsetDateTime};
 
 /// Hashes a password using Argon2
@@ -108,10 +96,10 @@ pub async fn create_user(
     let hashed_password = hash_password(password)?;
 
     let user = entity::user::ActiveModel {
-        email: sea_orm::Set(email),
-        password: sea_orm::Set(Some(hashed_password)),
-        first_name: sea_orm::Set(first_name),
-        last_name: sea_orm::Set(last_name),
+        email: Set(email),
+        password: Set(Some(hashed_password)),
+        first_name: Set(first_name),
+        last_name: Set(last_name),
         ..Default::default()
     };
     let user = user
@@ -121,118 +109,6 @@ pub async fn create_user(
     Ok(user
         .try_into_model()
         .or_internal_server_error("Failed to convert active model to model")?)
-}
-
-pub(crate) fn build_http_client() -> Result<reqwest::Client, anyhow::Error> {
-    let http_client = reqwest::ClientBuilder::new()
-        .redirect(reqwest::redirect::Policy::none())
-        .build()?;
-    Ok(http_client)
-}
-
-pub(crate) type OidcClient = Client<
-    EmptyAdditionalClaims,
-    CoreAuthDisplay,
-    CoreGenderClaim,
-    CoreJweContentEncryptionAlgorithm,
-    CoreJsonWebKey,
-    CoreAuthPrompt,
-    StandardErrorResponse<CoreErrorResponseType>,
-    CoreTokenResponse,
-    CoreTokenIntrospectionResponse,
-    CoreRevocableToken,
-    CoreRevocationErrorResponse,
-    EndpointSet,
-    EndpointNotSet,
-    EndpointNotSet,
-    EndpointNotSet,
-    EndpointMaybeSet,
-    EndpointMaybeSet,
->;
-
-pub(crate) async fn create_oidc_client() -> Result<OidcClient, anyhow::Error> {
-    let http_client = build_http_client()?;
-
-    let provider_metadata = CoreProviderMetadata::discover_async(
-        IssuerUrl::new(env::var("OIDC_ISSUER_URL")?)?,
-        &http_client,
-    )
-    .await?;
-
-    let redirect_url = format!("{}/api/oidc/redirect", env::var("SERVER_URL")?);
-
-    let client = CoreClient::from_provider_metadata(
-        provider_metadata,
-        ClientId::new(env::var("OIDC_CLIENT_ID")?),
-        Some(ClientSecret::new(env::var("OIDC_CLIENT_SECRET")?)),
-    )
-    .set_redirect_uri(RedirectUrl::new(redirect_url)?);
-    Ok(client)
-}
-
-pub struct OidcMetadata {
-    pub url: Url,
-    pub csrf_token: CsrfToken,
-    pub pkce_code_verifier: PkceCodeVerifier,
-    pub nonce: Nonce,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct OidcSession {
-    pub(crate) pkce_code_verifier: PkceCodeVerifier,
-    pub(crate) csrf_token: CsrfToken,
-    pub(crate) nonce: Nonce,
-}
-
-impl From<OidcMetadata> for OidcSession {
-    fn from(value: OidcMetadata) -> Self {
-        Self {
-            pkce_code_verifier: value.pkce_code_verifier,
-            nonce: value.nonce,
-            csrf_token: value.csrf_token,
-        }
-    }
-}
-
-pub(crate) fn create_oidc_challenge(client: &OidcClient) -> Result<OidcMetadata, anyhow::Error> {
-    let (pkce_challenge, pkce_code_verifier) = PkceCodeChallenge::new_random_sha256();
-    let mut authorization_request = client.authorize_url(
-        CoreAuthenticationFlow::AuthorizationCode,
-        CsrfToken::new_random,
-        Nonce::new_random,
-    );
-
-    let env_scopes = env::var("OAUTH_SCOPES").unwrap_or("openid email profile".to_string());
-    let scopes = env_scopes.split_whitespace();
-
-    for scope in scopes {
-        authorization_request = authorization_request.add_scope(Scope::new(scope.to_string()));
-    }
-    authorization_request = authorization_request.set_pkce_challenge(pkce_challenge);
-
-    let (auth_url, csrf_token, nonce) = authorization_request.url();
-
-    let metadata = OidcMetadata {
-        url: auth_url,
-        pkce_code_verifier,
-        nonce,
-        csrf_token,
-    };
-    Ok(metadata)
-}
-
-pub async fn verify_oidc_challenge(
-    client: &OidcClient,
-    authorization_code: String,
-    pkce_code_verifier: PkceCodeVerifier,
-) -> Result<CoreTokenResponse, anyhow::Error> {
-    let http_client = build_http_client()?;
-    let token = client
-        .exchange_code(AuthorizationCode::new(authorization_code))?
-        .set_pkce_verifier(pkce_code_verifier)
-        .request_async(&http_client)
-        .await?;
-    Ok(token)
 }
 
 /// Hashes a session key using blake3

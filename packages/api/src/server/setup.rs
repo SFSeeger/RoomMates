@@ -1,6 +1,7 @@
 use super::*;
-use crate::server::auth::{
-    OidcClient, build_http_client, create_oidc_client, find_user_by_session,
+use crate::server::auth::find_user_by_session;
+use crate::server::auth::oidc::{
+    OidcConfig, create_oidc_config, jwks_refresh_loop, validate_authorization_token,
 };
 use anyhow::anyhow;
 use dioxus::core::Element;
@@ -13,7 +14,6 @@ use dioxus::prelude::*;
 use dioxus::server::axum;
 use dioxus::server::axum::Extension;
 use entity::prelude::Session;
-use openidconnect::AccessToken;
 use sea_orm::{DatabaseConnection, EntityTrait};
 use std::env;
 use time::Duration;
@@ -30,15 +30,17 @@ pub async fn setup_api(app: fn() -> Element) -> Result<axum::Router, anyhow::Err
         .await?;
 
     let database_clone = database.clone();
-    let oidc_client = if env::var("OAUTH_ENABLED")?.trim().to_lowercase() == "true" {
-        Some(create_oidc_client().await?)
+    let oidc_config = if env::var("OAUTH_ENABLED")?.trim().to_lowercase() == "true" {
+        let config = create_oidc_config().await?;
+        tokio::spawn(jwks_refresh_loop(config.jwks_state.clone()));
+        Some(config)
     } else {
         None
     };
 
     let app_state = AppState {
         database: database_clone,
-        oidc_client,
+        oidc_config,
     };
 
     let session_store = MemoryStore::default();
@@ -48,7 +50,6 @@ pub async fn setup_api(app: fn() -> Element) -> Result<axum::Router, anyhow::Err
 
     let router = axum::Router::new()
         .serve_dioxus_application(ServeConfig::default().enable_out_of_order_streaming(), app)
-        .layer(Extension(app_state))
         .layer(CookieManagerLayer::new())
         .layer(session_layer)
         .layer(axum::middleware::from_fn(tracing_middleware))
@@ -56,7 +57,8 @@ pub async fn setup_api(app: fn() -> Element) -> Result<axum::Router, anyhow::Err
             move |request: Request, next: Next| {
                 authentication_middleware(request, next, database.clone())
             },
-        ));
+        ))
+        .layer(Extension(app_state));
 
     Ok(router)
 }
@@ -64,7 +66,7 @@ pub async fn setup_api(app: fn() -> Element) -> Result<axum::Router, anyhow::Err
 #[derive(Clone)]
 pub struct AppState {
     pub database: DatabaseConnection,
-    pub oidc_client: Option<OidcClient>,
+    pub oidc_config: Option<OidcConfig>,
 }
 
 async fn authentication_middleware(
@@ -95,23 +97,17 @@ async fn authentication_middleware(
         && let Some(token) = token.strip_prefix("Token ")
     {
         let app_state = request.extensions().get::<AppState>().unwrap();
-        let oidc_client = app_state.oidc_client.as_ref().expect("OIDC is disabled!");
+        let oidc_config = app_state.oidc_config.as_ref().expect("OIDC is disabled!");
 
-        let user_info_request = oidc_client
-            .user_info(AccessToken::new(token.to_string()), None)
+        let claims = validate_authorization_token(&oidc_config.jwks_state, token)
+            .await
             .unwrap();
-
-        let http_client = build_http_client().unwrap();
-        let claims = user_info_request.request_async(&http_client).await.unwrap();
-
-        let email: &str = claims.email().map(|email| email.as_str()).unwrap();
-        let user = entity::user::Entity::find_by_email(email)
+        let user = entity::user::Entity::find_by_email(claims.email)
             .one(&database)
             .await
-            .unwrap()
-            .unwrap_or_else(|| panic!("User with email {email} not found in database"));
+            .unwrap();
 
-        authentication_state.user = Some(user);
+        authentication_state.user = user
     }
 
     request.extensions_mut().insert(authentication_state);
