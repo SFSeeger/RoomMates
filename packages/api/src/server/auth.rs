@@ -1,4 +1,6 @@
+pub mod middleware;
 pub mod oidc;
+pub use middleware::AuthenticationState;
 
 use crate::routes::users::EMAIL_REGEX;
 use crate::routes::users::UserInfo;

@@ -16,8 +16,7 @@ pub async fn oauth_login() -> Result<Redirect, ServerFnError> {
         .oidc_config
         .as_ref()
         .or_internal_server_error("OAuth Client Missing or disabled!")?;
-    let metadata = oidc::create_oidc_challenge(&oidc_config.client)
-        .or_internal_server_error("Error creating pkce challenge")?;
+    let metadata = oidc::create_oidc_challenge(&oidc_config.client);
 
     let redirect_url = metadata.url.as_str().to_string();
     let oidc_session: oidc::OidcSession = metadata.into();
@@ -36,10 +35,7 @@ pub async fn oauth_login() -> Result<Redirect, ServerFnError> {
     cookies: Extension<tower_cookies::Cookies>,
     session: Extension<tower_sessions::Session>
 )]
-pub async fn oauth_redirect(
-    state: Option<String>,
-    code: Option<String>,
-) -> Result<Redirect, ServerFnError> {
+pub async fn oauth_redirect(state: String, code: String) -> Result<Redirect, ServerFnError> {
     use std::time::Duration;
 
     use crate::server::auth::oidc;
@@ -54,43 +50,37 @@ pub async fn oauth_redirect(
         .map(|c| &c.client)
         .or_internal_server_error("Oidc not initialized / enabled")?;
 
-    debug!("Trying oauth login with state {state:?} and code {code:?}");
-
     let oidc_session: oidc::OidcSession = session
         .get(OIDC_SESSION_KEY)
         .await
         .or_internal_server_error("Failed to retrieve session")?
         .or_bad_request("Failed to get session with required metadata")?;
 
-    (*oidc_session.csrf_token.secret() == state.or_bad_request("Missing State parameter")?)
-        .or_bad_request("CSRF Mismatch")?;
+    (*oidc_session.csrf_token.secret() == state).or_bad_request("CSRF Mismatch")?;
 
-    let token_response = oidc::verify_oidc_challenge(
-        oidc_client,
-        code.or_bad_request("Missing Authorization code")?,
-        oidc_session.pkce_code_verifier,
-    )
-    .await
-    .inspect_err(|e| error!("{e}"))
-    .or_forbidden("Error receiving token")?;
+    let token_response =
+        oidc::verify_oidc_challenge(oidc_client, code, oidc_session.pkce_code_verifier)
+            .await
+            .inspect_err(|e| error!("{e}"))
+            .or_forbidden("Error receiving token")?;
 
     let id_token = token_response
         .id_token()
-        .or_internal_server_error("Server did not return ID Token")?;
+        .or_bad_request("Server did not return ID Token")?;
     let id_token_verifier = oidc_client.id_token_verifier();
     let claims = id_token
         .claims(&id_token_verifier, &oidc_session.nonce)
-        .or_unauthorized("Unable to validate claims")?;
+        .or_bad_request("Unable to validate claims")?;
 
     if let Some(expected_access_token_hash) = claims.access_token_hash() {
         let actual_access_token_hash = AccessTokenHash::from_token(
             token_response.access_token(),
             id_token
                 .signing_alg()
-                .or_internal_server_error("Error extracting sining algorithm")?,
+                .or_bad_request("Error extracting sining algorithm")?,
             id_token
                 .signing_key(&id_token_verifier)
-                .or_internal_server_error("Error extracting signing key")?,
+                .or_bad_request("Error extracting signing key")?,
         )
         .or_internal_server_error("Error constructing expected access token")?;
         (actual_access_token_hash == *expected_access_token_hash)
@@ -150,7 +140,7 @@ pub async fn oauth_redirect(
     cookies.add(
         Cookie::build((
             "authorization",
-            format!("Token {}", token_response.access_token().secret()),
+            format!("Bearer {}", token_response.access_token().secret()),
         ))
         .secure(!cfg!(debug_assertions))
         .http_only(true)
@@ -161,11 +151,14 @@ pub async fn oauth_redirect(
     );
     if let Some(refresh_token) = token_response.refresh_token() {
         cookies.add(
-            Cookie::build(("refresh_token", format!("Token {}", refresh_token.secret())))
-                .secure(!cfg!(debug_assertions))
-                .http_only(true)
-                .path("/")
-                .build(),
+            Cookie::build((
+                "refresh_token",
+                format!("Bearer {}", refresh_token.secret()),
+            ))
+            .secure(!cfg!(debug_assertions))
+            .http_only(true)
+            .path("/")
+            .build(),
         );
     }
 

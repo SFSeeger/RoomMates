@@ -3,6 +3,7 @@ use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
 use crate::components::ui::form::input::Input;
 use crate::components::ui::form::submit_button::SubmitButton;
 use crate::{ICON, Route};
+use api::routes::app_config::get_app_config;
 use api::routes::users::{EMAIL_REGEX, get_me, login};
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
@@ -21,6 +22,8 @@ struct LoginFormData {
 
 #[component]
 pub fn LoginPage() -> Element {
+    let app_config = use_loader(get_app_config)?;
+
     let mut login_action = use_action(login);
     let mut get_me = use_action(get_me);
     let mut form_errors = use_signal(Vec::<String>::new);
@@ -71,9 +74,9 @@ pub fn LoginPage() -> Element {
                 debug!("Failed to log in with error {:?}", error);
             }
             None => {
-                debug!("No value present!")
+                debug!("No value present!");
             }
-        };
+        }
     });
 
     rsx! {
@@ -124,12 +127,25 @@ pub fn LoginPage() -> Element {
                                     label: "Login",
                                     submitting_label: "Logging in...",
                                 }
-                                p {
-                                    "Dont have an account? "
-                                    Link {
-                                        to: Route::SignupView {},
-                                        class: "link",
-                                        "Sign Up"
+                                if app_config().oidc_enabled {
+                                    a {
+                                        href: "/api/oidc/login",
+                                        class: "btn btn-primary grow w-full",
+                                        if let Some(name) = app_config().oidc_provider_name {
+                                            "Login with {name}"
+                                        } else {
+                                            "Login using SSO"
+                                        }
+                                    }
+                                }
+                                if !app_config().signup_enabled {
+                                    p {
+                                        "Dont have an account? "
+                                        Link {
+                                            to: Route::SignupView {},
+                                            class: "link",
+                                            "Sign Up"
+                                        }
                                     }
                                 }
                             }

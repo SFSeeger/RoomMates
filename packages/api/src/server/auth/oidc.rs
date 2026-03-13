@@ -1,4 +1,6 @@
+use crate::server::AppState;
 use dioxus::prelude::*;
+use entity::prelude::User;
 use jsonwebtoken::jwk::JwkSet;
 use jsonwebtoken::{DecodingKey, Validation};
 use openidconnect::core::{
@@ -16,9 +18,7 @@ use openidconnect::{
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::RwLock;
-use tokio::time::sleep;
 
 pub type OidcClient = Client<
     EmptyAdditionalClaims,
@@ -53,6 +53,7 @@ pub struct OidcConfig {
 }
 
 impl OidcConfig {
+    #[must_use]
     pub fn new(client: OidcClient, jwks: JwkSet, jwks_uri: JsonWebKeySetUrl) -> Self {
         Self {
             client,
@@ -89,13 +90,15 @@ pub(crate) async fn fetch_jwks(jwks_uri: &JsonWebKeySetUrl) -> Result<JwkSet, an
     Ok(jwks)
 }
 
-pub(crate) async fn jwks_refresh_loop(state: JwksState) {
+pub(crate) async fn jwks_refresh_loop(state: JwksState, refresh_duration: time::Duration) {
+    let mut interval =
+        tokio::time::interval(refresh_duration.try_into().expect("invalid duration"));
     loop {
-        sleep(Duration::from_secs(900)).await;
+        interval.tick().await;
 
         match fetch_jwks(&state.jwks_uri).await {
             Ok(new_jwks) => {
-                info!("JWKS updated with {}", new_jwks.keys.len());
+                info!("JWKS updated with {} keys", new_jwks.keys.len());
                 let mut jwks = state.jwks.write().await;
                 *jwks = new_jwks;
             }
@@ -153,7 +156,7 @@ impl From<OidcMetadata> for OidcSession {
     }
 }
 
-pub(crate) fn create_oidc_challenge(client: &OidcClient) -> Result<OidcMetadata, anyhow::Error> {
+pub(crate) fn create_oidc_challenge(client: &OidcClient) -> OidcMetadata {
     let (pkce_challenge, pkce_code_verifier) = PkceCodeChallenge::new_random_sha256();
     let mut authorization_request = client.authorize_url(
         CoreAuthenticationFlow::AuthorizationCode,
@@ -171,16 +174,30 @@ pub(crate) fn create_oidc_challenge(client: &OidcClient) -> Result<OidcMetadata,
 
     let (auth_url, csrf_token, nonce) = authorization_request.url();
 
-    let metadata = OidcMetadata {
+    OidcMetadata {
         url: auth_url,
         pkce_code_verifier,
         nonce,
         csrf_token,
-    };
-    Ok(metadata)
+    }
 }
 
-pub async fn verify_oidc_challenge(
+/// Verifies a pkce challenge and returns the `IdToken`
+///
+/// # Arguments
+///
+/// * `client`:
+/// * `authorization_code`:
+/// * `pkce_code_verifier`:
+///
+/// returns: Result<`CoreTokenResponse`, Error>
+///
+/// # Errors
+///
+/// * `ConfigurationError`: `exchange_code` failed to to uninitialized `OidcClient`
+/// * `RequestTokenError`: Fetching the token from the AuthProvider failed
+/// * Errors retuned by [`build_http_client`]
+pub(crate) async fn verify_oidc_challenge(
     client: &OidcClient,
     authorization_code: String,
     pkce_code_verifier: PkceCodeVerifier,
@@ -227,4 +244,17 @@ pub(crate) async fn validate_authorization_token(
     .unwrap_or_else(|err| panic!("Token decode error: {err}"));
 
     Ok(token_data.claims)
+}
+
+pub(crate) async fn get_user_from_authorization_token(
+    token: &str,
+    app_state: &AppState,
+) -> Result<Option<entity::user::Model>, anyhow::Error> {
+    let oidc_config = app_state.oidc_config.as_ref().expect("OIDC is disabled!");
+
+    let claims = validate_authorization_token(&oidc_config.jwks_state, token).await?;
+    let user = User::find_by_email(claims.email)
+        .one(&app_state.database)
+        .await?;
+    Ok(user)
 }

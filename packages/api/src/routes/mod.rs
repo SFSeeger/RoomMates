@@ -1,3 +1,4 @@
+pub mod app_config;
 pub mod events;
 pub mod groups;
 pub mod oauth;

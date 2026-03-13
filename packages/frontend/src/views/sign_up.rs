@@ -5,6 +5,7 @@ use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
 use crate::components::ui::form::input::Input;
 use crate::components::ui::form::submit_button::SubmitButton;
 use crate::{ICON, Route};
+use api::routes::app_config::get_app_config;
 use api::routes::users::{EMAIL_REGEX, sign_up};
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
@@ -24,7 +25,10 @@ struct SignupFormData {
 
 #[component]
 pub fn SignupView() -> Element {
-    let nav = navigator();
+    let app_config = use_loader(get_app_config)?;
+
+    let nav = use_navigator();
+
     let mut form_errors = use_signal(Vec::<String>::new);
     let mut sign_up_action = use_action(move |form_data: SignupFormData| async move {
         sign_up(
@@ -40,8 +44,9 @@ pub fn SignupView() -> Element {
 
     // If already logged in, redirect to home
     if auth_state.user.read().is_some() {
-        let nav = navigator();
         nav.push(Route::Home {});
+    } else if !app_config().signup_enabled {
+        nav.replace(Route::LoginPage {});
     }
 
     let mut form_state = use_form();
