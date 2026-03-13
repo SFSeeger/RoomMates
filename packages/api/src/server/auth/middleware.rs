@@ -10,6 +10,7 @@ use dioxus::fullstack::response::Response;
 use dioxus::prelude::*;
 use entity::prelude::Session;
 use sea_orm::{DatabaseConnection, EntityTrait};
+use tower_cookies::Cookies;
 
 #[derive(Clone, Debug)]
 pub struct AuthenticationState {
@@ -55,21 +56,21 @@ pub async fn authentication_middleware(mut request: Request, next: Next) -> Resp
     let app_state = request.extensions().get::<AppState>().unwrap();
     let database = &app_state.database;
 
+    let cookies = request.extensions().get::<Cookies>().unwrap();
+
     if let Some(token) = request.headers().get("Authorization")
         && let Ok(token) = token.to_str()
         && let Some(token) = token.strip_prefix("Bearer ")
         && let Ok(user) = get_user_from_authorization_token(token, app_state).await
     {
         authentication_state.user = user;
-    } else if let Some(cookies) = request.headers().typed_get::<Cookie>()
-        && let Some(token) = cookies.get("session")
-        && let Ok(Some((user, session_id))) = find_user_by_session(token, database).await
+    } else if let Some(cookie) = cookies.get("session")
+        && let Ok(Some((user, session_id))) = find_user_by_session(cookie.value(), database).await
     {
         authentication_state.user = Some(user);
         authentication_state.session_id = Some(session_id);
-    } else if let Some(cookies) = request.headers().typed_get::<Cookie>()
-        && let Some(token) = cookies.get("authorization")
-        && let Some(token) = token.strip_prefix("Bearer ")
+    } else if let Some(cookie) = cookies.get("authorization")
+        && let Some(token) = cookie.value().strip_prefix("Bearer ")
         && let Ok(user) = get_user_from_authorization_token(token, app_state).await
     {
         authentication_state.user = user;

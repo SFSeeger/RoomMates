@@ -3,22 +3,17 @@ use dioxus::prelude::*;
 use entity::prelude::User;
 use jsonwebtoken::jwk::JwkSet;
 use jsonwebtoken::{DecodingKey, Validation};
-use openidconnect::core::{
-    CoreAuthDisplay, CoreAuthPrompt, CoreAuthenticationFlow, CoreClient, CoreErrorResponseType,
-    CoreGenderClaim, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm, CoreProviderMetadata,
-    CoreRevocableToken, CoreRevocationErrorResponse, CoreTokenIntrospectionResponse,
-    CoreTokenResponse,
-};
+use openidconnect::core::{CoreAuthDisplay, CoreAuthPrompt, CoreAuthenticationFlow, CoreClient, CoreErrorResponseType, CoreGenderClaim, CoreJsonWebKey, CoreJweContentEncryptionAlgorithm, CoreProviderMetadata, CoreRevocableToken, CoreRevocationErrorResponse, CoreTokenIntrospectionResponse, CoreTokenResponse};
 use openidconnect::url::Url;
-use openidconnect::{
-    AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken, EmptyAdditionalClaims,
-    EndpointMaybeSet, EndpointNotSet, EndpointSet, IssuerUrl, JsonWebKeySetUrl, Nonce,
-    PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, StandardErrorResponse, reqwest,
-};
+use openidconnect::{AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken, EmptyAdditionalClaims, EndpointMaybeSet, EndpointNotSet, EndpointSet, IssuerUrl, JsonWebKeySetUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, StandardErrorResponse, reqwest, RefreshToken, OAuth2TokenResponse};
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::sync::Arc;
+use std::time::Duration;
+use time::ext::NumericalDuration;
 use tokio::sync::RwLock;
+use tower_cookies::{Cookie, Cookies};
+use tower_cookies::cookie::SameSite;
 
 pub type OidcClient = Client<
     EmptyAdditionalClaims,
@@ -49,14 +44,21 @@ pub struct JwksState {
 #[derive(Clone)]
 pub struct OidcConfig {
     pub client: OidcClient,
+    pub metadata: CoreProviderMetadata,
     pub jwks_state: JwksState,
 }
 
 impl OidcConfig {
     #[must_use]
-    pub fn new(client: OidcClient, jwks: JwkSet, jwks_uri: JsonWebKeySetUrl) -> Self {
+    pub fn new(
+        client: OidcClient,
+        metadata: CoreProviderMetadata,
+        jwks: JwkSet,
+        jwks_uri: JsonWebKeySetUrl,
+    ) -> Self {
         Self {
             client,
+            metadata,
             jwks_state: JwksState {
                 jwks: Arc::new(RwLock::new(jwks)),
                 jwks_uri,
@@ -121,7 +123,7 @@ pub(crate) async fn create_oidc_config() -> Result<OidcConfig, anyhow::Error> {
 
     let redirect_url = format!("{}/api/oidc/redirect", env::var("SERVER_URL")?);
     let client = CoreClient::from_provider_metadata(
-        provider_metadata,
+        provider_metadata.clone(),
         ClientId::new(env::var("OIDC_CLIENT_ID")?),
         Some(ClientSecret::new(env::var("OIDC_CLIENT_SECRET")?)),
     )
@@ -129,7 +131,7 @@ pub(crate) async fn create_oidc_config() -> Result<OidcConfig, anyhow::Error> {
 
     let jwks = fetch_jwks(&jwks_uri).await?;
 
-    Ok(OidcConfig::new(client, jwks, jwks_uri))
+    Ok(OidcConfig::new(client, provider_metadata, jwks, jwks_uri))
 }
 
 pub struct OidcMetadata {
@@ -195,7 +197,7 @@ pub(crate) fn create_oidc_challenge(client: &OidcClient) -> OidcMetadata {
 /// # Errors
 ///
 /// * `ConfigurationError`: `exchange_code` failed to to uninitialized `OidcClient`
-/// * `RequestTokenError`: Fetching the token from the AuthProvider failed
+/// * `RequestTokenError`: Fetching the token from the `AuthProvider` failed
 /// * Errors retuned by [`build_http_client`]
 pub(crate) async fn verify_oidc_challenge(
     client: &OidcClient,
@@ -221,27 +223,19 @@ pub struct Claims {
 }
 
 pub(crate) async fn validate_authorization_token(
-    jwk_state: &JwksState,
+    oidc_config: &OidcConfig,
     token: &str,
 ) -> Result<Claims, anyhow::Error> {
     let header = jsonwebtoken::decode_header(token)?;
     let kid = header.kid.ok_or(anyhow::anyhow!("Missing kid"))?;
-    debug!("Kid: {kid}");
-    let jwk_lock = jwk_state.jwks.read().await;
+    let jwk_lock = oidc_config.jwks_state.jwks.read().await;
     let jwk = jwk_lock.find(&kid).ok_or(anyhow::anyhow!("Missing jwk"))?;
-    debug!("JWK: {jwk:?}");
 
     let mut validation = Validation::new(header.alg);
-    validation.set_issuer(&["http://auth.roommates.local/realms/roommates"]);
+    validation.set_issuer(&[oidc_config.metadata.issuer()]);
     validation.set_audience(&["account"]);
 
-    let token_data = jsonwebtoken::decode(
-        token,
-        &DecodingKey::from_jwk(jwk)
-            .unwrap_or_else(|err| panic!("Failed to create decoding key: {err}")),
-        &validation,
-    )
-    .unwrap_or_else(|err| panic!("Token decode error: {err}"));
+    let token_data = jsonwebtoken::decode(token, &DecodingKey::from_jwk(jwk)?, &validation)?;
 
     Ok(token_data.claims)
 }
@@ -252,9 +246,57 @@ pub(crate) async fn get_user_from_authorization_token(
 ) -> Result<Option<entity::user::Model>, anyhow::Error> {
     let oidc_config = app_state.oidc_config.as_ref().expect("OIDC is disabled!");
 
-    let claims = validate_authorization_token(&oidc_config.jwks_state, token).await?;
+    let claims = validate_authorization_token(oidc_config, token)
+        .await
+        .inspect_err(|e| error!("Error validating OIDC claims: {}", e))?;
     let user = User::find_by_email(claims.email)
         .one(&app_state.database)
         .await?;
     Ok(user)
+}
+
+pub(crate) async fn refresh_authorization_token(
+    refresh_token: &str,
+    app_state: &AppState,
+) -> Result<CoreTokenResponse, anyhow::Error> {
+    let oidc_client = &app_state.oidc_config.as_ref().expect("OIDC is disabled!").client;
+    let http_client = build_http_client()?;
+
+    let refresh_token = RefreshToken::new(refresh_token.to_owned());
+    let refresh_token_request = oidc_client.exchange_refresh_token(&refresh_token)?;
+    let new_token = refresh_token_request.request_async(&http_client).await?;
+    Ok(new_token)
+}
+
+pub(crate) fn add_oidc_cookies(cookies: &Cookies, token_response: &CoreTokenResponse) -> Result<(), anyhow::Error> {
+    let expires_at = token_response
+        .expires_in()
+        .unwrap_or(Duration::from_secs(3600));
+
+    cookies.add(
+        Cookie::build((
+            "authorization",
+            format!("Bearer {}", token_response.access_token().secret()),
+        ))
+            .secure(!cfg!(debug_assertions))
+            .http_only(true)
+            .path("/")
+            .same_site(SameSite::Strict)
+            .expires(time::OffsetDateTime::now_local()? + expires_at)
+            .build(),
+    );
+    if let Some(refresh_token) = token_response.refresh_token() {
+        cookies.add(
+            Cookie::build((
+                "refresh_token",
+                format!("Bearer {}", refresh_token.secret()),
+            ))
+                .secure(!cfg!(debug_assertions))
+                .http_only(true)
+                .path("/")
+                .expires(time::OffsetDateTime::now_local()? + 30.days())
+                .build(),
+        );
+    }
+    Ok(())
 }

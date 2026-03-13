@@ -31,18 +31,15 @@ pub async fn oauth_login() -> Result<Redirect, ServerFnError> {
 
 #[get("/api/oidc/redirect?state&code",
     ext: Extension<server::AppState>,
-    _auth: Extension<server::AuthenticationState>,
     cookies: Extension<tower_cookies::Cookies>,
     session: Extension<tower_sessions::Session>
 )]
 pub async fn oauth_redirect(state: String, code: String) -> Result<Redirect, ServerFnError> {
-    use std::time::Duration;
-
     use crate::server::auth::oidc;
     use entity::prelude::*;
     use openidconnect::{AccessTokenHash, OAuth2TokenResponse, TokenResponse};
     use sea_orm::prelude::*;
-    use tower_cookies::{Cookie, cookie::SameSite};
+    use crate::server::auth::oidc::add_oidc_cookies;
 
     let oidc_client = ext
         .oidc_config
@@ -133,34 +130,19 @@ pub async fn oauth_redirect(state: String, code: String) -> Result<Redirect, Ser
             .or_internal_server_error("Failed to create user")?;
     }
 
-    let expires_at = token_response
-        .expires_in()
-        .unwrap_or(Duration::from_secs(3600));
-
-    cookies.add(
-        Cookie::build((
-            "authorization",
-            format!("Bearer {}", token_response.access_token().secret()),
-        ))
-        .secure(!cfg!(debug_assertions))
-        .http_only(true)
-        .path("/")
-        .same_site(SameSite::Strict)
-        .expires(time::OffsetDateTime::now_local().unwrap() + expires_at)
-        .build(),
-    );
-    if let Some(refresh_token) = token_response.refresh_token() {
-        cookies.add(
-            Cookie::build((
-                "refresh_token",
-                format!("Bearer {}", refresh_token.secret()),
-            ))
-            .secure(!cfg!(debug_assertions))
-            .http_only(true)
-            .path("/")
-            .build(),
-        );
-    }
+    add_oidc_cookies(&cookies, &token_response).or_internal_server_error("Failed to add cookies")?;
 
     Ok(Redirect::to("/"))
+}
+
+#[post("/api/oidc/refresh", state: Extension<server::AppState>, cookies: Extension<tower_cookies::Cookies>)]
+pub async fn refresh_authorization_token() -> Result<(), ServerFnError> {
+    use crate::server::auth::oidc::add_oidc_cookies;
+    let refresh_token_cookie = cookies.get("refresh_token").or_bad_request("Invalid refresh token")?;
+    let refresh_token = refresh_token_cookie.value();
+
+    let tokens = server::auth::oidc::refresh_authorization_token(refresh_token, &state).await.or_internal_server_error("Failed to refresh token")?;
+
+    add_oidc_cookies(&cookies, &tokens).or_internal_server_error("Failed to set cookies")?;
+    Ok(())
 }
