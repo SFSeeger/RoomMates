@@ -11,34 +11,38 @@
 
 - [Features](#features)
 - [Deployment](#deployment)
-  - [Server](#server)
-    - [Server with Sqlite Database](#server-with-sqlite-database)
-    - [Server with MySQL/MariaDB](#server-with-mysqlmariadb)
-  - [Clients](#clients)
-    - [Android](#android)
-  - [Tools and Dependencies](#tools-and-dependencies)
+    - [Server](#server)
+        - [Server with Sqlite Database](#server-with-sqlite-database)
+        - [Server with MySQL/MariaDB](#server-with-mysqlmariadb)
+        - [OIDC Support](#oidc-support)
+    - [Clients](#clients)
+        - [Android](#android)
+    - [Tools and Dependencies](#tools-and-dependencies)
 - [Development](#development)
-  - [Project Structure](#project-structure)
-  - [Serving Your App](#serving-your-app)
-  - [Development Services](#development-services)
-  - [Dev Container](#dev-container)
-  - [Pre-Commit Hooks](#pre-commit-hooks)
-  - [Testing](#testing)
+    - [Project Structure](#project-structure)
+    - [Serving Your App](#serving-your-app)
+    - [Development Services](#development-services)
+    - [Dev Container](#dev-container)
+    - [Pre-Commit Hooks](#pre-commit-hooks)
+    - [Testing](#testing)
 - [Disclosure of AI Usage](#disclosure-of-ai-usage)
 
 </details>
 
 ## Features
+
 * Create, view and share Events with groups and individual users
-![alt text](screenshots/eventcreate.png)![alt text](screenshots/group-dark.png) ![alt text](screenshots/calendar.png)
+  ![Event Creation](docs/screenshots/eventcreate.png)
+  ![Group List](docs/screenshots/group-dark.png)
+  ![Calendar](docs/screenshots/calendar.png)
 * Manage and collaborate on To-Do Lists with different permissions
-![alt text](screenshots/todolist.png)
+  ![Todo List](docs/screenshots/todolist.png)
 * Choose from multiple themes to personalize your experience
-![alt text](screenshots/dashboard-dark.png)
-![alt text](<screenshots/dashboard pastel.png>)
+  ![Dashboard in a dark color theme](docs/screenshots/dashboard-dark.png)
+  ![Dashboard in a pastel color theme](docs/screenshots/dashboard-pastel.png)
 * Compatible with both MySQL and SQLite databases
 * Cross-Platform Support ([See Clients](#clients))
-
+* OIDC Support
 
 ## Deployment
 
@@ -90,26 +94,47 @@ volumes:
 ```
 
 And a `.env` file like this in the same directory:
+
 ```shell
 MYSQL_PASSWORD = <super secret password>
 MYSQL_ROOT_PASSWORD = <super secret password 2>
 ```
+
 Then run:
 
 ````shell
 docker compose --env-file .env up -d
 ````
 
+#### OIDC Support
+
+RoomMates supports OIDC using the [openidconnect crate](https://docs.rs/openidconnect/latest/openidconnect/).
+OIDC is not enabled by default and can be configured using the following Environment Variables:
+
+|   Enviroment Variable Name    | Description                                                                                                                                                      |      Required      |
+|:-----------------------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------|:------------------:|
+|        `OIDC_ENABLED`         | Controls wether OIDC is enabled or not                                                                                                                           | :white_check_mark: |
+|       `OIDC_ISSUER_URL`       | Url to the Issuer. Gets used to retrieve the required Metadata using the .well-known endpoint                                                                    | :white_check_mark: |
+|       `OIDC_CLIENT_ID`        | Client ID used to authenticate against                                                                                                                           | :white_check_mark: |
+|     `OIDC_CLIENT_SECRET`      | Client Secret for the supplied client                                                                                                                            | :white_check_mark: |
+|         `SERVER_URL`          | Domain where the server is deployed. Used for redirection after the OIDC flow is compleated                                                                      | :white_check_mark: |
+|       `SIGNUP_ENABLED`        | Controls wether users can create an account using the signup provided by RoomMates. OIDC accounds will always be created                                         |        :x:         |
+|         `OIDC_SCOPES`         | Scopes the application has access to. Note that the application needs at least the email as well as the given and family name Defaults to `email profile openid` |        :x:         |
+|      `OIDC_PROVIDE_NAME`      | The name of the provider displayed in the login form. Defauls to SSO                                                                                             |        :x:         |
+| `OIDC_JWKS_REFRESH_INTERVALL` | Intervall in secounds when to reload the jwks used to validate auth tokens.                                                                                      |        :x:         |
+|        `OIDC_AUDIENCE`        | Comma seperated list of audiences (e.g. `account,app`)                                                                                                           |        :x:         |
+
 ### Clients
 
-Bundling the following targets have been tested. While bundling untested targets may work, there is a chance they require additional configuration.
+Bundling the following targets have been tested. While bundling untested targets may work, there is a chance they
+require additional configuration.
+
 - [X] Web
 - [X] Linux
 - [ ] Windows
 - [ ] macOS
 - [X] Android
 - [ ] iOS
-
 
 To bundle clients for production, install the [required tools](#tools-and-dependencies) or use the devcontainer.
 Then choose the platform you want to bundle and optionally
@@ -119,24 +144,26 @@ Run the following command in the root of the project[^1]:
 > `SERVER_URL` should be the URL of your deployed server. Defaults to `http://localhost:8080`.
 
 > [!TIP]
-> You can also bundle the server this way, if you don't want to use docker. In this case set `PLATFORM` to web. You can omit `SERVER_URL` as it is not needed for the web platform.
+> You can also bundle the server this way, if you don't want to use docker. In this case set `PLATFORM` to web. You can
+> omit `SERVER_URL` as it is not needed for the web platform.
 
 ```shell
 make bundle PLATFORM=<platform> SERVER_URL="<your-server-url>" [PACKAGES="<package1> [<package2> ...]"]
 ```
+
 #### Android
+
 > [!IMPORTANT]
-> This bundeling config assumes you have a valid keystore in `~/.android/keystore.jks`. You can override the keystore location by using the `KEYSTORE_PATH` argument when bundling.
+> This bundling config assumes you have a valid keystore in `~/.android/keystore.jks`. You can override the keystore
+> location by using the `KEYSTORE_PATH` argument when bundling.
 > Refer to [the android docs](https://developer.android.com/studio/publish/app-signing) on how to create one
 
 > [!NOTE]
 > This creates a `.apk` file for sideloading. The `.aab` bundle created by dioxus does not include the app icon
 
-
 ```shell
 make bundle PLATFORM=android SERVER_URL="<your-server-url>" KEYSTORE_PASSWORD="<your-keystore-password>"
 ```
-
 
 ### Tools and Dependencies
 
@@ -203,11 +230,28 @@ make dev-server PLATFORM=desktop
 
 ### Development Services
 
-| Port | Service     | Description                                      |
-| ---- | ----------- | ------------------------------------------------ |
-| 8080 | Application | The Application served by the development server |
-| 8000 | phpMyAdmin  | Database frontend for development                |
-| 3306 | MariaDB     | Database Server                                  |
+The RoomMates Dev Container uses a `traefik` to route to all required services. For this to work, you need to extend
+your `/etc/hosts` (Linux / MacOS) `%windir%\system32\drivers\etc` (Windows) with these lines:
+
+```text
+127.0.0.1        roommates.local
+127.0.0.1        auth.roommates.local
+127.0.0.1        db.roommates.local
+127.0.0.1        traefik.roommates.local
+```
+
+|          Domain           | Service       | Description                                           |
+|:-------------------------:|:--------------|-------------------------------------------------------|
+|     `roommates.local`     | Dev Container | Forwards port 8080                                    |
+|  `auth.roommates.local`   | Keycloak      | Auth Provider for OIDC                                |
+|   `db.roommates.local`    | PhpMyAdmin    | Database Frontend                                     |
+| `traefik.roommates.local` | Traefik       | Used to access `traefik` dashboard under `/dashboard` |
+
+If you want to use OIDC in the development, you also need to create a User in the Keycloak. For this, open
+`auth.roommates.local` and login using the username `admin` with password `password`.
+Then click `Manage Realms > RoomMates`. Once you are in the RoomMates Realm navigate to `Users > Create new User`.
+After entering an email, first name and last name, open the tab `Credentials` and set a password. Make sure to disable
+`temporary`, otherwise you'll need to change it on first login.
 
 ### Dev Container
 
@@ -226,7 +270,12 @@ should already be installed in the devcontainer.
 
 Test Disclaimer:
 
-Some tests for basic and advanced database logic were done using unit tests. However later on, most tests were conducted by directly running and using the project, since a lot of the work was concerning the UI. Additionally most of the database operations are pretty similar, so in the interest of saving time, there was not a need to write individual tests for every one of them. The focus was on working directly with the interactive components of the project, seeing what worked and gaining concrete information about occurring errors through example data and debugging with developer tools.
+Some tests for basic and advanced database logic were done using unit tests. However later on, most tests were conducted
+by directly running and using the project, since a lot of the work was concerning the UI. Additionally most of the
+database operations are pretty similar, so in the interest of saving time, there was not a need to write individual
+tests for every one of them. The focus was on working directly with the interactive components of the project, seeing
+what worked and gaining concrete information about occurring errors through example data and debugging with developer
+tools.
 
 To run the tests for the project, use the following command:
 
@@ -235,11 +284,13 @@ make tests
 ```
 
 ## Disclosure of AI Usage
-AI was used for Tab-Completing and Debugging, never for generating whole sections of code without a human creating derivatives of said generated code.
+
+AI was used for Tab-Completing and Debugging, never for generating whole sections of code without a human creating
+derivatives of said generated code.
 Model used were:
+
 - ChatGPT 4o, 4.1 and 5
 - Github Copilot
 - Google Gemini
-
 
 [^1]: Angle brackets (`<>`) indicate required arguments, square brackets (`[]`) indicate optional arguments.
