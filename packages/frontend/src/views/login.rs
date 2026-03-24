@@ -2,7 +2,7 @@ use crate::components::contexts::{use_app_config, use_auth};
 use crate::components::ui::card::{Card, CardActions, CardBody, CardTitle};
 use crate::components::ui::form::input::Input;
 use crate::components::ui::form::submit_button::SubmitButton;
-use crate::{ICON, Route};
+use crate::{ICON, Route, SERVER_URL};
 use api::routes::users::{EMAIL_REGEX, get_me, login};
 use dioxus::prelude::*;
 use dioxus_free_icons::Icon;
@@ -128,7 +128,7 @@ pub fn LoginPage() -> Element {
                                 }
                                 if app_config.oidc_enabled {
                                     a {
-                                        href: "/api/oidc/login",
+                                        href: "{SERVER_URL}/api/oidc/login",
                                         class: "btn btn-primary grow w-full",
                                         if let Some(name) = app_config.oidc_provider_name {
                                             "Login with {name}"
@@ -139,7 +139,7 @@ pub fn LoginPage() -> Element {
                                 }
                                 if !app_config.signup_enabled {
                                     p {
-                                        "Dont have an account? "
+                                        "Don't have an account? "
                                         Link {
                                             to: Route::SignupView {},
                                             class: "link",

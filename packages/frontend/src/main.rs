@@ -21,7 +21,16 @@ const TAILWIND_CSS: Asset = asset!("/assets/dist/tailwind.css");
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 pub const ICON: Asset = asset!("/assets/icon.svg");
 
-// !! IMPORTANT: DO NOT FORMAT THIS! The formatting of the routing enum determines behaviour !!
+#[cfg(not(debug_assertions))]
+pub const SERVER_URL: &str = env!(
+    "SERVER_URL",
+    "SERVER_URL environment variable must be set when compiling"
+);
+
+#[cfg(debug_assertions)]
+pub const SERVER_URL: &str = "http://localhost:8080";
+
+// !! IMPORTANT: DO NOT FORMAT THIS! The formatting of the routing enum determines behavior !!
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
 enum Route {
@@ -81,10 +90,7 @@ fn main() {
 
     #[cfg(not(debug_assertions))]
     #[cfg(all(not(feature = "server"), any(feature = "desktop", feature = "mobile")))]
-    dioxus_fullstack::set_server_url(env!(
-        "SERVER_URL",
-        "SERVER_URL environment variable must be set when compiling"
-    ));
+    dioxus_fullstack::set_server_url(SERVER_URL);
     #[cfg(not(feature = "server"))]
     dioxus::launch(App);
 }

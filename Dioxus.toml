@@ -4,32 +4,34 @@ out_dir = "dist"
 tailwind_input = "tailwind.css"
 tailwind_output = "assets/dist/tailwind.css"
 
+# resource (static) file folder
+#asset_dir = "public"
+android_manifest = "src/android/AndroidManifest.xml"
+android_main_activity = "src/android/MainActivity.kt"
+
+[web.wasm_opt]
+# The level wasm-opt should target. z is the smallest. 4 is the fastest.
+level = "4"
+
 [web.app]
 
 # HTML title tag content
 title = "RoomMates"
 
-# include `assets` in web platform
-[web.resource]
-
-# Additional CSS style files
-style = []
-
-# Additional JavaScript files
-script = []
-
 [web.watcher]
-watch_path = ["src", "assets"]
 
-[web.resource.dev]
+index_on_404 = true
 
-# Javascript code file
-# serve: [dev-server] only
-script = []
+watch_path = ["src", "assets", "examples"]
 
 [bundle]
-identifier = "io.github.sfseeger.roommates"
-publisher = "RoomMates"
+# Bundle identifier
+identifier = "io.github.sfseeger.RoomMates"
+
+# Bundle publisher
+publisher = "SFSeeger"
+
+# Bundle icon
 icon = [
     "assets/dist/app_icons/32x32.png",
     "assets/dist/app_icons/128x128.png",
@@ -37,6 +39,39 @@ icon = [
     "assets/dist/app_icons/icon.icns",
     "assets/dist/app_icons/icon.ico",
 ]
+
+# Bundle resources
+#resources = ["public/*"]
+
+# Bundle copyright
+copyright = ""
+
+# Bundle category
+category = "Utility"
+
+# Bundle short description
+short_description = "An amazing dioxus application."
+
+# Bundle long description
+long_description = """
+An amazing dioxus application.
+"""
+
+[deep_links]
+schemes = ["roommates", "io.github.sfseeger.roommates"]
+hosts = ["roommates.sfseeger.de", "roommates.local"]
+paths = ["/app/*", "/oidc/callback"]
+
+# Android-specific intent filters for advanced cases
+[[android.intent_filters]]
+actions = ["android.intent.action.VIEW"]
+categories = ["android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"]
+auto_verify = true  # For App Links (requires assetlinks.json)
+
+[[android.intent_filters.data]]
+scheme = "https"
+host = "roommates.sfseeger.de"
+path_prefix = "/app"
 
 [android.app]
 min_sdk_version = 30
