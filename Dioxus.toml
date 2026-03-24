@@ -6,8 +6,8 @@ tailwind_output = "assets/dist/tailwind.css"
 
 # resource (static) file folder
 #asset_dir = "public"
-android_manifest = "src/android/AndroidManifest.xml"
-android_main_activity = "src/android/MainActivity.kt"
+android_manifest = "android/AndroidManifest.xml"
+android_main_activity = "android/MainActivity.kt"
 
 [web.wasm_opt]
 # The level wasm-opt should target. z is the smallest. 4 is the fastest.
