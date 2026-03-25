@@ -13,6 +13,7 @@ use views::{
 };
 
 mod components;
+#[cfg(feature = "mobile")]
 pub mod ffi;
 mod hooks;
 mod layouts;

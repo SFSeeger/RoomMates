@@ -19,10 +19,12 @@ dioxus-primitives = { git = "https://github.com/SFSeeger/dioxus-components", ver
 dioxus-sdk = { version = "0.7.0", features = ["time"] }
 time = { workspace = true }
 jni = { version = "0.22.4", optional = true }
+tokio = { version = "1.50.0", optional = true }
+
 
 [features]
 default = ["web"]
 web = ["dioxus/web"]
-mobile = ["dioxus/mobile", "dep:jni"]
+mobile = ["dioxus/mobile", "dep:jni", "dep:tokio"]
 desktop = ["dioxus/desktop"]
 server = ["dioxus/server", "api/server"]

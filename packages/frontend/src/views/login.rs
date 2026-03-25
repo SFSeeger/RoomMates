@@ -137,7 +137,7 @@ pub fn LoginPage() -> Element {
                                         }
                                     }
                                 }
-                                if !app_config.signup_enabled {
+                                if app_config.signup_enabled {
                                     p {
                                         "Don't have an account? "
                                         Link {

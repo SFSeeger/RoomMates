@@ -10,9 +10,27 @@ use crate::{
 use dioxus::{fullstack::FullstackContext, prelude::*};
 use dioxus_free_icons::icons::ld_icons::{LdCircleHelp, LdCircleX};
 
+#[cfg(feature = "mobile")]
+use crate::ffi::components::DeepLinkHandler;
+
+#[cfg(feature = "mobile")]
+use crate::ffi::components::GoBackHandler;
+
 #[component]
 pub fn StandardAppLayout(children: Element) -> Element {
+    #[cfg(feature = "mobile")]
+    let deep_link_handler = rsx! { DeepLinkHandler {} };
+    #[cfg(not(feature = "mobile"))]
+    let deep_link_handler = rsx! {};
+
+    #[cfg(feature = "mobile")]
+    let go_back_handler = rsx! { GoBackHandler {} };
+    #[cfg(not(feature = "mobile"))]
+    let go_back_handler = rsx! {};
+
     rsx! {
+        {deep_link_handler}
+        {go_back_handler}
         AppConfigProvider {
             AuthProvider {
                 SidebarProvider {
